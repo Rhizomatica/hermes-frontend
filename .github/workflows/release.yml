@@ -1,0 +1,137 @@
+name: Release (ARM64 Build + Deploy)
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  build-arm64:
+    name: Build ARM64
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app: [hermes-shell, hermes-gps-final, hermes-chat-final]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Set version
+        id: version
+        run: |
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          echo "sha=$SHORT_SHA" >> $GITHUB_OUTPUT
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            echo "version=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=dev-${SHORT_SHA}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build ${{ matrix.app }} (ARM64 standalone output)
+        run: |
+          docker buildx build \
+            --platform linux/arm64 \
+            --build-arg APP=${{ matrix.app }} \
+            --build-arg PORT=3000 \
+            --build-arg NEXT_PUBLIC_APP_VERSION=${{ steps.version.outputs.version }} \
+            --build-arg NEXT_PUBLIC_BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
+            --output type=local,dest=./build-output/${{ matrix.app }} \
+            --target runner \
+            .
+
+      - name: Package standalone output
+        run: |
+          tar -czf ${{ matrix.app }}-${{ steps.version.outputs.sha }}-arm64.tar.gz \
+            -C ./build-output/${{ matrix.app }} .
+          echo "artifact=${{ matrix.app }}-${{ steps.version.outputs.sha }}-arm64.tar.gz" >> $GITHUB_OUTPUT
+        id: package
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.app }}-arm64
+          path: ${{ matrix.app }}-${{ steps.version.outputs.sha }}-arm64.tar.gz
+          retention-days: 30
+
+      - name: Upload to GitHub Release (tagged releases only)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.app }}-${{ steps.version.outputs.sha }}-arm64.tar.gz
+          generate_release_notes: true
+
+  deploy-staging:
+    name: Deploy to Staging sBitx
+    needs: [build-arm64]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+
+      - name: Deploy to staging sBitx
+        run: |
+          echo "Deploying to staging sBitx..."
+          echo "This step requires:"
+          echo "  1. SSH key configured in GitHub Secrets (SBITX_STAGING_SSH_KEY)"
+          echo "  2. Staging sBitx hostname in GitHub Secrets (SBITX_STAGING_HOST)"
+          echo "  3. systemd service files on the sBitx: hermes-shell, hermes-gps, hermes-chat"
+          echo ""
+          echo "Deploy command (uncomment when secrets are configured):"
+          echo "# for app in hermes-shell hermes-gps-final hermes-chat-final; do"
+          echo "#   scp artifacts/\${app}-arm64/*.tar.gz \${SBITX_STAGING_HOST}:/opt/hermes/"
+          echo "#   ssh \${SBITX_STAGING_HOST} 'cd /opt/hermes && tar -xzf \${app}.tar.gz && systemctl restart hermes-\${app}'"
+          echo "# done"
+
+  deploy-production:
+    name: Deploy to Production sBitx
+    needs: [build-arm64]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+
+      - name: Deploy to production
+        run: |
+          echo "Deploying to production sBitx..."
+          echo "This step requires:"
+          echo "  1. SSH key configured in GitHub Secrets (SBITX_PROD_SSH_KEY)"
+          echo "  2. Production sBitx hostname in GitHub Secrets (SBITX_PROD_HOST)"
+          echo ""
+          echo "Deploy command (uncomment when secrets are configured):"
+          echo "# for app in hermes-shell hermes-gps-final hermes-chat-final; do"
+          echo "#   scp artifacts/\${app}-arm64/*.tar.gz \${SBITX_PROD_HOST}:/opt/hermes/"
+          echo "#   ssh \${SBITX_PROD_HOST} 'cd /opt/hermes && tar -xzf \${app}.tar.gz && systemctl restart hermes-\${app}'"
+          echo "# done"
+
+  rollback:
+    name: Rollback (manual trigger)
+    if: false  # Manual trigger — set to workflow_dispatch when ready
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Rollback to previous version
+        run: |
+          echo "Rolling back to previous version..."
+          echo "This step requires:"
+          echo "  1. SSH key configured in GitHub Secrets (SBITX_PROD_SSH_KEY)"
+          echo "  2. Production sBitx hostname in GitHub Secrets (SBITX_PROD_HOST)"
+          echo ""
+          echo "Rollback command (uncomment when secrets are configured):"
+          echo "# ssh \${SBITX_PROD_HOST} 'systemctl rollback hermes-shell && systemctl rollback hermes-gps && systemctl rollback hermes-chat'"
