@@ -1,0 +1,33 @@
+{
+  "extends": ["@commitlint/config-conventional"],
+  "rules": {
+    "type-enum": [2, "always", [
+      "feat",
+      "fix",
+      "perf",
+      "a11y",
+      "style",
+      "refactor",
+      "docs",
+      "test",
+      "chore",
+      "revert"
+    ]],
+    "scope-enum": [2, "always", [
+      "shell",
+      "gps",
+      "chat",
+      "api",
+      "ui",
+      "shared-auth",
+      "tailwind-config",
+      "config",
+      "utils",
+      "docs",
+      "ci",
+      "deps",
+      "repo"
+    ]],
+    "body-max-line-length": [0]
+  }
+}
