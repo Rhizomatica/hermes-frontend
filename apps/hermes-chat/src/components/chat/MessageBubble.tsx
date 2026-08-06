@@ -1,9 +1,13 @@
-import { formatTime } from "@/lib/formatting";
-import type { Message } from "@/lib/message";
+import { formatTime } from "@platform/utils";
+import type { Message } from "@platform/utils";
 import DeleteMessageButton from "@/components/DeleteMessageButton";
 import DoubleCheck from "@/components/DoubleCheck";
 import FileAttachment from "./FileAttachment";
+<<<<<<< HEAD
+import { PasswordDialog } from "@platform/ui";
+=======
 import { PasswordDialog } from "@hermes/ui";
+>>>>>>> main
 import { Lock, Loader2 } from "lucide-react";
 import { useState, useCallback } from "react";
 import { useTranslations } from "next-intl";
@@ -50,6 +54,10 @@ export default function MessageBubble({
             setWrongPassword(false);
             setPassword(pw);
             const data = await res.json();
+            if (!data.message) {
+                setWrongPassword(true);
+                return;
+            }
             setText(data.message);
             setDialogOpen(false);
         } catch {

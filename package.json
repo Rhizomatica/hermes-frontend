@@ -4,17 +4,25 @@
   "private": true,
   "packageManager": "npm@11.9.0",
   "workspaces": [
-    "apps/*",
+    "apps/hermes-shell",
+    "apps/hermes-gps-final",
+    "apps/hermes-chat-final",
     "packages/*"
   ],
   "scripts": {
-    "dev:chat": "turbo run dev --filter=hermes-chat",
-    "dev:gps":  "turbo run dev --filter=hermes-gps",
-    "dev":      "turbo run dev",
-    "build":    "turbo run build",
-    "lint":     "turbo run lint"
+    "dev:shell": "turbo run dev --filter=hermes-shell",
+    "dev:gps": "turbo run dev --filter=hermes-gps-final",
+    "dev:chat": "turbo run dev --filter=hermes-chat-final",
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "turbo run test:e2e"
   },
   "devDependencies": {
-    "turbo": "^2"
+    "turbo": "^2",
+    "vitest": "^2"
   }
 }

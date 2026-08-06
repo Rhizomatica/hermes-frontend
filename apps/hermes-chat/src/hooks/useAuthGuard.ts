@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { HermesUser } from "@/lib/user";
+import type { HermesUser } from "@platform/utils";
 
 export function useAuthGuard(): HermesUser | null {
   const router = useRouter();

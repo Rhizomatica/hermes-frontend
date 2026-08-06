@@ -1,7 +1,19 @@
 {
+<<<<<<< HEAD
+  "extends": "../../packages/config/typescript/base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+=======
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "plugins": [{ "name": "next" }],
+>>>>>>> main
     "paths": {
       "@/*": ["./src/*"]
     }

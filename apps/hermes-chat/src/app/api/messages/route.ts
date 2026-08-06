@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+<<<<<<< HEAD
+import { hermesGet, hermesPost, hermesDelete } from '@/lib/hermesApi';
+import type { Message } from '@platform/utils';
+=======
 import { hermesGet, hermesPost, hermesDelete } from '@hermes/api';
 import type { Message } from '@/lib/types';
+>>>>>>> main
 
 /**
  * Normalize a station address to its bare identifier for comparison.

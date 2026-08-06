@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { stationId } from "@/lib/conversation";
+import { stationId } from "@platform/utils";
 
 interface UseStationAliasResult {
   aliasMap: Map<string, string>;

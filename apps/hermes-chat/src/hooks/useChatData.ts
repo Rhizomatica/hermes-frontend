@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
-import type { Message } from "@/lib/message";
-import { filterConversation } from "@/lib/conversation";
+import type { Message } from "@platform/utils";
+import { filterConversation } from "@platform/utils";
 
 interface UseChatDataResult {
     messages: Message[];

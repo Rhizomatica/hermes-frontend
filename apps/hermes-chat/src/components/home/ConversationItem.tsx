@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useLocale } from "next-intl";
-import type { Conversation } from "@/lib/conversation";
-import { formatTimeOrDate } from "@/lib/formatting";
+import type { Conversation } from "@platform/utils";
+import { formatTimeOrDate } from "@platform/utils";
 
 interface ConversationItemProps {
   conv: Conversation;

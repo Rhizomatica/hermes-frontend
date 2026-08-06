@@ -1,16 +1,22 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import type { Message } from "@/lib/message";
-import { buildConversations } from "@/lib/conversation";
+import type { Message } from "@platform/utils";
+import { buildConversations } from "@platform/utils";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
 import { useStationAlias } from "@/hooks/useStationAlias";
 import { useTranslations } from "next-intl";
 import Navbar from "@/components/Navbar";
 import NewChatFab from "@/components/NewChatFab";
+<<<<<<< HEAD
+import { SearchInput } from "@platform/ui";
+import ConversationItem from "@/components/home/ConversationItem";
+import { LoadingSpinner } from "@platform/ui";
+=======
 import { SearchInput } from "@hermes/ui";
 import ConversationItem from "@/components/home/ConversationItem";
 import { LoadingSpinner } from "@hermes/ui";
+>>>>>>> main
 
 export default function Home() {
   const user = useAuthGuard();

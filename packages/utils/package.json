@@ -1,0 +1,11 @@
+{
+  "name": "@platform/utils",
+  "version": "0.1.0",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "devDependencies": {
+    "typescript": "^5"
+  }
+}

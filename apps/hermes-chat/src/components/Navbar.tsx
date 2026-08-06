@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useTheme } from "@hermes/ui";
 import { useLocale } from "@/providers/LocaleProvider";
 import { useTranslations } from "next-intl";
-import type { HermesUser } from "@/lib/user";
+import type { HermesUser } from "@platform/utils";
 import { Globe, LogOut, Menu, Moon, Radio, RefreshCw, Sun, X } from "lucide-react";
 
 interface NavbarProps {

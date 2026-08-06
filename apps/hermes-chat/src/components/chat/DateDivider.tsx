@@ -1,5 +1,5 @@
 import { useLocale } from "next-intl";
-import { formatDateDivider } from "@/lib/formatting";
+import { formatDateDivider } from "@platform/utils";
 
 interface DateDividerProps {
   dateStr: string;

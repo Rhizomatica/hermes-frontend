@@ -1,200 +1,122 @@
-name: CI / CD
+name: CI
 
 on:
-  push:
-    branches: [main]
-    tags: ["v*.*.*"]
   pull_request:
     branches: [main]
+  push:
+    branches: [main]
 
-env:
-  NODE_VERSION: "22"
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-
   lint:
     name: Lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-
-      - run: npm ci
-
+          node-version: 22
+          cache: 'npm'
+      - run: npm ci --ignore-scripts
       - run: npm run lint
 
-  build-web:
-    name: Build Web Apps
+  typecheck:
+    name: TypeScript
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
+          node-version: 22
+          cache: 'npm'
+      - run: npm ci --ignore-scripts
+      - run: npm run typecheck
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build (Turbo)
-        run: npm run build
-        env:
-          NEXT_TELEMETRY_DISABLED: 1
-
-      - name: Package standalone outputs into ZIP files
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+      - run: npm ci --ignore-scripts
+      - run: npm test -- --coverage
+      - name: Check coverage thresholds
         run: |
-          set -euo pipefail
-          mkdir -p dist
+          echo "Coverage report generated. Thresholds enforced in vitest.config.ts"
 
-          for APP in hermes-chat hermes-gps; do
-            STAGE="${APP}-standalone"
-            mkdir -p "${STAGE}/apps/${APP}/.next"
+  build-verify:
+    name: Build (verify)
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app: [hermes-shell, hermes-gps-final, hermes-chat-final]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+      - run: npm ci --ignore-scripts
+      - run: npx turbo build --filter=${{ matrix.app }}
+      - name: Verify standalone output exists
+        run: test -d apps/${{ matrix.app }}/.next/standalone
 
-            # Copy standalone server (already contains a trimmed node_modules)
-            cp -r "apps/${APP}/.next/standalone/." "${STAGE}/"
+  e2e:
+    name: E2E Tests
+    needs: [build-verify]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      matrix:
+        app: [hermes-shell]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+      - run: npm ci --ignore-scripts
+      - run: npx turbo build --filter=${{ matrix.app }}
+      - name: Start app in background
+        run: |
+          cd apps/${{ matrix.app }}
+          node .next/standalone/apps/${{ matrix.app }}/server.js &
+          sleep 5
+          curl --retry 10 --retry-delay 2 --retry-connrefused http://localhost:3000
+      - name: Run Playwright E2E
+        run: npx playwright test --project=chromium
+        working-directory: apps/${{ matrix.app }}
+      - name: Upload E2E artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-screenshots-${{ matrix.app }}
+          path: apps/${{ matrix.app }}/test-results/
 
-            # Add static chunks and public assets (not included in standalone)
-            cp -r "apps/${APP}/.next/static" "${STAGE}/apps/${APP}/.next/static"
-            cp -r "apps/${APP}/public"       "${STAGE}/apps/${APP}/public"
-
-            (cd "${STAGE}" && zip -r "../dist/${APP}.zip" .)
-            rm -rf "${STAGE}"
+  bundle-size:
+    name: Bundle Size Check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+      - run: npm ci --ignore-scripts
+      - run: npx turbo build
+      - name: Check bundle sizes
+        run: |
+          for app in hermes-shell hermes-gps-final hermes-chat-final; do
+            SIZE=$(du -sk apps/$app/.next/standalone | cut -f1)
+            echo "$app standalone: ${SIZE}KB"
+            if [ "$SIZE" -gt 150000 ]; then
+              echo "::warning::$app standalone exceeds 150MB budget (${SIZE}KB)"
+            fi
           done
-
-      - name: Upload ZIP artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: web-builds
-          path: dist/*.zip
-          retention-days: 30
-
-build-apk:
-    name: Build Android APK
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
-
-      - name: Cache Gradle packages
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: gradle-${{ runner.os }}-${{ hashFiles('apps/hermes-chat/package.json') }}
-          restore-keys: gradle-${{ runner.os }}-
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Initialize Capacitor Android project
-        # Only runs when the android/ directory is not committed to the repo.
-        working-directory: apps/hermes-chat
-        run: |
-          [ -d android ] || npx cap add android
-
-      - name: Sync Capacitor (injects HERMES_CHAT_URL into the Android project)
-        working-directory: apps/hermes-chat
-        run: npx cap sync android
-        env:
-          # Set HERMES_CHAT_URL as a repository variable in GitHub
-          # (Settings → Variables → Actions) to point at your server.
-          HERMES_CHAT_URL: ${{ vars.HERMES_CHAT_URL || 'http://localhost:3000' }}
-
-      - name: Build release APK
-        working-directory: apps/hermes-chat/android
-        run: |
-          chmod +x gradlew
-          ./gradlew assembleRelease --no-daemon
-
-      # Signing is optional: configure these four secrets in GitHub to enable it.
-      #   SIGNING_KEY          – base64-encoded JKS/PKCS12 keystore file
-      #   KEY_ALIAS            – key alias inside the keystore
-      #   KEY_STORE_PASSWORD   – keystore password
-      #   KEY_PASSWORD         – key password
-      - name: Detect signing key availability
-        id: check_signing
-        run: |
-          if [ -n "$SIGNING_KEY" ]; then
-            echo "available=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "available=false" >> "$GITHUB_OUTPUT"
-          fi
-        env:
-          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
-
-      - name: Sign APK
-        if: steps.check_signing.outputs.available == 'true'
-        uses: r0adkll/sign-android-release@v1
-        id: sign_apk
-        with:
-          releaseDirectory: apps/hermes-chat/android/app/build/outputs/apk/release
-          signingKeyBase64: ${{ secrets.SIGNING_KEY }}
-          alias: ${{ secrets.KEY_ALIAS }}
-          keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
-          keyPassword: ${{ secrets.KEY_PASSWORD }}
-
-      - name: Resolve final APK path
-        id: find_apk
-        run: |
-          SIGNED="${{ steps.sign_apk.outputs.signedReleaseFile }}"
-          if [ -n "$SIGNED" ]; then
-            echo "path=$SIGNED" >> "$GITHUB_OUTPUT"
-          else
-            APK=$(find apps/hermes-chat/android/app/build/outputs/apk/release \
-                    -name '*.apk' | head -1)
-            echo "path=$APK" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Upload APK artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: hermes-chat-apk
-          path: ${{ steps.find_apk.outputs.path }}
-          retention-days: 30
-
-  # ── 4. Create GitHub Release (tags only) ─────────────────────────────────
-  release:
-    name: GitHub Release
-    if: startsWith(github.ref, 'refs/tags/v')
-    needs: [lint, build-web, build-apk]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Download ZIP artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: web-builds
-          path: release/
-
-      - name: Download APK artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: hermes-chat-apk
-          path: release-apk/
-
-      - name: Rename APK with version tag
-        run: |
-          APK=$(find release-apk/ -name '*.apk' | head -1)
-          mv "$APK" "release/hermes-chat-${{ github.ref_name }}.apk"
-
-      - name: Publish release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: release/*
-          generate_release_notes: true

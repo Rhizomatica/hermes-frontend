@@ -12,7 +12,11 @@ import MessageList from "@/components/chat/MessageList";
 import MessageInput from "@/components/chat/MessageInput";
 import AttachmentPreview from "@/components/chat/AttachmentPreview";
 import NextSyncBadge from "@/components/NextSyncBadge";
+<<<<<<< HEAD
+import { ErrorBanner } from "@platform/ui";
+=======
 import { ErrorBanner } from "@hermes/ui";
+>>>>>>> main
 
 export default function ChatScreen() {
   useAuthGuard();

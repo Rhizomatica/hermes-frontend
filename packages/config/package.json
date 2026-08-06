@@ -1,0 +1,10 @@
+{
+  "name": "@platform/config",
+  "version": "0.1.0",
+  "private": true,
+  "exports": {
+    "./typescript/*": "./typescript/*",
+    "./tailwind/*": "./tailwind/*",
+    "./eslint/*": "./eslint/*"
+  }
+}

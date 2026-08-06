@@ -1,0 +1,32 @@
+name: Deploy hermes-chat
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/hermes-chat/**'
+      - 'packages/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build hermes-chat and its dependencies
+        run: npx turbo run build --filter=hermes-chat...
+
+      # Replace the step below with your actual deploy command
+      # e.g. Vercel, Docker, SSH, etc.
+      - name: Deploy
+        run: echo "Add your deploy command here"
+        env:
+          # Pass any secrets your deploy needs
+          HERMES_API_URL: ${{ secrets.HERMES_API_URL }}

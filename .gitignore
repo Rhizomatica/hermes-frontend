@@ -1,7 +1,11 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
+<<<<<<< HEAD
+node_modules
+=======
 node_modules/
+>>>>>>> main
 /.pnp
 .pnp.*
 .yarn/*
@@ -15,10 +19,18 @@ coverage/
 
 # next.js
 .next/
+<<<<<<< HEAD
+out/
+=======
 /out/
+>>>>>>> main
 
 # production
-/build
+build/
+dist/
+
+# turborepo
+.turbo/
 
 # turbo
 .turbo/

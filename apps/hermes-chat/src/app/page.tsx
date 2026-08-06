@@ -47,7 +47,7 @@ export default function Login() {
   }
 
   return (
-    <div className="relative flex min-h-screen flex-1 flex-col justify-center bg-gray-50 dark:bg-gray-900 px-6 py-20 lg:px-8">
+    <div className="relative flex min-h-screen flex-1 flex-col justify-center bg-gray-50 dark:bg-gray-900 px-6 lg:px-8">
       <button
         onClick={toggle}
         aria-label={tTheme("toggle")}

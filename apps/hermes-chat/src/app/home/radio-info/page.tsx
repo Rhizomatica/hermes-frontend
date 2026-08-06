@@ -8,7 +8,11 @@ import SysInfo from "@/components/radio/SysInfo";
 import CallerList, { type CallerEntry } from "@/components/radio/CallerList";
 import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
+<<<<<<< HEAD
+import { LoadingSpinner } from "@platform/ui";
+=======
 import { LoadingSpinner } from "@hermes/ui";
+>>>>>>> main
 
 export default function RadioInfoPage() {
     useAuthGuard();

@@ -7,10 +7,17 @@ import { ChevronLeft } from "lucide-react";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
 import { useTranslations } from "next-intl";
 import Navbar from "@/components/Navbar";
+<<<<<<< HEAD
+import { SearchInput } from "@platform/ui";
+import { LoadingSpinner } from "@platform/ui";
+import type { Message } from "@platform/utils";
+import { buildConversations, stationId, canonicalize } from "@platform/utils";
+=======
 import { SearchInput } from "@hermes/ui";
 import { LoadingSpinner } from "@hermes/ui";
 import type { Message } from "@/lib/message";
 import { buildConversations, stationId, canonicalize } from "@/lib/conversation";
+>>>>>>> main
 
 interface Station {
   name: string;

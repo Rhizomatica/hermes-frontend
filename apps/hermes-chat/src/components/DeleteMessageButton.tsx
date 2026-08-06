@@ -2,7 +2,11 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
+<<<<<<< HEAD
+import { ConfirmDialog } from "@platform/ui";
+=======
 import { ConfirmDialog } from "@hermes/ui";
+>>>>>>> main
 import { Trash2 } from "lucide-react";
 
 interface DeleteMessageButtonProps {
