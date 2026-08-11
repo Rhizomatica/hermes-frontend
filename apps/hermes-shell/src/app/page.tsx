@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useAuth, useAuthGuard, useLocale } from '@hermes/shared-auth';
@@ -53,16 +54,16 @@ export default function AppSelector() {
       </div>
 
       <div className="mt-8 flex flex-1 flex-col gap-4 sm:flex-row sm:justify-center">
-        <a href="/gps" className="flex flex-1 flex-col items-center justify-center rounded-2xl border-2 border-gray-200 bg-background p-6 text-center hover:border-orange-500 active:border-orange-600 dark:border-gray-700 sm:max-w-xs" style={{ minHeight: '160px' }}>
+        <Link href="/gps" className="flex flex-1 flex-col items-center justify-center rounded-2xl border-2 border-gray-200 bg-background p-6 text-center hover:border-orange-500 active:border-orange-600 dark:border-gray-700 sm:max-w-xs" style={{ minHeight: '160px' }}>
           <span className="text-4xl">📍</span>
           <h2 className="mt-3 text-lg font-semibold">{t('gpsViewer')}</h2>
           <p className="mt-1 text-sm text-foreground/60">{t('gpsDescription')}</p>
-        </a>
-        <a href="/chat" className="flex flex-1 flex-col items-center justify-center rounded-2xl border-2 border-gray-200 bg-background p-6 text-center hover:border-orange-500 active:border-orange-600 dark:border-gray-700 sm:max-w-xs" style={{ minHeight: '160px' }}>
+        </Link>
+        <Link href="/chat" className="flex flex-1 flex-col items-center justify-center rounded-2xl border-2 border-gray-200 bg-background p-6 text-center hover:border-orange-500 active:border-orange-600 dark:border-gray-700 sm:max-w-xs" style={{ minHeight: '160px' }}>
           <span className="text-4xl">💬</span>
           <h2 className="mt-3 text-lg font-semibold">{t('chat')}</h2>
           <p className="mt-1 text-sm text-foreground/60">{t('chatDescription')}</p>
-        </a>
+        </Link>
       </div>
 
       <div className="mt-6 text-center">

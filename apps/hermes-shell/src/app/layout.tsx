@@ -14,13 +14,17 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: 'HERMES',
   description: 'HERMES — sBitx Radio Ground Station',
+  manifest: '/manifest.json',
+  icons: {
+    icon: '/icon-192.png',
+  },
 };
 
 /**
  * Root layout for hermes-shell.
  *
- * Providers (AuthProvider, ThemeProvider, LocaleProvider) will be
- * added in Tasks 1.2.2–1.2.7.
+ * Provider hierarchy (ADR-006):
+ *   AuthProvider → ThemeProvider → LocaleProvider → NextIntlClientProvider
  */
 export default async function RootLayout({
   children,
@@ -32,6 +36,7 @@ export default async function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        {/* Theme flash prevention */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -45,6 +50,18 @@ export default async function RootLayout({
                   }
                 } catch(e) {}
               })();
+            `,
+          }}
+        />
+        {/* Service Worker registration */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/sw.js');
+                });
+              }
             `,
           }}
         />

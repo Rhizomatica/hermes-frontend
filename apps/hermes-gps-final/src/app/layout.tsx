@@ -14,12 +14,14 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: 'HERMES GPS',
   description: 'HERMES — GPS Viewer',
+  manifest: '/manifest.json',
 };
 
 /**
  * Root layout for hermes-gps-final.
  *
- * Providers will be added in Task 1.2.7.
+ * Provider hierarchy (ADR-006):
+ *   AuthProvider → ThemeProvider → LocaleProvider → NextIntlClientProvider
  */
 export default async function RootLayout({
   children,
@@ -44,6 +46,17 @@ export default async function RootLayout({
                   }
                 } catch(e) {}
               })();
+            `,
+          }}
+        />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/sw.js');
+                });
+              }
             `,
           }}
         />
