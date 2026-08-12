@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
-import { AuthProvider, LocaleProvider } from '@hermes/shared-auth';
+import { AuthProvider, LocaleProvider, WebSocketProvider } from '@hermes/shared-auth';
 import { ThemeProvider } from '@hermes/ui';
 import './globals.css';
 
@@ -25,8 +25,9 @@ export const metadata: Metadata = {
 /**
  * Root layout for hermes-shell.
  *
- * Provider hierarchy (ADR-006 §Provider Hierarchy, ADR-006 §3.1):
- *   NextIntlClientProvider → AuthProvider → ThemeProvider → LocaleProvider
+ * Provider hierarchy (ADR-006 §3.1):
+ *   NextIntlClientProvider → AuthProvider → ThemeProvider →
+ *   LocaleProvider → WebSocketProvider → children
  */
 export default async function RootLayout({
   children,
@@ -73,7 +74,9 @@ export default async function RootLayout({
           <AuthProvider>
             <ThemeProvider>
               <LocaleProvider>
-                {children}
+                <WebSocketProvider>
+                  {children}
+                </WebSocketProvider>
               </LocaleProvider>
             </ThemeProvider>
           </AuthProvider>
