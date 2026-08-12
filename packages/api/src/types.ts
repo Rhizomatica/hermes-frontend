@@ -24,3 +24,66 @@ export interface GpsFix {
   satellites: number;
   hdop: number;
 }
+
+/**
+ * A single Hermes message.
+ *
+ * `inbox` is true for messages received by the local station and false for
+ * messages the local station sent. `dest` may be a single string or an array
+ * of recipient addresses (the canonical form is always an array — use
+ * `destArray()` from @hermes/api to normalize).
+ */
+export interface Message {
+  id: number;
+  inbox: boolean;
+  draft: boolean;
+  orig: string;
+  dest: string[] | string;
+  name: string;
+  text: string | null;
+  file: string | null;
+  fileid: string | null;
+  mimetype: string | null;
+  secure: boolean;
+  sent_at: string;
+  synced: boolean;
+  unread: boolean;
+}
+
+/**
+ * A grouped conversation with a remote station.
+ *
+ * `station` is the canonical alias key (see `canonicalize()`), `lastMessage`
+ * is the most recent message in the conversation, and `unreadCount` is the
+ * number of unread inbound messages (server-provided when available,
+ * otherwise derived via `buildConversations()`).
+ */
+export interface Conversation {
+  station: string;
+  lastMessage: Message;
+  unreadCount: number;
+}
+
+/** A known radio station. */
+export interface Station {
+  name: string;
+  alias: string | null;
+  status: string;
+}
+
+/**
+ * The authenticated Hermes user.
+ *
+ * `role` is the string used by the auth backend (`admin`/`user` style),
+ * while `admin` is a boolean convenience flag derived from it where the
+ * backend exposes it. Consumers should prefer `admin` when present.
+ */
+export interface HermesUser {
+  id: number;
+  admin: boolean;
+  email: string;
+  name: string;
+  phone: string | null;
+  location: string | null;
+  role?: string;
+}

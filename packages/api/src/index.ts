@@ -58,7 +58,9 @@ function hermesRequest(
   });
 }
 
-export type { GpsPosition, GpsFix } from './types';
+export type { GpsPosition, GpsFix, Message, Conversation, Station, HermesUser } from './types';
+export { destArray, stationId, canonicalize } from './normalize';
+export { buildConversations, filterConversation } from './conversation';
 
 export const hermesGet = (path: string, cookie?: string) =>
   hermesRequest(path, 'GET', undefined, cookie);
