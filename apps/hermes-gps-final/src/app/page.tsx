@@ -1,19 +1,27 @@
 'use client';
 
+import { useState, useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { useAuthGuard } from '@hermes/shared-auth';
 import { useTheme } from '@hermes/ui';
 import { ErrorBanner, LoadingSpinner } from '@hermes/ui';
 import { useGpsCoords } from '@/hooks/useGpsCoords';
+import { useGpsHistory } from '@/hooks/useGpsHistory';
 import dynamic from 'next/dynamic';
 
 const MapView = dynamic(() => import('@/components/MapView'), { ssr: false });
+const BreadcrumbToggle = dynamic(
+  () => import('@/components/BreadcrumbToggle'),
+  { ssr: false },
+);
 
 /**
- * GPS main page — full-screen map with coordinate overlay panel.
+ * GPS main page — full-screen map with coordinate overlay panel
+ * and breadcrumb toggle.
  *
- * Composes MapView, CoordinatePanel, and controls. Auth-aware
- * via useAuthGuard. Uses useGpsCoords for real-time position data.
+ * Composes MapView, CoordinatePanel, BreadcrumbToggle, and controls.
+ * Auth-aware via useAuthGuard. Uses useGpsCoords for real-time
+ * position data and useGpsHistory for breadcrumb trail.
  *
  * @example
  * // Rendered at /gps in co-deployed mode
@@ -26,6 +34,23 @@ export default function GpsPage() {
   const { theme } = useTheme();
   const { position, loading, error, lastUpdated, stale, refresh } =
     useGpsCoords();
+  const {
+    history,
+    appendPosition,
+    refresh: refreshHistory,
+  } = useGpsHistory();
+
+  const [showTrail, setShowTrail] = useState(false);
+
+  // Append new live positions to the breadcrumb history
+  const prevTimestampRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (position && position.timestamp !== prevTimestampRef.current) {
+      prevTimestampRef.current = position.timestamp;
+      appendPosition(position);
+    }
+  }, [position, appendPosition]);
 
   if (!user) {
     return (
@@ -43,6 +68,8 @@ export default function GpsPage() {
           latitude={position?.latitude ?? null}
           longitude={position?.longitude ?? null}
           isDark={theme === 'dark'}
+          breadcrumb={history}
+          showBreadcrumb={showTrail}
         />
       </div>
 
@@ -76,6 +103,12 @@ export default function GpsPage() {
             >
               {loading ? '⏳' : '🔄'}
             </button>
+
+            <BreadcrumbToggle
+              visible={showTrail}
+              pointCount={history.length}
+              onToggle={() => setShowTrail((v) => !v)}
+            />
           </div>
         </div>
 
@@ -93,7 +126,7 @@ export default function GpsPage() {
                     position.latitude.toFixed(6),
                   )
                 }
-                aria-label="Copy latitude"
+                aria-label={t('copyLatitude')}
                 className="rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-gray-800"
                 style={{ minHeight: '44px' }}
               >
@@ -109,7 +142,7 @@ export default function GpsPage() {
                     position.longitude.toFixed(6),
                   )
                 }
-                aria-label="Copy longitude"
+                aria-label={t('copyLongitude')}
                 className="rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-gray-800"
                 style={{ minHeight: '44px' }}
               >

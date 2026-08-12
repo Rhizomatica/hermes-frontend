@@ -7,7 +7,13 @@
     "staleData": "Stale",
     "refresh": "Refresh position",
     "altitude": "Alt",
-    "speed": "Speed"
+    "speed": "Speed",
+    "showTrail": "Show breadcrumb trail",
+    "hideTrail": "Hide breadcrumb trail",
+    "trailOn": "Trail ON",
+    "trailOff": "Trail OFF",
+    "copyLatitude": "Copy latitude",
+    "copyLongitude": "Copy longitude"
   },
   "common": {
     "backToHermes": "← Back to HERMES",

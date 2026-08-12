@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { buildStyle } from '@/lib/mapStyle';
+import type { GpsPosition } from '@hermes/api';
 
 export interface MapViewProps {
   /** Latitude in decimal degrees */
@@ -12,22 +13,32 @@ export interface MapViewProps {
   longitude: number | null;
   /** Whether to use dark theme */
   isDark: boolean;
+  /** Breadcrumb trail positions (oldest → newest, up to 500) */
+  breadcrumb?: GpsPosition[];
+  /** Whether to show the breadcrumb trail */
+  showBreadcrumb?: boolean;
   /** Callback when tile loading fails */
   onTileError?: () => void;
 }
 
+/** Source ID for the breadcrumb line layer */
+const BREADCRUMB_SOURCE = 'hermes-breadcrumb';
+const BREADCRUMB_LAYER = 'hermes-breadcrumb-line';
+
 /**
  * Offline-capable map component using Maplibre GL JS + PMTiles.
  *
- * Renders a full-screen map with the station position marker.
- * Theme-aware (light/dark styles). Error overlay when tiles
- * cannot be loaded.
+ * Renders a full-screen map with the station position marker and
+ * optional breadcrumb trail. Theme-aware (light/dark styles).
+ * Error overlay when tiles cannot be loaded.
  *
  * @example
  * <MapView
  *   latitude={-23.45}
  *   longitude={-46.78}
  *   isDark={theme === 'dark'}
+ *   breadcrumb={history}
+ *   showBreadcrumb={true}
  *   onTileError={() => setTileError(true)}
  * />
  */
@@ -35,6 +46,8 @@ export default function MapView({
   latitude,
   longitude,
   isDark,
+  breadcrumb = [],
+  showBreadcrumb = false,
   onTileError,
 }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -134,6 +147,76 @@ export default function MapView({
     observer.observe(container);
     return () => observer.disconnect();
   }, [handleResize]);
+
+  // Breadcrumb trail — add/update/remove GeoJSON line source + layer
+  useEffect(() => {
+    if (!mapRef.current || !mapReady) return;
+
+    const map = mapRef.current;
+
+    if (!showBreadcrumb || breadcrumb.length < 2) {
+      if (map.getLayer(BREADCRUMB_LAYER)) {
+        map.removeLayer(BREADCRUMB_LAYER);
+      }
+      if (map.getSource(BREADCRUMB_SOURCE)) {
+        map.removeSource(BREADCRUMB_SOURCE);
+      }
+      return;
+    }
+
+    const coords: [number, number][] = breadcrumb.map((p) => [
+      p.longitude,
+      p.latitude,
+    ]);
+
+    const geojson: GeoJSON.FeatureCollection = {
+      type: 'FeatureCollection',
+      features: [
+        {
+          type: 'Feature',
+          properties: {},
+          geometry: { type: 'LineString', coordinates: coords },
+        },
+      ],
+    };
+
+    const source = map.getSource(BREADCRUMB_SOURCE) as
+      | maplibregl.GeoJSONSource
+      | undefined;
+
+    if (source) {
+      source.setData(geojson);
+    } else {
+      map.addSource(BREADCRUMB_SOURCE, { type: 'geojson', data: geojson });
+
+      map.addLayer({
+        id: BREADCRUMB_LAYER,
+        type: 'line',
+        source: BREADCRUMB_SOURCE,
+        paint: {
+          'line-color': '#f97316',
+          'line-width': 3,
+          'line-opacity': 0.7,
+          'line-gradient': [
+            'interpolate',
+            ['linear'],
+            ['line-progress'],
+            0,
+            '#f97316',
+            0.5,
+            '#fb923c',
+            1,
+            '#fed7aa',
+          ],
+        },
+        layout: {
+          'line-cap': 'round',
+          'line-join': 'round',
+        },
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [breadcrumb, showBreadcrumb, mapReady]);
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>

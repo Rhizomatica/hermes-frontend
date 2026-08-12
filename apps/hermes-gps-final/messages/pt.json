@@ -7,7 +7,13 @@
     "staleData": "Desatualizado",
     "refresh": "Atualizar posição",
     "altitude": "Alt",
-    "speed": "Vel"
+    "speed": "Vel",
+    "showTrail": "Mostrar rastro",
+    "hideTrail": "Ocultar rastro",
+    "trailOn": "Rastro LIGADO",
+    "trailOff": "Rastro DESLIGADO",
+    "copyLatitude": "Copiar latitude",
+    "copyLongitude": "Copiar longitude"
   },
   "common": {
     "backToHermes": "← Voltar ao HERMES",
