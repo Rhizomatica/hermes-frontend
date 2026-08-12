@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useAuthGuard } from '@hermes/shared-auth';
-import { useTheme } from '@hermes/ui';
-import { ErrorBanner, LoadingSpinner } from '@hermes/ui';
+import { useTheme, ErrorBanner, LoadingSpinner } from '@hermes/ui';
 import { useGpsCoords } from '@/hooks/useGpsCoords';
 import { useGpsHistory } from '@/hooks/useGpsHistory';
 import GpsStatusBadge from '@/components/GpsStatusBadge';
@@ -110,14 +110,14 @@ export default function GpsPage() {
       </div>
 
       {/* Back link overlay */}
-      <a
+      <Link
         href="/"
         className="absolute left-4 top-4 z-10 rounded-lg bg-background/80 px-3 py-2 text-sm text-blue-500 backdrop-blur-sm"
         aria-label={tc('backToHermes')}
         style={{ minHeight: '44px', lineHeight: '44px' }}
       >
         {tc('backToHermes')}
-      </a>
+      </Link>
 
       {/* Error banner */}
       {error && (

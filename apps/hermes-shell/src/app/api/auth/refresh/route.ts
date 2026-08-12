@@ -5,6 +5,7 @@ import { hermesPost } from '@hermes/api';
  * POST /api/auth/refresh
  *
  * Refreshes the access token using the refresh token.
+ * Backend expects: { refreshToken } → { access, refresh }
  * Sets new hermes_token and hermes_refresh cookies on success.
  */
 export async function POST(request: NextRequest) {
@@ -15,13 +16,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message: 'Invalid request body.' }, { status: 400 });
   }
 
-  const refresh = body.refresh;
-  if (typeof refresh !== 'string' || !refresh.trim()) {
+  const refreshToken = typeof body.refresh === 'string' ? body.refresh : '';
+  if (!refreshToken.trim()) {
     return NextResponse.json({ message: 'Refresh token is required.' }, { status: 400 });
   }
 
   const cookie = request.headers.get('cookie') ?? undefined;
-  const { data, status } = await hermesPost('auth/refresh', { refresh: refresh.trim() }, cookie);
+  const { data, status } = await hermesPost('/auth/refresh', { refreshToken: refreshToken.trim() }, cookie);
 
   if (status >= 400) return NextResponse.json(data, { status });
 

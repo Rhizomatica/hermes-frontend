@@ -78,7 +78,10 @@ export function useGpsHistory(): GpsHistoryState {
   }, []);
 
   useEffect(() => {
-    fetchHistory();
+    const id = setTimeout(() => {
+      fetchHistory();
+    }, 0);
+    return () => clearTimeout(id);
   }, [fetchHistory]);
 
   const appendPosition = useCallback((pos: GpsPosition) => {

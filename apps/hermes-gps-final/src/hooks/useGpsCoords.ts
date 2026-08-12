@@ -123,11 +123,14 @@ export function useGpsCoords(): GpsState {
       return;
     }
 
-    // Start polling when WS disconnected
-    fetchPosition();
-    pollInterval.current = setInterval(fetchPosition, POLL_INTERVAL_MS);
+    // Start polling when WS disconnected (deferred to avoid sync setState)
+    const id = setTimeout(() => {
+      fetchPosition();
+      pollInterval.current = setInterval(fetchPosition, POLL_INTERVAL_MS);
+    }, 0);
 
     return () => {
+      clearTimeout(id);
       if (pollInterval.current) {
         clearInterval(pollInterval.current);
         pollInterval.current = null;

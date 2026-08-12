@@ -10,7 +10,7 @@ export default function LoginPage() {
   const t = useTranslations('login');
   const { login, error, isLoading } = useAuth();
   const router = useRouter();
-  const [email, setEmail] = useState('');
+  const [callsign, setCallsign] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
@@ -22,7 +22,7 @@ export default function LoginPage() {
     setLocalError(null);
     setSubmitting(true);
     try {
-      await login(email, password);
+      await login(callsign, password);
       router.replace('/');
     } catch (err) {
       setLocalError(err instanceof Error ? err.message : t('networkError'));
@@ -49,12 +49,12 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
           <div>
-            <label htmlFor="email" className="block text-sm font-medium">{t('emailLabel')}</label>
+            <label htmlFor="callsign" className="block text-sm font-medium">{t('callsignLabel')}</label>
             <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              id="callsign"
+              type="text"
+              value={callsign}
+              onChange={(e) => setCallsign(e.target.value)}
               autoComplete="username"
               required
               aria-describedby={displayError ? 'login-error' : undefined}
@@ -82,7 +82,7 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            disabled={submitting || !email.trim() || !password}
+            disabled={submitting || !callsign.trim() || !password}
             className="w-full rounded-lg bg-orange-500 px-4 py-3 text-base font-semibold text-white hover:bg-orange-600 active:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50"
             style={{ minHeight: '44px' }}
           >

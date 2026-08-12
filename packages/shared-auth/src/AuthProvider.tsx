@@ -51,7 +51,7 @@ export interface AuthContextValue {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
-  login: (email: string, password: string) => Promise<void>;
+  login: (callsign: string, password: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -148,12 +148,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [store]);
 
   const login = useCallback(
-    async (email: string, password: string) => {
+    async (callsign: string, password: string) => {
       dispatch({ type: 'LOADING' });
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ callsign, password }),
       });
 
       if (!res.ok) {
