@@ -2,11 +2,30 @@
 
 import { useTranslations } from 'next-intl';
 import { useAuthGuard } from '@hermes/shared-auth';
-import { LoadingSpinner } from '@hermes/ui';
+import { useTheme } from '@hermes/ui';
+import { ErrorBanner, LoadingSpinner } from '@hermes/ui';
+import { useGpsCoords } from '@/hooks/useGpsCoords';
+import dynamic from 'next/dynamic';
 
+const MapView = dynamic(() => import('@/components/MapView'), { ssr: false });
+
+/**
+ * GPS main page — full-screen map with coordinate overlay panel.
+ *
+ * Composes MapView, CoordinatePanel, and controls. Auth-aware
+ * via useAuthGuard. Uses useGpsCoords for real-time position data.
+ *
+ * @example
+ * // Rendered at /gps in co-deployed mode
+ * <GpsPage />
+ */
 export default function GpsPage() {
+  const t = useTranslations('gps');
   const tc = useTranslations('common');
   const user = useAuthGuard();
+  const { theme } = useTheme();
+  const { position, loading, error, lastUpdated, stale, refresh } =
+    useGpsCoords();
 
   if (!user) {
     return (
@@ -17,12 +36,133 @@ export default function GpsPage() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-4">
-      <a href="/" className="mb-4 text-sm text-blue-500" aria-label={tc('backToHermes')} style={{ minHeight: '44px', lineHeight: '44px' }}>
+    <main className="relative flex min-h-screen flex-col">
+      {/* Map fills remaining space */}
+      <div className="absolute inset-0">
+        <MapView
+          latitude={position?.latitude ?? null}
+          longitude={position?.longitude ?? null}
+          isDark={theme === 'dark'}
+        />
+      </div>
+
+      {/* Back link overlay */}
+      <a
+        href="/"
+        className="absolute left-4 top-4 z-10 rounded-lg bg-background/80 px-3 py-2 text-sm text-blue-500 backdrop-blur-sm"
+        aria-label={tc('backToHermes')}
+        style={{ minHeight: '44px', lineHeight: '44px' }}
+      >
         {tc('backToHermes')}
       </a>
-      <h1 className="text-2xl font-bold">GPS Viewer</h1>
-      <p className="mt-2 text-base text-foreground/70">Map component — coming in Phase 2</p>
+
+      {/* Error banner */}
+      {error && (
+        <div className="absolute left-4 right-4 top-16 z-10">
+          <ErrorBanner message={error} />
+        </div>
+      )}
+
+      {/* Bottom panel */}
+      <div className="relative z-10 mt-auto">
+        <div className="flex items-center justify-between rounded-t-2xl bg-background px-4 py-2 shadow-lg">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={refresh}
+              disabled={loading}
+              aria-label={t('refresh')}
+              className="rounded-lg p-2 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50"
+              style={{ minHeight: '44px', minWidth: '44px' }}
+            >
+              {loading ? '⏳' : '🔄'}
+            </button>
+          </div>
+        </div>
+
+        {!position ? (
+          <div className="bg-background px-4 pb-4 text-center text-base text-foreground/60">
+            {loading ? t('loading') : t('noPosition')}
+          </div>
+        ) : (
+          <div className="bg-background px-4 pb-4">
+            {/* Coordinates */}
+            <div className="grid grid-cols-2 gap-2 text-center">
+              <button
+                onClick={() =>
+                  navigator.clipboard.writeText(
+                    position.latitude.toFixed(6),
+                  )
+                }
+                aria-label="Copy latitude"
+                className="rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-gray-800"
+                style={{ minHeight: '44px' }}
+              >
+                <span className="text-xs text-foreground/50">Lat</span>
+                <br />
+                <span className="font-mono text-lg">
+                  {position.latitude.toFixed(6)}
+                </span>
+              </button>
+              <button
+                onClick={() =>
+                  navigator.clipboard.writeText(
+                    position.longitude.toFixed(6),
+                  )
+                }
+                aria-label="Copy longitude"
+                className="rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-gray-800"
+                style={{ minHeight: '44px' }}
+              >
+                <span className="text-xs text-foreground/50">Lon</span>
+                <br />
+                <span className="font-mono text-lg">
+                  {position.longitude.toFixed(6)}
+                </span>
+              </button>
+            </div>
+
+            {/* Info row */}
+            <div className="mt-2 flex items-center justify-center gap-2 text-sm text-foreground/50">
+              <span>
+                {t('altitude')}:{' '}
+                {position.altitude != null
+                  ? `${position.altitude.toFixed(0)}m`
+                  : '—'}
+              </span>
+              <span>·</span>
+              <span>
+                {t('speed')}:{' '}
+                {position.speed != null
+                  ? `${position.speed.toFixed(1)}km/h`
+                  : '—'}
+              </span>
+              {stale && (
+                <>
+                  <span>·</span>
+                  <span
+                    className="rounded-full bg-orange-100 px-2 py-0.5 text-xs text-orange-700 dark:bg-orange-900 dark:text-orange-200"
+                    role="status"
+                  >
+                    {t('staleData')}
+                  </span>
+                </>
+              )}
+            </div>
+
+            {/* Timestamp */}
+            <div className="mt-1 text-center text-xs text-foreground/40">
+              {t('lastUpdated')}:{' '}
+              {lastUpdated
+                ? new Intl.DateTimeFormat('en', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                  }).format(lastUpdated)
+                : '—'}
+            </div>
+          </div>
+        )}
+      </div>
     </main>
   );
 }

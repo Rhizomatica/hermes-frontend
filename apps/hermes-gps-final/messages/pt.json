@@ -1,1 +1,17 @@
-{"gps":{"title":"Visualizador GPS","loading":"Carregando mapa…","noPosition":"Aguardando posição GPS…"},"common":{"backToHermes":"← Voltar ao HERMES"}}
+{
+  "gps": {
+    "title": "Visualizador GPS",
+    "loading": "Carregando mapa…",
+    "noPosition": "Aguardando posição GPS…",
+    "lastUpdated": "Última atualização",
+    "staleData": "Desatualizado",
+    "refresh": "Atualizar posição",
+    "altitude": "Alt",
+    "speed": "Vel"
+  },
+  "common": {
+    "backToHermes": "← Voltar ao HERMES",
+    "themeToggle": "Alternar tema",
+    "localeToggle": "Mudar idioma"
+  }
+}
