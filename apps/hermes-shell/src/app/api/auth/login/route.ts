@@ -6,6 +6,8 @@ import { hermesPost } from '@hermes/api';
  *
  * Proxies login credentials to hermes-backend.
  * Sets hermes_token and hermes_refresh Set-Cookie headers on success.
+ *
+ * Backend expects: { callsign, password } → { access, refresh, user }
  */
 export async function POST(request: NextRequest) {
   let body: Record<string, unknown>;
@@ -15,18 +17,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message: 'Invalid request body.' }, { status: 400 });
   }
 
-  const email = body.email;
-  const password = body.password;
+  const callsign = typeof body.callsign === 'string' ? body.callsign : '';
+  const password = typeof body.password === 'string' ? body.password : '';
 
-  if (typeof email !== 'string' || !email.trim()) {
-    return NextResponse.json({ message: 'Email is required.' }, { status: 400 });
+  if (!callsign.trim()) {
+    return NextResponse.json({ message: 'Callsign is required.' }, { status: 400 });
   }
-  if (typeof password !== 'string' || !password.trim()) {
+  if (!password.trim()) {
     return NextResponse.json({ message: 'Password is required.' }, { status: 400 });
   }
 
   const cookie = request.headers.get('cookie') ?? undefined;
-  const { data, status } = await hermesPost('auth/login', { email: email.trim(), password }, cookie);
+  const { data, status } = await hermesPost('/auth/login', { callsign: callsign.trim(), password }, cookie);
 
   if (status >= 400) return NextResponse.json(data, { status });
 

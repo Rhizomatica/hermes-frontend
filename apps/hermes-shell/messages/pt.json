@@ -1,6 +1,6 @@
 {
   "login": {
-    "emailLabel": "E-mail",
+    "callsignLabel": "Indicativo",
     "passwordLabel": "Senha",
     "submit": "Entrar",
     "submitting": "Entrando…",

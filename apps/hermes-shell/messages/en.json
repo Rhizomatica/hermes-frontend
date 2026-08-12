@@ -1,6 +1,6 @@
 {
   "login": {
-    "emailLabel": "Email",
+    "callsignLabel": "Callsign",
     "passwordLabel": "Password",
     "submit": "Sign In",
     "submitting": "Signing in…",
