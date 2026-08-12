@@ -3,12 +3,15 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useWebSocket } from '@hermes/shared-auth';
 import type { GpsPosition, GpsFix } from '@hermes/api';
+import { saveGpsCache, loadGpsCache, getCacheAgeMs } from '@/lib/gpsCache';
 
 /**
  * ServerState<T> for GPS coordinate data with real-time updates.
  *
  * Consumes gps.position + gps.fix WebSocket events.
  * Falls back to GET /api/gps polling when WS is disconnected.
+ * Loads cached position on startup and saves every new position
+ * for offline-capable "last known" display.
  */
 export interface GpsState {
   position: GpsPosition | null;
@@ -17,6 +20,10 @@ export interface GpsState {
   error: string | null;
   lastUpdated: Date | null;
   stale: boolean;
+  /** Whether current position was loaded from cache (offline fallback) */
+  isCached: boolean;
+  /** Age of cached data in milliseconds, or null if live */
+  cacheAgeMs: number | null;
   refresh: () => Promise<void>;
 }
 
@@ -31,6 +38,8 @@ export function useGpsCoords(): GpsState {
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [stale, setStale] = useState(false);
+  const [isCached, setIsCached] = useState(false);
+  const [cacheAgeMs, setCacheAgeMs] = useState<number | null>(null);
 
   const pollInterval = useRef<ReturnType<typeof setInterval> | null>(null);
   const mountedRef = useRef(true);
@@ -50,10 +59,24 @@ export function useGpsCoords(): GpsState {
         setLastUpdated(new Date());
         setStale(false);
         setError(null);
+        setIsCached(false);
+        setCacheAgeMs(null);
+        saveGpsCache(json.data);
       }
     } catch (err) {
+      // If live fetch fails, try loading from cache
+      const cached = loadGpsCache();
       if (mountedRef.current) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch GPS data');
+        if (cached) {
+          setPosition(cached.position);
+          setLastUpdated(new Date(cached.cachedAt));
+          setStale(true);
+          setIsCached(true);
+          setCacheAgeMs(getCacheAgeMs());
+          setError(null);
+        } else {
+          setError(err instanceof Error ? err.message : 'Failed to fetch GPS data');
+        }
       }
     } finally {
       if (mountedRef.current) setLoading(false);
@@ -72,6 +95,9 @@ export function useGpsCoords(): GpsState {
       setStale(false);
       setLoading(false);
       setError(null);
+      setIsCached(false);
+      setCacheAgeMs(null);
+      saveGpsCache(pos);
     });
 
     const unsubFix = subscribe('gps.fix', (event) => {
@@ -132,5 +158,5 @@ export function useGpsCoords(): GpsState {
     await fetchPosition();
   }, [fetchPosition]);
 
-  return { position, fix, loading, error, lastUpdated, stale, refresh };
+  return { position, fix, loading, error, lastUpdated, stale, isCached, cacheAgeMs, refresh };
 }

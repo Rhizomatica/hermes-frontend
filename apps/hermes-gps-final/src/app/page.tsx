@@ -17,6 +17,21 @@ const BreadcrumbToggle = dynamic(
 );
 
 /**
+ * Format a cache age in milliseconds to a human-readable string.
+ * E.g. 65_000 → "1m", 3_600_000 → "1h", 86_400_000 → "1d"
+ */
+function formatCacheAge(ms: number): string {
+  const seconds = Math.floor(ms / 1000);
+  if (seconds < 60) return `${seconds}s`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h`;
+  const days = Math.floor(hours / 24);
+  return `${days}d`;
+}
+
+/**
  * GPS main page — full-screen map with coordinate overlay panel
  * and breadcrumb toggle.
  *
@@ -33,7 +48,7 @@ export default function GpsPage() {
   const tc = useTranslations('common');
   const user = useAuthGuard();
   const { theme } = useTheme();
-  const { position, fix, loading, error, lastUpdated, stale, refresh } =
+  const { position, fix, loading, error, lastUpdated, stale, isCached, cacheAgeMs, refresh } =
     useGpsCoords();
   const {
     history,
@@ -156,8 +171,18 @@ export default function GpsPage() {
             </div>
 
             {/* GPS Status badges */}
-            <div className="mt-2 flex items-center justify-center">
+            <div className="mt-2 flex flex-col items-center gap-1">
               <GpsStatusBadge fix={fix} isStale={stale} />
+              {isCached && (
+                <span
+                  className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700 dark:bg-amber-900 dark:text-amber-200"
+                  role="status"
+                  title={t('lastKnownTooltip')}
+                >
+                  ⚠ {t('lastKnown')}
+                  {cacheAgeMs != null && ` (${formatCacheAge(cacheAgeMs)})`}
+                </span>
+              )}
             </div>
 
             {/* Info row */}
