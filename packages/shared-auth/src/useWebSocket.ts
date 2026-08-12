@@ -15,8 +15,29 @@ export interface WebSocketContextValue {
 
 const WebSocketContext = createContext<WebSocketContextValue | null>(null);
 
+/**
+ * useWebSocket — consumes the WebSocket context.
+ *
+ * During server-side rendering (build time), returns a stub value
+ * since no WebSocket connection exists on the server.
+ *
+ * @throws if used outside WebSocketProvider at runtime (client-side)
+ */
 export function useWebSocket(): WebSocketContextValue {
   const ctx = useContext(WebSocketContext);
-  if (!ctx) throw new Error('useWebSocket must be used within <WebSocketProvider>');
+
+  // Server-side rendering — return stub
+  if (typeof window === 'undefined') {
+    return {
+      connected: false,
+      lastEvent: null,
+      subscribe: () => () => {},
+    };
+  }
+
+  if (!ctx) {
+    throw new Error('useWebSocket must be used within <WebSocketProvider>');
+  }
+
   return ctx;
 }
