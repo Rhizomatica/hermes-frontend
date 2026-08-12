@@ -1,1 +1,22 @@
-{"chat":{"title":"Chat","noConversations":"Nenhuma conversa ainda","loading":"Carregando mensagens…","sendMessage":"Enviar mensagem"},"common":{"backToHermes":"← Voltar ao HERMES"}}
+{
+  "chat": {
+    "title": "Chat",
+    "noConversations": "Nenhuma conversa ainda",
+    "loading": "Carregando mensagens…",
+    "sendMessage": "Enviar mensagem"
+  },
+  "common": {
+    "backToHermes": "← Voltar ao HERMES"
+  },
+  "home": {
+    "title": "Conversas",
+    "searchPlaceholder": "Buscar por estação ou indicativo",
+    "noConversations": "Nenhuma conversa ainda",
+    "refresh": "Atualizar",
+    "retry": "Tentar novamente",
+    "logout": "Sair",
+    "newChat": "Nova conversa",
+    "openConversation": "Abrir conversa com {station}",
+    "unreadCount": "{count} mensagens não lidas"
+  }
+}
