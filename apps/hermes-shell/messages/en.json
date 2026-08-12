@@ -1,0 +1,25 @@
+{
+  "login": {
+    "callsignLabel": "Callsign",
+    "passwordLabel": "Password",
+    "submit": "Sign In",
+    "submitting": "Signing in…",
+    "invalidCredentials": "Invalid email or password.",
+    "networkError": "Could not reach the server."
+  },
+  "home": {
+    "title": "HERMES",
+    "greeting": "Welcome, {name}",
+    "gpsViewer": "GPS Viewer",
+    "gpsDescription": "View real-time position and offline maps",
+    "chat": "Chat",
+    "chatDescription": "Messages and radio information",
+    "logout": "Sign Out",
+    "loading": "Loading…"
+  },
+  "common": {
+    "backToHermes": "← Back to HERMES",
+    "themeToggle": "Toggle theme",
+    "localeToggle": "Change language"
+  }
+}

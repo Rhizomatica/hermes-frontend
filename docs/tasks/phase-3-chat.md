@@ -218,7 +218,7 @@ Deliver a production-ready messaging client with offline message queue, real-tim
 
 **Acceptance Criteria**:
 - [ ] Inbound (left-aligned, gray) vs outbound (right-aligned, dark) layout
-- [ ] Delivery status icons: `DoubleCheck` for sent, `DoubleCheck` filled for synced
+- [ ] Delivery status: `DeliveryStatus` component with 5-stage HF pipeline indicator (Composed → Queued → Transmitting → Transmitted → Delivered)
 - [ ] Encrypted message: shows lock icon, "Unlock message" button → `PasswordDialog` → decrypt
 - [ ] File attachment: `FileAttachment` component for images, audio, generic files
 - [ ] Timestamp with `formatTime`
@@ -232,7 +232,7 @@ Deliver a production-ready messaging client with offline message queue, real-tim
 **Files to Create/Edit**:
 - `apps/hermes-chat-final/src/components/chat/MessageBubble.tsx`
 - `apps/hermes-chat-final/src/components/chat/FileAttachment.tsx`
-- `apps/hermes-chat-final/src/components/DoubleCheck.tsx`
+- `apps/hermes-chat-final/src/components/DeliveryStatus.tsx`
 - `apps/hermes-chat-final/src/components/DeleteMessageButton.tsx`
 
 **Stack Notes**: PoC reference: `apps/hermes-chat/src/components/chat/MessageBubble.tsx` (124 lines). Keep the decryption flow pattern (PasswordDialog + fetch /api/messages/uncrypt/:id).
@@ -250,8 +250,9 @@ Deliver a production-ready messaging client with offline message queue, real-tim
 - [ ] File attachment button (paperclip icon) → hidden file input
 - [ ] Encryption toggle (lock icon) → shows/hides password field
 - [ ] Send button (arrow/send icon), disabled when text empty and no file
-- [ ] File validation: images/audio ≤30MB, other files ≤20MB
-- [ ] Error message for oversized files (i18n)
+- [ ] File validation: all files ≤500KB (HF-aware limit per ADR-004)
+- [ ] Warning message for files approaching the limit: "This file is 480KB. Estimated HF transmission time: ~65 minutes. Are you sure you want to send this over HF?"
+- [ ] Error message for oversized files: "File too large for HF transmission (max 500KB). Reduce size or send via alternative channel." (i18n)
 - [ ] Paste-from-clipboard: intercept `paste` event for images
 - [ ] Caption input when file attached (placeholder: "Add a caption…")
 - [ ] Sending state: button shows spinner, input disabled
@@ -295,17 +296,16 @@ Deliver a production-ready messaging client with offline message queue, real-tim
 **Acceptance Criteria**:
 - [ ] Back button (←) → navigates to conversation list
 - [ ] Station name display (alias if available, otherwise callsign)
-- [ ] Online/offline status indicator (green dot / gray dot) from WS `station.online`/`station.offline`
-- [ ] "Last seen X min ago" when offline
+- [ ] Last-heard status indicator: "Last heard: 14:30 UTC (4 hours ago)" from WS `station.lastHeard` event — no green/gray presence dot (HF incompatible)
 - [ ] Tap header → navigate to station info/detail (future)
 - [ ] Refresh button (manual message fetch)
 
 **Files to Create/Edit**:
 - `apps/hermes-chat-final/src/components/chat/ChatHeader.tsx`
 
-**Stack Notes**: PoC reference: `apps/hermes-chat/src/components/chat/ChatHeader.tsx`. Add online status from WebSocket.
+**Stack Notes**: PoC reference: `apps/hermes-chat/src/components/chat/ChatHeader.tsx`. Replace online status with last-heard timestamp from WebSocket.
 
-**Doc Reference**: ADR-002 §Event Catalog (station.online, station.offline)
+**Doc Reference**: ADR-002 §Event Catalog (station.lastHeard)
 
 ---
 
@@ -313,14 +313,17 @@ Deliver a production-ready messaging client with offline message queue, real-tim
 
 ### [ ] Task 3.3.1: `useOfflineQueue` hook
 
-**Description**: Implement the IndexedDB-backed offline message queue per ADR-004. Hooks into `WebSocketProvider` `connectionState` to auto-drain on reconnect.
+**Description**: Implement the IndexedDB-backed offline message queue per ADR-004 (5-stage HF delivery pipeline). Hooks into `WebSocketProvider` `connectionState` to auto-drain on reconnect.
 
 **Acceptance Criteria**:
 - [ ] `useOfflineQueue()` returns: `{ queueLength, pendingMessages, isDraining, retryMessage, removeMessage }`
-- [ ] When `connectionState !== 'connected'`, `sendMessage` stores payload in IndexedDB with UUID
+- [ ] When backend unreachable, `sendMessage` stores payload in IndexedDB with UUID, status: `composed`
 - [ ] On `connectionState` transition to `connected`, auto-drains queue (FIFO)
-- [ ] Successful send: delete from queue, insert optimistic message
-- [ ] Failed send: increment `retryCount`; after 3 retries → `status: 'failed'`
+- [ ] Successful backend acceptance: status → `queued` (awaiting HF transmission window)
+- [ ] WS `radioDaemon.hfStatus` event updates status: `transmitting` (animated radio waves icon)
+- [ ] WS `message.synced` event: status → `transmitted` (awaiting remote ACK)
+- [ ] WS `message.delivered` event: status → `delivered` (green double checkmark)
+- [ ] Failed send: increment `retryCount`; after backend retries exhausted → `status: 'failed'` (red X with retry)
 - [ ] UUID-based idempotency prevents duplicate sends
 - [ ] Queue persists across page reloads (IndexedDB)
 - [ ] Unit tested with mocked IndexedDB
@@ -330,9 +333,9 @@ Deliver a production-ready messaging client with offline message queue, real-tim
 - `apps/hermes-chat-final/src/hooks/useOfflineQueue.test.ts`
 - `apps/hermes-chat-final/src/lib/offlineDb.ts` — IndexedDB wrapper
 
-**Stack Notes**: Use `idb` library for Promise-based IndexedDB. Schema per ADR-004 §Queue Schema.
+**Stack Notes**: Use `idb` library for Promise-based IndexedDB. Schema per ADR-004 §Queue Schema. Delivery status per ADR-004 §HF Delivery Status Model.
 
-**Doc Reference**: ADR-004 §Queue Flow, ADR-004 §Queue Schema
+**Doc Reference**: ADR-004 §Queue Flow, ADR-004 §Queue Schema, ADR-004 §HF Delivery Status Model
 
 ---
 
@@ -344,8 +347,9 @@ Deliver a production-ready messaging client with offline message queue, real-tim
 - [ ] `sendMessage({ text, file, pass, orig })`:
   - If online: POST to API immediately
   - If offline: enqueue via `useOfflineQueue`
-- [ ] Optimistic insert: message appears in list with `draft: true`, `id: -userId`
-- [ ] On server confirmation: replace optimistic with real message
+- [ ] Optimistic insert: message appears in list with `draft: true`, `id: -userId`, and 5-stage delivery status indicator (starts at `composed`)
+- [ ] On server confirmation: replace optimistic with real message, status transitions to `queued`
+- [ ] UI feedback: "Message queued for transmission" — not "Message sent!" (HF-aware per ADR-004)
 - [ ] File upload: `POST /api/ufile` (multipart) → get file id → `POST /api/messages` with fileid
 - [ ] Encrypted messages: `secure: true`, `pass` field included
 - [ ] `sending` flag for UI loading state
@@ -355,7 +359,7 @@ Deliver a production-ready messaging client with offline message queue, real-tim
 - `apps/hermes-chat-final/src/hooks/useSendMessage.ts`
 - `apps/hermes-chat-final/src/hooks/useSendMessage.test.ts`
 
-**Stack Notes**: PoC reference: `apps/hermes-chat/src/hooks/useSendMessage.ts` (90 lines). Enhance with offline queue integration.
+**Stack Notes**: PoC reference: `apps/hermes-chat/src/hooks/useSendMessage.ts` (90 lines). Enhance with offline queue integration. UI feedback per ADR-004 §UI Feedback (HF-Aware).
 
 **Doc Reference**: ADR-004, PoC useSendMessage.ts
 
@@ -363,18 +367,20 @@ Deliver a production-ready messaging client with offline message queue, real-tim
 
 ### [ ] Task 3.3.3: Message delivery real-time sync
 
-**Description**: Listen to WebSocket `message.delivered` and `message.synced` events to update delivery status icons in real-time (without page refresh).
+**Description**: Listen to WebSocket `message.delivered`, `message.synced`, and `radioDaemon.hfStatus` events to update delivery status through the 5-stage HF pipeline in real-time (without page refresh).
 
 **Acceptance Criteria**:
-- [ ] `message.delivered` → adds `messageId` to `syncedIds` set in `useChatData`
-- [ ] `message.synced` → marks message as fully synced (double checkmark filled)
-- [ ] UI re-renders affected `MessageBubble` components with updated status
+- [ ] `radioDaemon.hfStatus` → updates message status to `transmitting` when currentTransmission matches a local message UUID
+- [ ] `message.synced` → marks message as `transmitted` (awaiting remote ACK)
+- [ ] `message.delivered` → marks message as `delivered` (green double checkmark)
+- [ ] UI re-renders affected `MessageBubble` components with updated `DeliveryStatus` component
 - [ ] Optimistic message reconciliation: when server sends `message.new` with our UUID, replace optimistic message
+- [ ] `station.lastHeard` → updates ChatHeader last-heard timestamp
 
 **Files to Edit**:
 - `apps/hermes-chat-final/src/hooks/useChatData.ts` — add WS subscriptions
 
-**Doc Reference**: ADR-002 §Event Catalog
+**Doc Reference**: ADR-002 §Event Catalog, ADR-004 §HF Delivery Status Model
 
 ---
 
@@ -384,7 +390,7 @@ Deliver a production-ready messaging client with offline message queue, real-tim
 
 **Acceptance Criteria**:
 - [ ] File input accepts: images, audio, PDF, text files
-- [ ] Client-side validation: type check, size check (image/audio ≤30MB, other ≤20MB)
+- [ ] Client-side validation: type check, size check (all files ≤500KB per ADR-004 HF limits)
 - [ ] Upload progress indicator (progress bar) via `XMLHttpRequest.upload.onprogress`
 - [ ] Upload to `POST /api/ufile` (multipart form data)
 - [ ] Server returns `{ id, filename, mimetype }`
@@ -492,7 +498,7 @@ Deliver a production-ready messaging client with offline message queue, real-tim
 - [ ] Last message preview: truncated text (1 line), attachment icon if file
 - [ ] Relative timestamp: "2 min ago", "yesterday", "12/06/2026" (older than 7 days)
 - [ ] Unread badge: colored dot with count (if >0)
-- [ ] Delivery status: double check icon if last message is mine
+- [ ] Delivery status: 5-stage HF delivery pipeline indicator if last message is mine (per ADR-004)
 - [ ] Tap → navigate to chat
 - [ ] Long-press → context menu: delete conversation, mark as read (future)
 - [ ] Accessible: role="button", aria-label with station name

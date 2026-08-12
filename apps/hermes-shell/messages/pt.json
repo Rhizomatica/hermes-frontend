@@ -1,0 +1,25 @@
+{
+  "login": {
+    "callsignLabel": "Indicativo",
+    "passwordLabel": "Senha",
+    "submit": "Entrar",
+    "submitting": "Entrando…",
+    "invalidCredentials": "E-mail ou senha inválidos.",
+    "networkError": "Não foi possível conectar ao servidor."
+  },
+  "home": {
+    "title": "HERMES",
+    "greeting": "Bem-vindo(a), {name}",
+    "gpsViewer": "Visualizador GPS",
+    "gpsDescription": "Veja posição em tempo real e mapas offline",
+    "chat": "Chat",
+    "chatDescription": "Mensagens e informações de rádio",
+    "logout": "Sair",
+    "loading": "Carregando…"
+  },
+  "common": {
+    "backToHermes": "← Voltar ao HERMES",
+    "themeToggle": "Alternar tema",
+    "localeToggle": "Mudar idioma"
+  }
+}

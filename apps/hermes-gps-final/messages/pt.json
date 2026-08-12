@@ -1,0 +1,23 @@
+{
+  "gps": {
+    "title": "Visualizador GPS",
+    "loading": "Carregando mapa…",
+    "noPosition": "Aguardando posição GPS…",
+    "lastUpdated": "Última atualização",
+    "staleData": "Desatualizado",
+    "refresh": "Atualizar posição",
+    "altitude": "Alt",
+    "speed": "Vel",
+    "showTrail": "Mostrar rastro",
+    "hideTrail": "Ocultar rastro",
+    "trailOn": "Rastro LIGADO",
+    "trailOff": "Rastro DESLIGADO",
+    "copyLatitude": "Copiar latitude",
+    "copyLongitude": "Copiar longitude"
+  },
+  "common": {
+    "backToHermes": "← Voltar ao HERMES",
+    "themeToggle": "Alternar tema",
+    "localeToggle": "Mudar idioma"
+  }
+}
