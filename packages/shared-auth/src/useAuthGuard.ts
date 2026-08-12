@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from './AuthProvider';
 import type { HermesUser } from './tokenStore';
@@ -20,12 +21,13 @@ export function useAuthGuard(): HermesUser | null {
   const router = useRouter();
   const loginUrl = process.env.NEXT_PUBLIC_LOGIN_URL ?? '/login';
 
-  if (isLoading) return null;
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.replace(loginUrl);
+    }
+  }, [isLoading, isAuthenticated, router, loginUrl]);
 
-  if (!isAuthenticated) {
-    router.replace(loginUrl);
-    return null;
-  }
+  if (isLoading || !isAuthenticated) return null;
 
   return user;
 }
