@@ -11,6 +11,10 @@ export interface MapViewProps {
   latitude: number | null;
   /** Longitude in decimal degrees */
   longitude: number | null;
+  /** Heading in degrees (0-360, 0=north, clockwise) */
+  heading: number | null;
+  /** HDOP value for accuracy circle sizing */
+  hdop: number | null;
   /** Whether to use dark theme */
   isDark: boolean;
   /** Breadcrumb trail positions (oldest → newest, up to 500) */
@@ -45,6 +49,8 @@ const BREADCRUMB_LAYER = 'hermes-breadcrumb-line';
 export default function MapView({
   latitude,
   longitude,
+  heading,
+  hdop,
   isDark,
   breadcrumb = [],
   showBreadcrumb = false,
@@ -53,6 +59,7 @@ export default function MapView({
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markerRef = useRef<maplibregl.Marker | null>(null);
+  const markerElRef = useRef<HTMLDivElement | null>(null);
   const [tileError, setTileError] = useState(false);
   const [mapReady, setMapReady] = useState(false);
 
@@ -99,7 +106,7 @@ export default function MapView({
     mapRef.current.setStyle(buildStyle(isDark));
   }, [isDark, mapReady]);
 
-  // Update marker position
+  // Update marker position, heading, and accuracy
   useEffect(() => {
     if (!mapRef.current || latitude == null || longitude == null) return;
 
@@ -107,21 +114,76 @@ export default function MapView({
     if (!markerRef.current) {
       const el = document.createElement('div');
       el.className = 'hermes-marker';
+      el.setAttribute('aria-label', 'Station GPS position');
       el.style.cssText = `
-        width: 20px;
-        height: 20px;
-        background-color: #f97316;
-        border: 3px solid white;
-        border-radius: 50%;
-        box-shadow: 0 0 10px rgba(249, 115, 22, 0.6);
+        width: 48px;
+        height: 48px;
         cursor: pointer;
         transition: transform 0.5s ease;
       `;
 
-      markerRef.current = new maplibregl.Marker({ element: el })
+      // Accuracy circle overlay (scaled by HDOP)
+      const accuracyEl = document.createElement('div');
+      accuracyEl.className = 'hermes-marker-accuracy';
+      accuracyEl.style.cssText = `
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 100%;
+        height: 100%;
+        border: 1.5px dashed #f97316;
+        border-radius: 50%;
+        opacity: 0.3;
+        pointer-events: none;
+        transition: transform 0.5s ease, opacity 0.3s ease;
+      `;
+      el.appendChild(accuracyEl);
+
+      // SVG marker image
+      const img = document.createElement('img');
+      img.src = '/marker.svg';
+      img.alt = '';
+      img.setAttribute('aria-hidden', 'true');
+      img.style.cssText = `
+        width: 48px;
+        height: 48px;
+        display: block;
+        transition: transform 0.5s ease;
+      `;
+      img.className = 'hermes-marker-arrow';
+      el.appendChild(img);
+
+      markerElRef.current = el;
+
+      markerRef.current = new maplibregl.Marker({
+        element: el,
+        anchor: 'center',
+        offset: [0, 0],
+      })
         .setLngLat([longitude, latitude])
         .addTo(mapRef.current);
+
       return;
+    }
+
+    // Update arrow rotation based on heading
+    if (markerElRef.current && heading != null) {
+      const arrow = markerElRef.current.querySelector('.hermes-marker-arrow') as HTMLElement | null;
+      if (arrow) {
+        arrow.style.transform = `rotate(${heading}deg)`;
+      }
+    }
+
+    // Update accuracy circle scale based on HDOP
+    if (markerElRef.current && hdop != null) {
+      const accuracyCircle = markerElRef.current.querySelector('.hermes-marker-accuracy') as HTMLElement | null;
+      if (accuracyCircle) {
+        // Scale: HDOP 1.0 → 1.0x (no scaling), HDOP 5.0 → 2.0x (max), clamped
+        const scale = Math.min(1 + (hdop - 1) * 0.25, 2.0);
+        accuracyCircle.style.transform = `translate(-50%, -50%) scale(${Math.max(scale, 1.0)})`;
+        accuracyCircle.style.opacity = hdop > 2.0 ? '0.5' : '0.3';
+      }
     }
 
     // Fly to new position
@@ -132,7 +194,7 @@ export default function MapView({
     });
 
     markerRef.current.setLngLat([longitude, latitude]);
-  }, [latitude, longitude]);
+  }, [latitude, longitude, heading, hdop]);
 
   // ResizeObserver for responsive sizing
   const handleResize = useCallback(() => {

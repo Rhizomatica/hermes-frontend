@@ -101,6 +101,8 @@ export default function GpsPage() {
         <MapView
           latitude={position?.latitude ?? null}
           longitude={position?.longitude ?? null}
+          heading={position?.heading ?? null}
+          hdop={fix?.hdop ?? null}
           isDark={theme === 'dark'}
           breadcrumb={history}
           showBreadcrumb={showTrail}
