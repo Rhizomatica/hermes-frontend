@@ -41,10 +41,10 @@ describe('useGpsCoords', () => {
     it('updates position on gps.position event', async () => {
       const { result } = renderHook(() => useGpsCoords());
 
-      const positionCallback = mockSubscribe.mock.calls.find(
-        (call: [string, (event: unknown) => void]) =>
-          call[0] === 'gps.position',
-      )[1];
+      const calls = mockSubscribe.mock.calls as Array<[string, (event: { payload: unknown }) => void]>;
+      const positionCall = calls.find(([type]) => type === 'gps.position');
+      expect(positionCall).toBeDefined();
+      const positionCallback = positionCall![1];
 
       act(() => {
         positionCallback({
@@ -77,9 +77,10 @@ describe('useGpsCoords', () => {
     it('updates fix on gps.fix event', async () => {
       const { result } = renderHook(() => useGpsCoords());
 
-      const fixCallback = mockSubscribe.mock.calls.find(
-        (call: [string, (event: unknown) => void]) => call[0] === 'gps.fix',
-      )[1];
+      const calls = mockSubscribe.mock.calls as Array<[string, (event: { payload: unknown }) => void]>;
+      const fixCall = calls.find(([type]) => type === 'gps.fix');
+      expect(fixCall).toBeDefined();
+      const fixCallback = fixCall![1];
 
       act(() => {
         fixCallback({
@@ -99,10 +100,10 @@ describe('useGpsCoords', () => {
     it('clears loading state after first position update', async () => {
       const { result } = renderHook(() => useGpsCoords());
 
-      const positionCallback = mockSubscribe.mock.calls.find(
-        (call: [string, (event: unknown) => void]) =>
-          call[0] === 'gps.position',
-      )[1];
+      const calls = mockSubscribe.mock.calls as Array<[string, (event: { payload: unknown }) => void]>;
+      const positionCall = calls.find(([type]) => type === 'gps.position');
+      expect(positionCall).toBeDefined();
+      const positionCallback = positionCall![1];
 
       act(() => {
         positionCallback({
@@ -124,16 +125,15 @@ describe('useGpsCoords', () => {
   });
 
   describe('when WebSocket is disconnected', () => {
-    beforeEach(() => {
+    it('falls back to REST polling', async () => {
+      // Override the mock for this test
       vi.doMock('@hermes/shared-auth', () => ({
         useWebSocket: () => ({
           connected: false,
           subscribe: mockSubscribe,
         }),
       }));
-    });
 
-    it('falls back to REST polling', async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
         json: () =>
