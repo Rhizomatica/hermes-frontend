@@ -7,6 +7,7 @@ import { useTheme } from '@hermes/ui';
 import { ErrorBanner, LoadingSpinner } from '@hermes/ui';
 import { useGpsCoords } from '@/hooks/useGpsCoords';
 import { useGpsHistory } from '@/hooks/useGpsHistory';
+import GpsStatusBadge from '@/components/GpsStatusBadge';
 import dynamic from 'next/dynamic';
 
 const MapView = dynamic(() => import('@/components/MapView'), { ssr: false });
@@ -32,7 +33,7 @@ export default function GpsPage() {
   const tc = useTranslations('common');
   const user = useAuthGuard();
   const { theme } = useTheme();
-  const { position, loading, error, lastUpdated, stale, refresh } =
+  const { position, fix, loading, error, lastUpdated, stale, refresh } =
     useGpsCoords();
   const {
     history,
@@ -154,6 +155,11 @@ export default function GpsPage() {
               </button>
             </div>
 
+            {/* GPS Status badges */}
+            <div className="mt-2 flex items-center justify-center">
+              <GpsStatusBadge fix={fix} isStale={stale} />
+            </div>
+
             {/* Info row */}
             <div className="mt-2 flex items-center justify-center gap-2 text-sm text-foreground/50">
               <span>
@@ -169,17 +175,6 @@ export default function GpsPage() {
                   ? `${position.speed.toFixed(1)}km/h`
                   : '—'}
               </span>
-              {stale && (
-                <>
-                  <span>·</span>
-                  <span
-                    className="rounded-full bg-orange-100 px-2 py-0.5 text-xs text-orange-700 dark:bg-orange-900 dark:text-orange-200"
-                    role="status"
-                  >
-                    {t('staleData')}
-                  </span>
-                </>
-              )}
             </div>
 
             {/* Timestamp */}

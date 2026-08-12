@@ -13,7 +13,17 @@
     "trailOn": "Trail ON",
     "trailOff": "Trail OFF",
     "copyLatitude": "Copy latitude",
-    "copyLongitude": "Copy longitude"
+    "copyLongitude": "Copy longitude",
+    "fixNoFix": "No Fix",
+    "fix2D": "2D Fix",
+    "fix3D": "3D Fix",
+    "gpsStatus": "GPS status",
+    "satellitesTooltip": "{count} satellites tracking",
+    "satellitesAria": "{count} satellites connected",
+    "hdopTooltip": "Horizontal Dilution of Precision: {value}",
+    "hdopAria": "HDOP {value}",
+    "lastKnown": "Last known position",
+    "lastKnownTooltip": "Live GPS data unavailable. Showing last cached position."
   },
   "common": {
     "backToHermes": "← Back to HERMES",

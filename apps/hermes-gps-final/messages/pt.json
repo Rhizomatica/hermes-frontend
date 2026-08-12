@@ -13,7 +13,17 @@
     "trailOn": "Rastro LIGADO",
     "trailOff": "Rastro DESLIGADO",
     "copyLatitude": "Copiar latitude",
-    "copyLongitude": "Copiar longitude"
+    "copyLongitude": "Copiar longitude",
+    "fixNoFix": "Sem Fix",
+    "fix2D": "Fix 2D",
+    "fix3D": "Fix 3D",
+    "gpsStatus": "Status do GPS",
+    "satellitesTooltip": "{count} satélites rastreando",
+    "satellitesAria": "{count} satélites conectados",
+    "hdopTooltip": "Diluição Horizontal de Precisão: {value}",
+    "hdopAria": "HDOP {value}",
+    "lastKnown": "Última posição conhecida",
+    "lastKnownTooltip": "Dados GPS indisponíveis. Mostrando última posição em cache."
   },
   "common": {
     "backToHermes": "← Voltar ao HERMES",
