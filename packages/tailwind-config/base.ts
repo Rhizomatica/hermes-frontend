@@ -6,16 +6,13 @@ import type { Config } from 'tailwindcss';
  * Defines design tokens for the sBitx 7-inch 800×480 touchscreen
  * as the canonical target (ADR-008). All apps extend this config.
  *
+ * Imported as a Tailwind preset: `presets: [baseConfig]`
+ *
  * Key constraints:
  * - Viewport: 800×480 (WVGA), touch-first, no hover
  * - Chromium kiosk mode: single tab, no beforeunload, no window.open()
  * - Touch targets: minimum 44px (WCAG 2.2 AAA)
  * - Fonts: self-hosted, 16px minimum, 18px body
- *
- * @example
- * // In an app's tailwind.config.ts:
- * import baseConfig from '@hermes/tailwind-config';
- * export default { ...baseConfig, content: ['./src/**/*.{ts,tsx}'] };
  */
 const baseConfig: Omit<Config, 'content'> = {
   darkMode: 'class',
