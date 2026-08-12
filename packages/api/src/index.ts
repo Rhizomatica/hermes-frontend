@@ -52,6 +52,8 @@ function hermesRequest(
   });
 }
 
+export type { GpsPosition, GpsFix } from './types';
+
 export const hermesGet = (path: string, cookie?: string) =>
   hermesRequest(path, 'GET', undefined, cookie);
 
