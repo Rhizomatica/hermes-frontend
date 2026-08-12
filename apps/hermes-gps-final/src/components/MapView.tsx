@@ -215,7 +215,6 @@ export default function MapView({
         },
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [breadcrumb, showBreadcrumb, mapReady]);
 
   return (
