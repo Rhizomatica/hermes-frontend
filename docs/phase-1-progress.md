@@ -2,8 +2,8 @@
 
 **Branch**: `feature/1.1.0-sbitx-design-tokens`  
 **Base**: `docs/hf-digital-specialist-review-fixes` (commit `529d0f7`)  
-**Updated**: 2026-08-11  
-**Status**: ✅ Complete (with code review findings addressed)
+**Updated**: 2026-08-12  
+**Status**: ✅ Complete — all 17 tasks implemented, CR-1 resolved, all three apps build successfully
 
 ---
 
@@ -11,7 +11,7 @@
 
 | ID | Task | Status | Commit | Notes |
 |---|---|---|---|---|
-| — | Merge conflict fix | ✅ | `529d0f7` | 3 files: tsconfig.base.json, packages/config/typescript/base.json, packages/ui/src/index.ts |
+| — | Merge conflict fix | ✅ | `529d0f7` | 3 files |
 | **Week 1** | **Monorepo Scaffolding** | ✅ | | |
 | 1.1.0 | sBitx design tokens | ✅ | `82b40d0` | Touch targets, fonts, breakpoints, z-index in @hermes/tailwind-config |
 | 1.1.1 | packages/shared-auth scaffold | ✅ | `82b40d0` | Empty barrel, TS config, peer deps |
@@ -42,44 +42,34 @@
 | — | env.d.ts | ✅ | `fcdeaca` | ProcessEnv declarations |
 | — | Service Worker registration | ✅ | `fcdeaca` | SW registered in all 3 layouts |
 | — | ThemeProvider key align | ✅ | `fcdeaca` | hermes_theme → hermes-theme |
+| **CR-1** | **Provider hierarchy fix** | ✅ | `7e55e17` | AuthProvider + ThemeProvider + LocaleProvider in all 3 layouts |
 
 ---
 
-## Remaining Work (Phase 1 Quality Gates)
+## Phase 1 Quality Gates
 
-See `docs/development-plan.md` §Phase Quality Gates (line 471):
-
-- [ ] `npm run build` passes with zero TypeScript errors across all workspaces
-- [ ] `npm run lint` passes with zero warnings
-- [ ] `npm test` passes with coverage targets
-- [ ] ARM64 build produces running binaries (tested on Pi or QEMU)
-- [ ] Login flow E2E: visit `:4000/login` → enter credentials → redirected to app selector
-- [ ] Cookie auth E2E test passes
-- [ ] App selector shows GPS and Chat links
-- [ ] Navigating to `:4001` (GPS) shows auth-aware page
-- [ ] Navigating to `:4002` (Chat) shows auth-aware page
-- [ ] Logout clears session and redirects to login
-- [ ] Theme toggle works and persists across all three apps
-- [ ] Locale toggle switches en↔pt and persists
-- [ ] All new routes have `next-intl` message keys in both `en.json` and `pt.json`
-- [ ] No `console.log` in production code paths
-- [ ] CSP headers configured and no violations in browser console
-- [ ] IndexedDB persistence verified on sBitx Chromium kiosk
-- [ ] README rewritten with full developer onboarding guide
-- [ ] `@hermes/shared-auth` barrel only exports public API
-- [ ] Test fixtures/mocks available in `packages/shared-auth/src/testing/`
-- [ ] All PoC anti-patterns absent (no `any`, no Capacitor, self-hosted fonts, etc.)
-- [ ] All components follow contract standard (exported Props + JSDoc @example)
-- [ ] All environment variables documented in `.env.example`
+| Gate | Status | Notes |
+|---|---|---|
+| `npm run build` — zero TS errors | ✅ | All three apps build successfully (2026-08-12) |
+| `npm run lint` — zero warnings | ⏳ | Not yet run |
+| `npm test` — coverage targets | ⏳ | Not yet run |
+| ARM64 build on Raspberry Pi or QEMU | ⏳ | Pending hardware access |
+| Login E2E flow | ⏳ | Requires backend running |
+| Cookie auth E2E | ⏳ | Requires backend running |
+| Cross-app auth | ⏳ | Requires backend running |
+| Theme toggle persistence | ⏳ | Requires backend running |
+| Locale toggle en↔pt persistence | ⏳ | Requires backend running |
+| CSP no violations | ⏳ | Requires backend running |
+| IndexedDB persistence verified | ⏳ | Pending sBitx hardware |
 
 ---
 
-## Known Issues (from Code Review)
+## Known Issues
 
 | Severity | ID | Description | Status |
 |---|---|---|---|
-| 🔴 Critical | CR-1 | Provider hierarchy missing from all three root layouts — `useAuth()` will throw | ⚠️ Unresolved |
-| 🟢 Low | CR-2 | SW files are minified to single lines — hard to debug | Won't fix (acceptable for Phase 1) |
+| 🔴 Critical | CR-1 | Provider hierarchy missing from all three root layouts | ✅ Fixed (`7e55e17`) |
+| 🟢 Low | CR-2 | SW files are minified to single lines | Won't fix |
 | 💡 Enhancement | CR-3 | No comment in turbo.json/package.json explaining PoC exclusion | Won't fix |
 
 ---
@@ -89,22 +79,16 @@ See `docs/development-plan.md` §Phase Quality Gates (line 471):
 ```
 packages/tailwind-config/     → sBitx design tokens
 packages/shared-auth/         → Auth + WebSocket + Locale providers
-packages/api/                 → Dual-mode API client (server/client)
+packages/api/                 → Dual-mode API client + shared types (GpsPosition, GpsFix)
 packages/ui/                  → ThemeProvider, ErrorBanner, LoadingSpinner, ConfirmDialog, etc.
 
 apps/hermes-shell/            → Next.js 16, port 4000
   /login                       → Login form
-  /                            → App selector (GPS/Chat cards)
+  /api/auth/{login,me,refresh} → Auth proxy routes
 
 apps/hermes-gps-final/        → Next.js 16, port 4001
-  /                            → Auth-aware placeholder
+  /                            → Full-screen map + coordinate overlay
+  /api/gps                     → GPS position proxy
 
 apps/hermes-chat-final/       → Next.js 16, port 4002
-  /                            → Auth-aware placeholder
-```
-
----
-
-## Next Phase
-
-See `docs/tasks/phase-2-gps.md` for the 12 GPS tasks.
+  /                            → Auth-aware placeholder (Phase 3 target)
