@@ -4,8 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useAuth, useAuthGuard, useLocale } from '@hermes/shared-auth';
-import { useTheme } from '@hermes/ui';
-import { LoadingSpinner } from '@hermes/ui';
+import { useTheme, LoadingSpinner } from '@hermes/ui';
 
 /**
  * App selector page — authenticated home screen for hermes-shell.
