@@ -32,10 +32,11 @@ function formatCacheAge(ms: number): string {
 }
 
 /**
- * GPS main page — full-screen map with coordinate overlay panel
- * and breadcrumb toggle.
+ * GPS main page — full-screen map with coordinate overlay panel,
+ * breadcrumb toggle, GPS status indicators, offline cache badge,
+ * and copy-to-clipboard with toast feedback.
  *
- * Composes MapView, CoordinatePanel, BreadcrumbToggle, and controls.
+ * Composes MapView, GpsStatusBadge, BreadcrumbToggle, and controls.
  * Auth-aware via useAuthGuard. Uses useGpsCoords for real-time
  * position data and useGpsHistory for breadcrumb trail.
  *
@@ -50,16 +51,14 @@ export default function GpsPage() {
   const { theme } = useTheme();
   const { position, fix, loading, error, lastUpdated, stale, isCached, cacheAgeMs, refresh } =
     useGpsCoords();
-  const {
-    history,
-    appendPosition,
-    refresh: refreshHistory,
-  } = useGpsHistory();
+  const { history, appendPosition } = useGpsHistory();
 
   const [showTrail, setShowTrail] = useState(false);
+  const [copiedLabel, setCopiedLabel] = useState<string | null>(null);
 
   // Append new live positions to the breadcrumb history
   const prevTimestampRef = useRef<string | null>(null);
+  const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (position && position.timestamp !== prevTimestampRef.current) {
@@ -67,6 +66,25 @@ export default function GpsPage() {
       appendPosition(position);
     }
   }, [position, appendPosition]);
+
+  // Copy coordinate to clipboard with 2s toast feedback
+  function handleCopy(value: string, label: string) {
+    navigator.clipboard.writeText(value).catch(() => {
+      // Clipboard API not available — silently skip
+    });
+    setCopiedLabel(label);
+    if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
+    copyTimeoutRef.current = setTimeout(() => {
+      setCopiedLabel(null);
+    }, 2000);
+  }
+
+  // Cleanup copy timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
+    };
+  }, []);
 
   if (!user) {
     return (
@@ -138,9 +156,7 @@ export default function GpsPage() {
             <div className="grid grid-cols-2 gap-2 text-center">
               <button
                 onClick={() =>
-                  navigator.clipboard.writeText(
-                    position.latitude.toFixed(6),
-                  )
+                  handleCopy(position.latitude.toFixed(6), 'lat')
                 }
                 aria-label={t('copyLatitude')}
                 className="rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -154,9 +170,7 @@ export default function GpsPage() {
               </button>
               <button
                 onClick={() =>
-                  navigator.clipboard.writeText(
-                    position.longitude.toFixed(6),
-                  )
+                  handleCopy(position.longitude.toFixed(6), 'lon')
                 }
                 aria-label={t('copyLongitude')}
                 className="rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -169,6 +183,17 @@ export default function GpsPage() {
                 </span>
               </button>
             </div>
+
+            {/* Copied toast */}
+            {copiedLabel && (
+              <div
+                className="mt-1 text-center text-xs text-green-600 dark:text-green-400"
+                role="status"
+                aria-live="polite"
+              >
+                {t('copied', { label: copiedLabel === 'lat' ? 'Lat' : 'Lon' })}
+              </div>
+            )}
 
             {/* GPS Status badges */}
             <div className="mt-2 flex flex-col items-center gap-1">

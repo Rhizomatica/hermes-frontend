@@ -23,7 +23,8 @@
     "hdopTooltip": "Diluição Horizontal de Precisão: {value}",
     "hdopAria": "HDOP {value}",
     "lastKnown": "Última posição conhecida",
-    "lastKnownTooltip": "Dados GPS indisponíveis. Mostrando última posição em cache."
+    "lastKnownTooltip": "Dados GPS indisponíveis. Mostrando última posição em cache.",
+    "copied": "{label} copiado!"
   },
   "common": {
     "backToHermes": "← Voltar ao HERMES",

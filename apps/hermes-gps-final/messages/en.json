@@ -23,7 +23,8 @@
     "hdopTooltip": "Horizontal Dilution of Precision: {value}",
     "hdopAria": "HDOP {value}",
     "lastKnown": "Last known position",
-    "lastKnownTooltip": "Live GPS data unavailable. Showing last cached position."
+    "lastKnownTooltip": "Live GPS data unavailable. Showing last cached position.",
+    "copied": "{label} copied!"
   },
   "common": {
     "backToHermes": "← Back to HERMES",
