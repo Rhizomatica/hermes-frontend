@@ -120,11 +120,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
           if (refreshRes.ok) {
             const refreshData = (await refreshRes.json()) as {
-              access: string;
-              refresh: string;
+              access?: string;
+              refresh?: string;
+              accessToken?: string;
+              refreshToken?: string;
               user: HermesUser;
             };
-            store.setTokens(refreshData.access, refreshData.refresh);
+            const access = refreshData.access ?? refreshData.accessToken ?? '';
+            const refresh = refreshData.refresh ?? refreshData.refreshToken ?? '';
+            store.setTokens(access, refresh);
             store.setUser(refreshData.user);
             if (!cancelled) dispatch({ type: 'AUTHENTICATED', user: refreshData.user });
             return;
@@ -164,12 +168,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const data = (await res.json()) as {
-        access: string;
-        refresh: string;
+        access?: string;
+        refresh?: string;
+        accessToken?: string;
+        refreshToken?: string;
         user: HermesUser;
       };
 
-      store.setTokens(data.access, data.refresh);
+      store.setTokens(data.access ?? data.accessToken ?? '', data.refresh ?? data.refreshToken ?? '');
       store.setUser(data.user);
       dispatch({ type: 'AUTHENTICATED', user: data.user });
     },

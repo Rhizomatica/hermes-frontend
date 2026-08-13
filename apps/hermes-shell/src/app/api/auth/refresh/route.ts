@@ -27,12 +27,20 @@ export async function POST(request: NextRequest) {
   if (status >= 400) return NextResponse.json(data, { status });
 
   const response = NextResponse.json(data, { status });
-  const authData = data as { access?: string; refresh?: string; user?: unknown };
-  if (authData.access) {
-    response.headers.set('Set-Cookie', `hermes_token=${authData.access}; SameSite=Lax; Path=/; Max-Age=604800`);
+  const authData = data as {
+    access?: string;
+    refresh?: string;
+    accessToken?: string;
+    refreshToken?: string;
+    user?: unknown;
+  };
+  const access = authData.access ?? authData.accessToken;
+  const refresh = authData.refresh ?? authData.refreshToken;
+  if (access) {
+    response.headers.set('Set-Cookie', `hermes_token=${access}; SameSite=Lax; Path=/; Max-Age=604800`);
   }
-  if (authData.refresh) {
-    response.headers.append('Set-Cookie', `hermes_refresh=${authData.refresh}; SameSite=Lax; Path=/; Max-Age=2592000`);
+  if (refresh) {
+    response.headers.append('Set-Cookie', `hermes_refresh=${refresh}; SameSite=Lax; Path=/; Max-Age=2592000`);
   }
   if (authData.user) {
     const userJson = encodeURIComponent(JSON.stringify(authData.user));

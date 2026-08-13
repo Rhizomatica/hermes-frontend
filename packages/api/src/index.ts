@@ -4,8 +4,22 @@ import https from 'node:https';
 const insecureAgent = new https.Agent({ rejectUnauthorized: false });
 
 function getBase(): string {
-  const url = process.env.HERMES_API_URL ?? 'https://10.70.96.5';
+  const url = process.env.HERMES_API_URL ?? 'http://localhost:3000/';
   return url.endsWith('/') ? url.slice(0, -1) : url;
+}
+
+function getAccessTokenFromCookie(cookie?: string): string | null {
+  if (!cookie) return null;
+  const match = cookie.match(/(?:^|;\s*)hermes_token=([^;]*)/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+function buildAuthHeaders(cookie?: string): Record<string, string> {
+  const headers: Record<string, string> = {};
+  if (cookie) headers['Cookie'] = cookie;
+  const token = getAccessTokenFromCookie(cookie);
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  return headers;
 }
 
 function hermesRequest(
@@ -21,9 +35,9 @@ function hermesRequest(
   return new Promise((resolve) => {
     const headers: Record<string, string | number> = {
       'Content-Type': 'application/json',
+      ...buildAuthHeaders(cookie),
     };
     if (body) headers['Content-Length'] = Buffer.byteLength(body);
-    if (cookie) headers['Cookie'] = cookie;
 
     const transport = isHttps ? https : http;
 
@@ -108,8 +122,8 @@ export function hermesPostMultipart(
     const headers: Record<string, string | number> = {
       'Content-Type': `multipart/form-data; boundary=${boundary}`,
       'Content-Length': body.byteLength,
+      ...buildAuthHeaders(cookie),
     };
-    if (cookie) headers['Cookie'] = cookie;
 
     const req = transport.request(
       {
@@ -148,7 +162,7 @@ export function hermesGetBuffer(
   const transport = isHttps ? https : http;
 
   return new Promise((resolve) => {
-    const extraHeaders: Record<string, string> = cookie ? { Cookie: cookie } : {};
+    const extraHeaders: Record<string, string> = buildAuthHeaders(cookie);
     const req = transport.request(
       {
         hostname: url.hostname,
