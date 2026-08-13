@@ -1,9 +1,8 @@
 import type { Metadata, Viewport } from 'next';
-import Script from 'next/script';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import { AuthProvider, LocaleProvider, WebSocketProvider } from '@hermes/shared-auth';
-import { ThemeProvider } from '@hermes/ui';
+import { ThemeProvider, ServiceWorkerRegistrator } from '@hermes/ui';
 import './globals.css';
 
 export const viewport: Viewport = {
@@ -16,7 +15,7 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: 'HERMES',
-  description: 'HERMES — sBitx Radio Ground Station',
+  description: 'HERMES',
   manifest: '/manifest.json',
   icons: {
     icon: '/icon-192.png',
@@ -39,11 +38,9 @@ export default async function RootLayout({
 
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
+      <body className="min-h-screen bg-background text-foreground antialiased">
         {/* Theme flash prevention */}
-        <Script
-          id="theme-flash"
-          strategy="beforeInteractive"
+        <script
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
@@ -59,22 +56,7 @@ export default async function RootLayout({
             `,
           }}
         />
-        {/* Service Worker registration */}
-        <Script
-          id="sw-register"
-          strategy="beforeInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `
-              if ('serviceWorker' in navigator) {
-                window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js');
-                });
-              }
-            `,
-          }}
-        />
-      </head>
-      <body className="min-h-screen bg-background text-foreground antialiased">
+        <ServiceWorkerRegistrator />
         <NextIntlClientProvider messages={messages}>
           <AuthProvider>
             <ThemeProvider>

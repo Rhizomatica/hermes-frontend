@@ -59,6 +59,7 @@ export default function GpsPage() {
   // Append new live positions to the breadcrumb history
   const prevTimestampRef = useRef<string | null>(null);
   const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const SHELL_URL = process.env.NEXT_PUBLIC_SHELL_URL ?? 'localhost:4000';
 
   useEffect(() => {
     if (position && position.timestamp !== prevTimestampRef.current) {
@@ -111,12 +112,12 @@ export default function GpsPage() {
 
       {/* Back link overlay */}
       <Link
-        href="/"
+        href={{ pathname: SHELL_URL }}
         className="absolute left-4 top-4 z-10 rounded-lg bg-background/80 px-3 py-2 text-sm text-blue-500 backdrop-blur-sm"
         aria-label={tc('backToHermes')}
         style={{ minHeight: '44px', lineHeight: '44px' }}
       >
-        {tc('backToHermes')}
+        {tc('backToHermes')} {SHELL_URL}
       </Link>
 
       {/* Error banner */}
@@ -234,10 +235,10 @@ export default function GpsPage() {
               {t('lastUpdated')}:{' '}
               {lastUpdated
                 ? new Intl.DateTimeFormat('en', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit',
-                  }).format(lastUpdated)
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  second: '2-digit',
+                }).format(lastUpdated)
                 : '—'}
             </div>
           </div>

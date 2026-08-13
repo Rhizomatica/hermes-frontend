@@ -1,9 +1,8 @@
 import type { Metadata, Viewport } from 'next';
-import Script from 'next/script';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import { AuthProvider, LocaleProvider, WebSocketProvider } from '@hermes/shared-auth';
-import { ThemeProvider } from '@hermes/ui';
+import { ThemeProvider, ServiceWorkerRegistrator } from '@hermes/ui';
 import './globals.css';
 
 export const viewport: Viewport = {
@@ -36,10 +35,8 @@ export default async function RootLayout({
 
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <Script
-          id="theme-flash"
-          strategy="beforeInteractive"
+      <body className="min-h-screen bg-background text-foreground antialiased">
+        <script
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
@@ -55,21 +52,7 @@ export default async function RootLayout({
             `,
           }}
         />
-        <Script
-          id="sw-register"
-          strategy="beforeInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `
-              if ('serviceWorker' in navigator) {
-                window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js');
-                });
-              }
-            `,
-          }}
-        />
-      </head>
-      <body className="min-h-screen bg-background text-foreground antialiased">
+        <ServiceWorkerRegistrator />
         <NextIntlClientProvider messages={messages}>
           <AuthProvider>
             <ThemeProvider>

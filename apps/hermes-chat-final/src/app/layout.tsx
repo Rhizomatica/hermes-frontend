@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from 'next';
-import Script from 'next/script';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import { AuthProvider, LocaleProvider, WebSocketProvider } from '@hermes/shared-auth';
@@ -36,10 +35,8 @@ export default async function RootLayout({
 
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <Script
-          id="theme-flash"
-          strategy="beforeInteractive"
+      <body className="min-h-screen bg-background text-foreground antialiased">
+        <script
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
@@ -55,9 +52,7 @@ export default async function RootLayout({
             `,
           }}
         />
-        <Script
-          id="sw-register"
-          strategy="beforeInteractive"
+        <script
           dangerouslySetInnerHTML={{
             __html: `
               if ('serviceWorker' in navigator) {
@@ -68,8 +63,6 @@ export default async function RootLayout({
             `,
           }}
         />
-      </head>
-      <body className="min-h-screen bg-background text-foreground antialiased">
         <NextIntlClientProvider messages={messages}>
           <AuthProvider>
             <ThemeProvider>

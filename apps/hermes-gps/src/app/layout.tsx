@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { ThemeProvider } from "@hermes/ui";
-import { LocaleProvider } from "@/providers/LocaleProvider";
+import { AuthProvider, LocaleProvider, WebSocketProvider } from '@hermes/shared-auth';
+import { ThemeProvider } from '@hermes/ui';
+
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,16 +27,18 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var s=localStorage.getItem('hermes_theme');var p=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';if((s||p)==='dark')document.documentElement.classList.add('dark');}catch(e){}})();`,
           }}
         />
-      </head>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <LocaleProvider>
-          <ThemeProvider>{children}</ThemeProvider>
+          <ThemeProvider>
+            <WebSocketProvider>
+              {children}
+            </WebSocketProvider>
+          </ThemeProvider>
         </LocaleProvider>
       </body>
     </html>

@@ -7,6 +7,20 @@ import { useAuth, useAuthGuard, useLocale } from '@hermes/shared-auth';
 import { useTheme, LoadingSpinner } from '@hermes/ui';
 
 /**
+ * App entry points.
+ *
+ * Production (co-deployed, ADR-007) serves all apps from a single origin
+ * via path-based routing behind nginx, so these default to relative paths:
+ *   /gps  → hermes-gps-final
+ *   /chat → hermes-chat-final
+ *
+ * Local dev runs each app on its own Next.js dev server, so the absolute
+ * URLs can be overridden via environment variables (e.g. in .env.local).
+ */
+const GPS_URL = process.env.NEXT_PUBLIC_GPS_URL ?? '/gps';
+const CHAT_URL = process.env.NEXT_PUBLIC_CHAT_URL ?? '/chat';
+
+/**
  * App selector page — authenticated home screen for hermes-shell.
  *
  * Uses useAuthGuard for auth enforcement. Shows navigation cards
@@ -49,16 +63,15 @@ export default function AppSelector() {
 
       <div className="mt-2 text-center">
         <h1 className="text-2xl font-bold text-orange-500">{t('title')}</h1>
-        <p className="mt-1 text-base text-foreground/70">{t('greeting', { name: user.name })}</p>
+        <p className="mt-1 text-base text-foreground/70">{t('greeting', { name: user.displayName })}</p>
       </div>
-
       <div className="mt-8 flex flex-1 flex-col gap-4 sm:flex-row sm:justify-center">
-        <Link href="/gps" className="flex flex-1 flex-col items-center justify-center rounded-2xl border-2 border-gray-200 bg-background p-6 text-center hover:border-orange-500 active:border-orange-600 dark:border-gray-700 sm:max-w-xs" style={{ minHeight: '160px' }}>
+        <Link href={GPS_URL} className="flex flex-1 flex-col items-center justify-center rounded-2xl border-2 border-gray-200 bg-background p-6 text-center hover:border-orange-500 active:border-orange-600 dark:border-gray-700 sm:max-w-xs" style={{ minHeight: '160px' }}>
           <span className="text-4xl">📍</span>
           <h2 className="mt-3 text-lg font-semibold">{t('gpsViewer')}</h2>
           <p className="mt-1 text-sm text-foreground/60">{t('gpsDescription')}</p>
         </Link>
-        <Link href="/chat" className="flex flex-1 flex-col items-center justify-center rounded-2xl border-2 border-gray-200 bg-background p-6 text-center hover:border-orange-500 active:border-orange-600 dark:border-gray-700 sm:max-w-xs" style={{ minHeight: '160px' }}>
+        <Link href={CHAT_URL} className="flex flex-1 flex-col items-center justify-center rounded-2xl border-2 border-gray-200 bg-background p-6 text-center hover:border-orange-500 active:border-orange-600 dark:border-gray-700 sm:max-w-xs" style={{ minHeight: '160px' }}>
           <span className="text-4xl">💬</span>
           <h2 className="mt-3 text-lg font-semibold">{t('chat')}</h2>
           <p className="mt-1 text-sm text-foreground/60">{t('chatDescription')}</p>
