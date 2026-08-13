@@ -1,5 +1,12 @@
+import { config as loadEnv } from 'dotenv';
+import path from 'path';
 import type { NextConfig } from 'next';
 import createNextIntlPlugin from 'next-intl/plugin';
+
+// Load monorepo root .env/.env.local as base (cwd is the app dir under turbo/npm).
+// dotenv defaults to override:false, so app-level env still wins.
+loadEnv({ path: path.resolve(process.cwd(), '../../.env') });
+loadEnv({ path: path.resolve(process.cwd(), '../../.env.local') });
 
 const withNextIntl = createNextIntlPlugin();
 
