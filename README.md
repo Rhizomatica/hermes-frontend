@@ -1,6 +1,7 @@
 # HERMES Frontend
 
-Monorepo for the HERMES sBitx Radio Ground Station — three Next.js 16 apps designed for Raspberry Pi ARM64, 7-inch 800×480 touchscreen (ADR-008).
+Monorepo for the HERMES  High-frequency Emergency and Rural Multimedia Exchange System
+ — three Next.js 16 apps designed for Raspberry Pi ARM64, 7-inch 800×480 touchscreen (ADR-008).
 
 ## Architecture
 
