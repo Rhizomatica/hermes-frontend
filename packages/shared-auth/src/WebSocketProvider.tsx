@@ -1,7 +1,6 @@
 'use client';
 
 import {
-  createContext,
   useCallback,
   useEffect,
   useMemo,
@@ -9,11 +8,9 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import type { WebSocketContextValue, WebSocketEvent } from './useWebSocket';
+import { WebSocketContext, type WebSocketContextValue, type WebSocketEvent } from './useWebSocket';
 
 export { type WebSocketContextValue, type WebSocketEvent };
-
-const WebSocketContext = createContext<WebSocketContextValue | null>(null);
 
 /**
  * WebSocketProvider — connects to hermes-radio-daemon (ADR-002).

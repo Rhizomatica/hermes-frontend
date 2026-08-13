@@ -13,7 +13,7 @@ export interface WebSocketContextValue {
   subscribe: (eventType: string, handler: (event: WebSocketEvent) => void) => () => void;
 }
 
-const WebSocketContext = createContext<WebSocketContextValue | null>(null);
+export const WebSocketContext = createContext<WebSocketContextValue | null>(null);
 
 /**
  * useWebSocket — consumes the WebSocket context.
