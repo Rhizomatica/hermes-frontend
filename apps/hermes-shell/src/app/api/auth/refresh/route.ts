@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { hermesPost } from '@hermes/api';
+import { hermesPost, hermesGet } from '@hermes/api';
 
 /**
  * POST /api/auth/refresh
@@ -42,9 +42,20 @@ export async function POST(request: NextRequest) {
   if (refresh) {
     response.headers.append('Set-Cookie', `hermes_refresh=${refresh}; SameSite=Lax; Path=/; Max-Age=2592000`);
   }
-  if (authData.user) {
-    const userJson = encodeURIComponent(JSON.stringify(authData.user));
+  // Backend refresh returns only tokens — fetch the user profile and persist it
+  // as a cookie so the session is shared across dev ports.
+  const user = authData.user ?? (access ? await fetchUserFromBackend(access) : undefined);
+  if (user) {
+    const userJson = encodeURIComponent(JSON.stringify(user));
     response.headers.append('Set-Cookie', `hermes_user=${userJson}; SameSite=Lax; Path=/; Max-Age=604800`);
   }
   return response;
+}
+
+/** Fetch the authenticated user profile from the backend using a bearer token. */
+async function fetchUserFromBackend(accessToken: string): Promise<unknown> {
+  const authorization = accessToken.startsWith('Bearer ') ? accessToken : `Bearer ${accessToken}`;
+  const { data, status } = await hermesGet('/users/me', undefined, authorization);
+  if (status >= 400) return undefined;
+  return data;
 }

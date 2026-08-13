@@ -74,16 +74,20 @@ export interface Station {
 /**
  * The authenticated Hermes user.
  *
- * `role` is the string used by the auth backend (`admin`/`user` style),
- * while `admin` is a boolean convenience flag derived from it where the
- * backend exposes it. Consumers should prefer `admin` when present.
+ * Matches the backend `GET /users/me` response (hermes-backend `users`
+ * table with `passwordHash` stripped). This is the canonical shape.
  */
 export interface HermesUser {
-  id: number;
-  admin: boolean;
-  email: string;
-  name: string;
-  phone: string | null;
-  location: string | null;
-  role?: string;
+  id: string; // UUID
+  callsign: string;
+  displayName: string;
+  email: string | null;
+  role: string; // 'admin' | 'operator' | 'user' | 'readonly'
+  status: string; // 'active' | 'suspended' | 'pending'
+  avatarPath: string | null;
+  metadata: string; // JSON-encoded string
+  locale: string; // 'en' | 'es' | 'pt-BR'
+  createdAt: string;
+  updatedAt: string;
+  lastSeenAt: string | null;
 }

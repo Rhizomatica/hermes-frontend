@@ -9,7 +9,9 @@ import {
   useReducer,
   type ReactNode,
 } from 'react';
-import { detectTokenStore, type HermesUser, type TokenStore } from './tokenStore';
+import { detectTokenStore, type TokenStore } from './tokenStore';
+
+import { HermesUser } from '@hermes/api';
 
 // ------------------------------------------------------------------
 // State
@@ -100,7 +102,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     async function validate() {
       try {
-        const res = await fetch('/api/auth/me');
+        const token = store.getAccessToken();
+        const headers: Record<string, string> = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+        const res = await fetch('/api/auth/me', { headers });
 
         if (res.ok) {
           const data = (await res.json()) as HermesUser;
@@ -124,14 +129,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               refresh?: string;
               accessToken?: string;
               refreshToken?: string;
-              user: HermesUser;
             };
             const access = refreshData.access ?? refreshData.accessToken ?? '';
             const refresh = refreshData.refresh ?? refreshData.refreshToken ?? '';
             store.setTokens(access, refresh);
-            store.setUser(refreshData.user);
-            if (!cancelled) dispatch({ type: 'AUTHENTICATED', user: refreshData.user });
-            return;
+
+            // Backend does not return the user on refresh — re-fetch it.
+            const meHeaders: Record<string, string> = {};
+            if (access) meHeaders['Authorization'] = `Bearer ${access}`;
+            const meRes = await fetch('/api/auth/me', { headers: meHeaders });
+            if (meRes.ok) {
+              const me = (await meRes.json()) as HermesUser;
+              store.setUser(me);
+              if (!cancelled) dispatch({ type: 'AUTHENTICATED', user: me });
+              return;
+            }
           }
         }
 
@@ -172,12 +184,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         refresh?: string;
         accessToken?: string;
         refreshToken?: string;
-        user: HermesUser;
+        user?: HermesUser;
       };
 
-      store.setTokens(data.access ?? data.accessToken ?? '', data.refresh ?? data.refreshToken ?? '');
-      store.setUser(data.user);
-      dispatch({ type: 'AUTHENTICATED', user: data.user });
+      const access = data.access ?? data.accessToken ?? '';
+      const refresh = data.refresh ?? data.refreshToken ?? '';
+      store.setTokens(access, refresh);
+
+      // Backend login returns only tokens — fetch the user identity.
+      const headers: Record<string, string> = {};
+      if (access) headers['Authorization'] = `Bearer ${access}`;
+      const meRes = await fetch('/api/auth/me', { headers });
+      if (meRes.ok) {
+        const user = (await meRes.json()) as HermesUser;
+        store.setUser(user);
+        dispatch({ type: 'AUTHENTICATED', user });
+        return;
+      }
+
+      // Fall back to any user embedded in the login response (legacy).
+      if (data.user) {
+        store.setUser(data.user);
+        dispatch({ type: 'AUTHENTICATED', user: data.user });
+        return;
+      }
+
+      store.clearTokens();
+      dispatch({ type: 'UNAUTHENTICATED', error: 'Could not load your profile.' });
+      throw new Error('Could not load your profile.');
     },
     [store],
   );

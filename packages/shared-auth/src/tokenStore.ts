@@ -6,12 +6,7 @@
  * Auto-detection based on cookie presence.
  */
 
-export interface HermesUser {
-  id: number;
-  email: string;
-  name: string;
-  role: string;
-}
+import { HermesUser } from '@hermes/api';
 
 export interface TokenStore {
   getAccessToken(): string | null;

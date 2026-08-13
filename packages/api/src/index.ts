@@ -4,7 +4,7 @@ import https from 'node:https';
 const insecureAgent = new https.Agent({ rejectUnauthorized: false });
 
 function getBase(): string {
-  const url = process.env.HERMES_API_URL ?? 'http://localhost:3000/';
+  const url = process.env.HERMES_API_URL ?? 'http://localhost:3000';
   return url.endsWith('/') ? url.slice(0, -1) : url;
 }
 
@@ -14,11 +14,13 @@ function getAccessTokenFromCookie(cookie?: string): string | null {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
-function buildAuthHeaders(cookie?: string): Record<string, string> {
+function buildAuthHeaders(cookie?: string, authorization?: string): Record<string, string> {
   const headers: Record<string, string> = {};
   if (cookie) headers['Cookie'] = cookie;
-  const token = getAccessTokenFromCookie(cookie);
-  if (token) headers['Authorization'] = `Bearer ${token}`;
+  // Prefer an explicit Authorization header (dev/localStorage path); otherwise
+  // derive it from the hermes_token cookie (production path).
+  const token = authorization ?? getAccessTokenFromCookie(cookie);
+  if (token) headers['Authorization'] = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
   return headers;
 }
 
@@ -27,6 +29,7 @@ function hermesRequest(
   method: string,
   body?: string,
   cookie?: string,
+  authorization?: string,
 ): Promise<{ data: unknown; status: number }> {
   const base = getBase();
   const url = new URL(path.startsWith('/') ? path : '/' + path, base);
@@ -35,7 +38,7 @@ function hermesRequest(
   return new Promise((resolve) => {
     const headers: Record<string, string | number> = {
       'Content-Type': 'application/json',
-      ...buildAuthHeaders(cookie),
+      ...buildAuthHeaders(cookie, authorization),
     };
     if (body) headers['Content-Length'] = Buffer.byteLength(body);
 
@@ -76,14 +79,14 @@ export type { GpsPosition, GpsFix, Message, Conversation, Station, HermesUser } 
 export { destArray, stationId, canonicalize } from './normalize';
 export { buildConversations, filterConversation } from './conversation';
 
-export const hermesGet = (path: string, cookie?: string) =>
-  hermesRequest(path, 'GET', undefined, cookie);
+export const hermesGet = (path: string, cookie?: string, authorization?: string) =>
+  hermesRequest(path, 'GET', undefined, cookie, authorization);
 
-export const hermesPost = (path: string, body: unknown, cookie?: string) =>
-  hermesRequest(path, 'POST', JSON.stringify(body), cookie);
+export const hermesPost = (path: string, body: unknown, cookie?: string, authorization?: string) =>
+  hermesRequest(path, 'POST', JSON.stringify(body), cookie, authorization);
 
-export const hermesDelete = (path: string, cookie?: string) =>
-  hermesRequest(path, 'DELETE', undefined, cookie);
+export const hermesDelete = (path: string, cookie?: string, authorization?: string) =>
+  hermesRequest(path, 'DELETE', undefined, cookie, authorization);
 
 interface MultipartFile {
   fieldName: string;

@@ -10,6 +10,7 @@ import { hermesGet } from '@hermes/api';
  */
 export async function GET(request: NextRequest) {
   const cookie = request.headers.get('cookie') ?? undefined;
-  const { data, status } = await hermesGet('/users/me', cookie);
+  const authorization = request.headers.get('authorization') ?? undefined;
+  const { data, status } = await hermesGet('/users/me', cookie, authorization);
   return NextResponse.json(data, { status });
 }
