@@ -19,13 +19,23 @@ import type { HermesUser } from './tokenStore';
 export function useAuthGuard(): HermesUser | null {
   const { user, isLoading, isAuthenticated } = useAuth();
   const router = useRouter();
-  const loginUrl = process.env.NEXT_PUBLIC_LOGIN_URL ?? '/login';
+  const shellUrl = process.env.NEXT_PUBLIC_SHELL_URL ?? '';
+  const loginUrl = shellUrl
+    ? `${shellUrl}${process.env.NEXT_PUBLIC_LOGIN_URL ?? '/login'}`
+    : process.env.NEXT_PUBLIC_LOGIN_URL ?? '/login';
+
+  // Cross-origin shells can't use router.replace — use window.location instead.
+  const isCrossOrigin = typeof window !== 'undefined' && shellUrl && !window.location.origin.startsWith(shellUrl);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      router.replace(loginUrl);
+      if (isCrossOrigin) {
+        window.location.assign(loginUrl);
+      } else {
+        router.replace(loginUrl);
+      }
     }
-  }, [isLoading, isAuthenticated, router, loginUrl]);
+  }, [isLoading, isAuthenticated, router, loginUrl, isCrossOrigin]);
 
   if (isLoading || !isAuthenticated) return null;
 

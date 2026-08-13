@@ -28,11 +28,12 @@ export interface TokenStore {
 
 const COOKIE_ACCESS = 'hermes_token';
 const COOKIE_REFRESH = 'hermes_refresh';
+const COOKIE_USER = 'hermes_user';
 
 function getCookie(name: string): string | null {
   if (typeof document === 'undefined') return null;
   const match = document.cookie.match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`));
-  return match ? decodeURIComponent(match[1]) : null;
+  return match ? match[1] : null;
 }
 
 export const cookieTokenStore: TokenStore = {
@@ -47,23 +48,26 @@ export const cookieTokenStore: TokenStore = {
     // Client cannot write HttpOnly cookies — no-op
   },
   clearTokens() {
-    if (typeof localStorage !== 'undefined') {
-      localStorage.removeItem('hermes_user');
+    if (typeof document !== 'undefined') {
+      const expire = '; Path=/; Max-Age=0';
+      document.cookie = `${COOKIE_ACCESS}=${expire}`;
+      document.cookie = `${COOKIE_REFRESH}=${expire}`;
+      document.cookie = `${COOKIE_USER}=${expire}`;
     }
   },
   getUser(): HermesUser | null {
-    if (typeof localStorage === 'undefined') return null;
-    const raw = localStorage.getItem('hermes_user');
+    const raw = getCookie(COOKIE_USER);
     if (!raw) return null;
     try {
-      return JSON.parse(raw) as HermesUser;
+      return JSON.parse(decodeURIComponent(raw)) as HermesUser;
     } catch {
       return null;
     }
   },
   setUser(user: HermesUser) {
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('hermes_user', JSON.stringify(user));
+    if (typeof document !== 'undefined') {
+      const json = encodeURIComponent(JSON.stringify(user));
+      document.cookie = `${COOKIE_USER}=${json}; Path=/; SameSite=Lax; Max-Age=604800`;
     }
   },
 };

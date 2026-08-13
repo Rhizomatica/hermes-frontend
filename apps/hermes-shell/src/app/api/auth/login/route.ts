@@ -33,12 +33,16 @@ export async function POST(request: NextRequest) {
   if (status >= 400) return NextResponse.json(data, { status });
 
   const response = NextResponse.json(data, { status });
-  const authData = data as { access?: string; refresh?: string };
+  const authData = data as { access?: string; refresh?: string; user?: unknown };
   if (authData.access) {
-    response.headers.set('Set-Cookie', `hermes_token=${authData.access}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=604800`);
+    response.headers.set('Set-Cookie', `hermes_token=${authData.access}; SameSite=Lax; Path=/; Max-Age=604800`);
   }
   if (authData.refresh) {
-    response.headers.append('Set-Cookie', `hermes_refresh=${authData.refresh}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=2592000`);
+    response.headers.append('Set-Cookie', `hermes_refresh=${authData.refresh}; SameSite=Lax; Path=/; Max-Age=2592000`);
+  }
+  if (authData.user) {
+    const userJson = encodeURIComponent(JSON.stringify(authData.user));
+    response.headers.append('Set-Cookie', `hermes_user=${userJson}; SameSite=Lax; Path=/; Max-Age=604800`);
   }
   return response;
 }
