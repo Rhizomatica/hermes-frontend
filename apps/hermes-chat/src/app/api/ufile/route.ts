@@ -9,7 +9,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ message: 'No file provided.' }, { status: 400 });
   }
 
-  const base = (process.env.HERMES_API_URL ?? 'https://10.70.96.6').replace(/\/$/, '') + '/api/';
+  const base = (process.env.HERMES_API_URL ?? 'http://localhost:3000').replace(/\/$/, '') + '/api/';
   const url = new URL('file', base);
   const cookie = request.headers.get('cookie') ?? '';
   const contentLength = request.headers.get('content-length');
