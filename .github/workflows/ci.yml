@@ -18,7 +18,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 20.19.0
           cache: 'npm'
       - run: npm ci --ignore-scripts
       - run: npm run lint
@@ -30,7 +30,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 20.19.0
           cache: 'npm'
       - run: npm ci --ignore-scripts
       - run: npm run typecheck
@@ -42,7 +42,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 20.19.0
           cache: 'npm'
       - run: npm ci --ignore-scripts
       - run: npm test -- --coverage
@@ -60,7 +60,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 20.19.0
           cache: 'npm'
       - run: npm ci --ignore-scripts
       - run: npx turbo build --filter=${{ matrix.app }}
@@ -79,7 +79,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 20.19.0
           cache: 'npm'
       - run: npm ci --ignore-scripts
       - run: npx turbo build --filter=${{ matrix.app }}
@@ -107,7 +107,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 20.19.0
           cache: 'npm'
       - run: npm ci --ignore-scripts
       - run: npx turbo build

@@ -1,5 +1,5 @@
 # ── Stage 1: install all workspace dependencies ──────────────────────────────
-FROM node:22-alpine AS deps
+FROM node:20.19-alpine AS deps
 WORKDIR /repo
 
 # Copy only manifests first so this layer is cached between code changes
@@ -15,7 +15,7 @@ COPY packages/ui/package.json           ./packages/ui/
 RUN npm ci --ignore-scripts
 
 # ── Stage 2: build one app via Turborepo ─────────────────────────────────────
-FROM node:22-alpine AS builder
+FROM node:20.19-alpine AS builder
 
 # Which workspace member to build, e.g. hermes-chat | hermes-gps | hermes-map
 ARG APP
@@ -30,7 +30,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN npx turbo build --filter=${APP}
 
 # ── Stage 3: minimal production image ────────────────────────────────────────
-FROM node:22-alpine AS runner
+FROM node:20.19-alpine AS runner
 
 ARG APP
 ARG PORT=3000
