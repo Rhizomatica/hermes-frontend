@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import { Protocol } from 'pmtiles';
 import { buildStyle } from '@/lib/mapStyle';
 import { getMapTokens } from '@hermes/tailwind-config/map-tokens';
 import type { GpsPosition } from '@hermes/api';
@@ -25,11 +26,25 @@ export interface MapViewProps {
   showBreadcrumb?: boolean;
   /** Callback when tile loading fails */
   onTileError?: () => void;
+  /**
+   * Increment this counter to re-center the map on the current position.
+   * Changes from 0 → 1 → 2… trigger a fly-to animation.
+   */
+  recenterToken?: number;
 }
 
 /** Source ID for the breadcrumb line layer */
 const BREADCRUMB_SOURCE = 'hermes-breadcrumb';
 const BREADCRUMB_LAYER = 'hermes-breadcrumb-line';
+
+// Register the pmtiles:// protocol handler with MapLibre (once per page load)
+let protocolRegistered = false;
+function ensureProtocol(): void {
+  if (protocolRegistered) return;
+  const protocol = new Protocol();
+  maplibregl.addProtocol('pmtiles', protocol.tile.bind(protocol));
+  protocolRegistered = true;
+}
 
 /**
  * Offline-capable map component using Maplibre GL JS + PMTiles.
@@ -57,6 +72,7 @@ export default function MapView({
   breadcrumb = [],
   showBreadcrumb = false,
   onTileError,
+  recenterToken = 0,
 }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -69,6 +85,8 @@ export default function MapView({
   // Initialize map
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
+
+    ensureProtocol();
 
     const map = new maplibregl.Map({
       container: containerRef.current,
@@ -98,10 +116,25 @@ export default function MapView({
     return () => {
       map.remove();
       mapRef.current = null;
+      markerRef.current = null;
+      markerElRef.current = null;
       setMapReady(false);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Re-center the map on the current position when the token changes.
+  useEffect(() => {
+    if (!recenterToken || !mapRef.current) return;
+    if (latitude == null || longitude == null) return;
+    mapRef.current.flyTo({
+      center: [longitude, latitude],
+      zoom: 10,
+      duration: 1500,
+      essential: true,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recenterToken]);
 
   // Update map style when theme changes
   useEffect(() => {

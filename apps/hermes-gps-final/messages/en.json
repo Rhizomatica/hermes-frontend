@@ -6,6 +6,7 @@
     "lastUpdated": "Last updated",
     "staleData": "Stale",
     "refresh": "Refresh position",
+    "recenter": "Re-center map on current position",
     "altitude": "Alt",
     "speed": "Speed",
     "showTrail": "Show breadcrumb trail",
@@ -26,7 +27,10 @@
     "lastKnownTooltip": "Live GPS data unavailable. Showing last cached position.",
     "copied": "{label} copied!",
     "tileError": "Map tiles not found. Run npm run download-tiles to fetch offline map data.",
-    "breadcrumbPoint": "Position at {time}"
+    "breadcrumbPoint": "Position at {time}",
+    "sosButton": "SOS EMERGENCY",
+    "sosButtonTooltip": "Send SOS message with current location",
+    "sosButtonAria": "Send SOS message with current location"
   },
   "common": {
     "backToHermes": "← Back to HERMES",

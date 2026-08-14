@@ -6,6 +6,7 @@
     "lastUpdated": "Última atualização",
     "staleData": "Desatualizado",
     "refresh": "Atualizar posição",
+    "recenter": "Centralizar mapa na posição atual",
     "altitude": "Alt",
     "speed": "Vel",
     "showTrail": "Mostrar rastro",
@@ -26,7 +27,10 @@
     "lastKnownTooltip": "Dados GPS indisponíveis. Mostrando última posição em cache.",
     "copied": "{label} copiado!",
     "tileError": "Mapas não encontrados. Execute npm run download-tiles para baixar os mapas offline.",
-    "breadcrumbPoint": "Posição às {time}"
+    "breadcrumbPoint": "Posição às {time}",
+    "sosButton": "EMERGÊNCIA SOS",
+    "sosButtonTooltip": "Enviar mensagem SOS com localização atual",
+    "sosButtonAria": "Enviar mensagem SOS com localização atual"
   },
   "common": {
     "backToHermes": "← Voltar ao HERMES",

@@ -147,8 +147,10 @@ export function useGpsCoords(): GpsState {
     return () => clearTimeout(timer);
   }, [lastUpdated]);
 
-  // Cleanup on unmount
+  // Track mounted state. Re-assert `true` on every mount so the flag survives
+  // React StrictMode's dev-only unmount/remount cycle (ADR-006 / React 18).
   useEffect(() => {
+    mountedRef.current = true;
     return () => {
       mountedRef.current = false;
       if (pollInterval.current) clearInterval(pollInterval.current);

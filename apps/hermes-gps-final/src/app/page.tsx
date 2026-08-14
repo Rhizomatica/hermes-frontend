@@ -57,6 +57,7 @@ export default function GpsPage() {
 
   const [showTrail, setShowTrail] = useState(false);
   const [copiedLabel, setCopiedLabel] = useState<string | null>(null);
+  const [recenterToken, setRecenterToken] = useState(0);
 
   // Append new live positions to the breadcrumb history
   const prevTimestampRef = useRef<string | null>(null);
@@ -118,6 +119,7 @@ export default function GpsPage() {
           isDark={theme === 'dark'}
           breadcrumb={history}
           showBreadcrumb={showTrail}
+          recenterToken={recenterToken}
         />
       </div>
 
@@ -128,7 +130,7 @@ export default function GpsPage() {
         aria-label={tc('backToHermes')}
         style={{ minHeight: '44px', lineHeight: '44px' }}
       >
-        {tc('backToHermes')} {SHELL_URL}
+        {tc('backToHermes')}
       </Link>
 
       {/* Error banner */}
@@ -140,8 +142,8 @@ export default function GpsPage() {
 
       {/* Bottom panel */}
       <div className="relative z-10 mt-auto">
-        <div className="flex items-center justify-between rounded-t-2xl bg-background px-4 py-2 shadow-lg">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between rounded-t-2xl bg-background px-4 py-2 shadow-md">
+          <div className="flex items-center gap-2 pt-5">
             <button
               onClick={refresh}
               disabled={loading}
@@ -149,7 +151,20 @@ export default function GpsPage() {
               className="rounded-lg p-2 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50"
               style={{ minHeight: '44px', minWidth: '44px' }}
             >
-              {loading ? '⏳' : '🔄'}
+              <p className="text-lg">
+                {loading ? '⏳' : '🔄'}
+              </p>
+            </button>
+
+            <button
+              onClick={() => setRecenterToken((v) => v + 1)}
+              disabled={!position}
+              aria-label={t('recenter')}
+              title={t('recenter')}
+              className="rounded-lg p-2 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50"
+              style={{ minHeight: '44px', minWidth: '44px' }}
+            >
+              <p className="text-lg">🎯</p>
             </button>
 
             <BreadcrumbToggle
@@ -157,103 +172,111 @@ export default function GpsPage() {
               pointCount={history.length}
               onToggle={() => setShowTrail((v) => !v)}
             />
+
+
+            <button
+              onClick={() => alert('SOS button pressed! Implement emergency action here.')}
+              disabled={!position}
+              aria-label={t('sosButton')}
+              title={t('sosButton')}
+              className="absolute right-4 rounded-lg p-2 bg-red-500 hover:bg-red-900 dark:hover:bg-red-900 disabled:opacity-50"
+              style={{ minHeight: '44px', minWidth: '44px' }}
+            >
+              <p className="text-lg">{t('sosButton')}</p>
+            </button>
+
           </div>
         </div>
 
-        {!position ? (
-          <div className="bg-background px-4 pb-4 text-center text-base text-foreground/60">
-            {loading ? t('loading') : t('noPosition')}
-          </div>
-        ) : (
-          <div className="bg-background px-4 pb-4">
-            {/* Coordinates */}
-            <div className="grid grid-cols-2 gap-2 text-center">
-              <button
-                onClick={() =>
-                  handleCopy(position.latitude.toFixed(6), 'lat')
-                }
-                aria-label={t('copyLatitude')}
-                className="rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-gray-800"
-                style={{ minHeight: '44px' }}
-              >
-                <span className="text-xs text-foreground/50">Lat</span>
-                <br />
-                <span className="font-mono text-lg">
-                  {position.latitude.toFixed(6)}
-                </span>
-              </button>
-              <button
-                onClick={() =>
-                  handleCopy(position.longitude.toFixed(6), 'lon')
-                }
-                aria-label={t('copyLongitude')}
-                className="rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-gray-800"
-                style={{ minHeight: '44px' }}
-              >
-                <span className="text-xs text-foreground/50">Lon</span>
-                <br />
-                <span className="font-mono text-lg">
-                  {position.longitude.toFixed(6)}
-                </span>
-              </button>
-            </div>
 
-            {/* Copied toast */}
-            {copiedLabel && (
-              <div
-                className="mt-1 text-center text-xs text-green-600 dark:text-green-400"
+        <div className="bg-background px-5 pb-6 pt-1 shadow-lg">
+          {/* Coordinates */}
+          <div className="grid grid-cols-2 gap-2 text-center">
+            <button
+              onClick={() =>
+                position && handleCopy(position.latitude.toFixed(6), 'lat')
+              }
+              aria-label={t('copyLatitude')}
+              className="rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-gray-800"
+              style={{ minHeight: '44px' }}
+            >
+              <span className="text-xs text-foreground/50">Lat</span>
+              <br />
+              <span className="font-mono text-lg">
+                {position?.latitude?.toFixed(6)}
+              </span>
+            </button>
+            <button
+              onClick={() =>
+                position && handleCopy(position.longitude.toFixed(6), 'lon')
+              }
+              aria-label={t('copyLongitude')}
+              className="rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-gray-800"
+              style={{ minHeight: '44px' }}
+            >
+              <span className="text-xs text-foreground/50">Lon</span>
+              <br />
+              <span className="font-mono text-lg">
+                {position?.longitude?.toFixed(6)}
+              </span>
+            </button>
+          </div>
+
+          {/* Copied toast */}
+          {copiedLabel && (
+            <div
+              className="mt-1 text-center text-xs text-green-600 dark:text-green-400"
+              role="status"
+              aria-live="polite"
+            >
+              {t('copied', { label: copiedLabel === 'lat' ? 'Lat' : 'Lon' })}
+            </div>
+          )}
+
+          {/* GPS Status badges */}
+          <div className="mt-2 flex flex-col items-center gap-1">
+            <GpsStatusBadge fix={fix} isStale={stale} />
+            {isCached && (
+              <span
+                className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700 dark:bg-amber-900 dark:text-amber-200"
                 role="status"
-                aria-live="polite"
+                title={t('lastKnownTooltip')}
               >
-                {t('copied', { label: copiedLabel === 'lat' ? 'Lat' : 'Lon' })}
-              </div>
+                ⚠ {t('lastKnown')}
+                {cacheAgeMs != null && ` (${formatCacheAge(cacheAgeMs)})`}
+              </span>
             )}
-
-            {/* GPS Status badges */}
-            <div className="mt-2 flex flex-col items-center gap-1">
-              <GpsStatusBadge fix={fix} isStale={stale} />
-              {isCached && (
-                <span
-                  className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700 dark:bg-amber-900 dark:text-amber-200"
-                  role="status"
-                  title={t('lastKnownTooltip')}
-                >
-                  ⚠ {t('lastKnown')}
-                  {cacheAgeMs != null && ` (${formatCacheAge(cacheAgeMs)})`}
-                </span>
-              )}
-            </div>
-
-            {/* Info row */}
-            <div className="mt-2 flex items-center justify-center gap-2 text-sm text-foreground/50">
-              <span>
-                {t('altitude')}:{' '}
-                {position.altitude != null
-                  ? `${position.altitude.toFixed(0)}m`
-                  : '—'}
-              </span>
-              <span>·</span>
-              <span>
-                {t('speed')}:{' '}
-                {position.speed != null
-                  ? `${position.speed.toFixed(1)}km/h`
-                  : '—'}
-              </span>
-            </div>
-
-            {/* Timestamp */}
-            <div className="mt-1 text-center text-xs text-foreground/40">
-              {t('lastUpdated')}:{' '}
-              {lastUpdated
-                ? new Intl.DateTimeFormat('en', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  second: '2-digit',
-                }).format(lastUpdated)
-                : '—'}
-            </div>
           </div>
-        )}
+
+          {/* Info row */}
+          <div className="mt-2 flex items-center justify-center gap-2 text-sm text-foreground/50">
+            <span>
+              {t('altitude')}:{' '}
+              {position?.altitude != null
+                ? `${position.altitude.toFixed(0)}m`
+                : '—'}
+            </span>
+            <span>·</span>
+            <span>
+              {t('speed')}:{' '}
+              {position?.speed != null
+                ? `${position.speed.toFixed(1)}km/h`
+                : '—'}
+            </span>
+          </div>
+
+          {/* Timestamp */}
+          <div className="mt-1 text-center text-xs text-foreground/40">
+            {t('lastUpdated')}:{' '}
+            {lastUpdated
+              ? new Intl.DateTimeFormat('en', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+              }).format(lastUpdated)
+              : '—'}
+          </div>
+        </div>
       </div>
     </main>
   );
