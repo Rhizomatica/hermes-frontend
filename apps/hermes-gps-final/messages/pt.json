@@ -24,7 +24,9 @@
     "hdopAria": "HDOP {value}",
     "lastKnown": "Última posição conhecida",
     "lastKnownTooltip": "Dados GPS indisponíveis. Mostrando última posição em cache.",
-    "copied": "{label} copiado!"
+    "copied": "{label} copiado!",
+    "tileError": "Mapas não encontrados. Execute npm run download-tiles para baixar os mapas offline.",
+    "breadcrumbPoint": "Posição às {time}"
   },
   "common": {
     "backToHermes": "← Voltar ao HERMES",

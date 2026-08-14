@@ -24,7 +24,9 @@
     "hdopAria": "HDOP {value}",
     "lastKnown": "Last known position",
     "lastKnownTooltip": "Live GPS data unavailable. Showing last cached position.",
-    "copied": "{label} copied!"
+    "copied": "{label} copied!",
+    "tileError": "Map tiles not found. Run npm run download-tiles to fetch offline map data.",
+    "breadcrumbPoint": "Position at {time}"
   },
   "common": {
     "backToHermes": "← Back to HERMES",

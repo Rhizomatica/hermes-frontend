@@ -42,6 +42,29 @@ if [[ -f "$DEST" ]] && [[ "$FORCE" == false ]]; then
   fi
 fi
 
+# ── Direct download (when PMTILES_URL is set) ───────────────────────────────
+if [[ -n "${PMTILES_URL:-}" ]]; then
+  mkdir -p "$(dirname "$DEST")"
+  echo "Downloading tiles from PMTILES_URL..."
+  curl -# -fL "$PMTILES_URL" -o "$DEST" || {
+    echo "Error: failed to download tiles from PMTILES_URL."
+    exit 1
+  }
+
+  if [[ -n "${PMTILES_CHECKSUM:-}" ]]; then
+    echo "Verifying SHA256 checksum..."
+    echo "${PMTILES_CHECKSUM}  ${DEST}" | sha256sum --check --status || {
+      echo "Error: checksum mismatch for downloaded tiles."
+      exit 1
+    }
+    echo "Checksum verified."
+  fi
+
+  sha256sum "$DEST" | awk '{print $1}' > "$CHECKSUM_FILE"
+  echo "Done. Tiles downloaded from PMTILES_URL."
+  exit 0
+fi
+
 # ── Find the latest Protomaps planet build ───────────────────────────────────
 # Brazil bounding box: minLon, minLat, maxLon, maxLat
 BBOX="-74.0,-33.8,-28.6,5.3"

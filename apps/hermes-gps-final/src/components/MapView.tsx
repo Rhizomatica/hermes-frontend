@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { buildStyle } from '@/lib/mapStyle';
+import { getMapTokens } from '@hermes/tailwind-config/map-tokens';
 import type { GpsPosition } from '@hermes/api';
 
 export interface MapViewProps {
@@ -62,6 +64,7 @@ export default function MapView({
   const markerElRef = useRef<HTMLDivElement | null>(null);
   const [tileError, setTileError] = useState(false);
   const [mapReady, setMapReady] = useState(false);
+  const t = useTranslations('gps');
 
   // Initialize map
   useEffect(() => {
@@ -121,6 +124,24 @@ export default function MapView({
         cursor: pointer;
         transition: transform 0.5s ease;
       `;
+
+      // Pulsing glow ring (animated)
+      const pulseEl = document.createElement('div');
+      pulseEl.className = 'hermes-marker-pulse';
+      pulseEl.style.cssText = `
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 100%;
+        height: 100%;
+        transform: translate(-50%, -50%);
+        border-radius: 50%;
+        background: rgba(249, 115, 22, 0.35);
+        pointer-events: none;
+        will-change: transform, opacity;
+        animation: hermes-pulse 2s ease-out infinite;
+      `;
+      el.appendChild(pulseEl);
 
       // Accuracy circle overlay (scaled by HDOP)
       const accuracyEl = document.createElement('div');
@@ -226,20 +247,33 @@ export default function MapView({
       return;
     }
 
+    const tokens = getMapTokens(isDark);
+
     const coords: [number, number][] = breadcrumb.map((p) => [
       p.longitude,
       p.latitude,
     ]);
 
+    const lineFeature: GeoJSON.Feature<GeoJSON.LineString> = {
+      type: 'Feature',
+      properties: {},
+      geometry: { type: 'LineString', coordinates: coords },
+    };
+
+    const pointFeatures: GeoJSON.Feature<GeoJSON.Point>[] = breadcrumb.map(
+      (p, index) => ({
+        type: 'Feature',
+        properties: { index, timestamp: p.timestamp },
+        geometry: {
+          type: 'Point',
+          coordinates: [p.longitude, p.latitude],
+        },
+      }),
+    );
+
     const geojson: GeoJSON.FeatureCollection = {
       type: 'FeatureCollection',
-      features: [
-        {
-          type: 'Feature',
-          properties: {},
-          geometry: { type: 'LineString', coordinates: coords },
-        },
-      ],
+      features: [lineFeature, ...pointFeatures],
     };
 
     const source = map.getSource(BREADCRUMB_SOURCE) as
@@ -256,7 +290,7 @@ export default function MapView({
         type: 'line',
         source: BREADCRUMB_SOURCE,
         paint: {
-          'line-color': '#f97316',
+          'line-color': tokens.trailRecent,
           'line-width': 3,
           'line-opacity': 0.7,
           'line-gradient': [
@@ -264,11 +298,11 @@ export default function MapView({
             ['linear'],
             ['line-progress'],
             0,
-            '#f97316',
+            tokens.trailRecent,
             0.5,
-            '#fb923c',
+            tokens.trailMid,
             1,
-            '#fed7aa',
+            tokens.trailOld,
           ],
         },
         layout: {
@@ -276,8 +310,36 @@ export default function MapView({
           'line-join': 'round',
         },
       });
+
+      // Click on trail → tooltip with timestamp and coordinates.
+      map.on('click', BREADCRUMB_LAYER, (e) => {
+        const feature = e.features?.[0];
+        const props = feature?.properties as
+          | { index?: number; timestamp?: string }
+          | undefined;
+        if (props?.index == null) return;
+
+        const point = breadcrumb[props.index];
+        if (!point) return;
+
+        const time = new Intl.DateTimeFormat(undefined, {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        }).format(new Date(point.timestamp));
+
+        new maplibregl.Popup()
+          .setLngLat([point.longitude, point.latitude])
+          .setHTML(
+            `<div style="font-size:12px;line-height:1.5">
+               ${point.latitude.toFixed(6)}, ${point.longitude.toFixed(6)}<br/>
+               ${t('breadcrumbPoint', { time })}
+             </div>`,
+          )
+          .addTo(map);
+      });
     }
-  }, [breadcrumb, showBreadcrumb, mapReady]);
+  }, [breadcrumb, showBreadcrumb, mapReady, isDark, t]);
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
@@ -304,8 +366,7 @@ export default function MapView({
           }}
         >
           <p style={{ color: 'var(--foreground)', margin: 0 }}>
-            Map tiles not found. Run npm run download-tiles to fetch offline
-            map data.
+            {t('tileError')}
           </p>
         </div>
       )}

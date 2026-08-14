@@ -3,10 +3,11 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { useAuthGuard } from '@hermes/shared-auth';
+import { useAuth, useAuthGuard } from '@hermes/shared-auth';
 import { useTheme, ErrorBanner, LoadingSpinner } from '@hermes/ui';
 import { useGpsCoords } from '@/hooks/useGpsCoords';
 import { useGpsHistory } from '@/hooks/useGpsHistory';
+import { clearGpsCache } from '@/lib/gpsCache';
 import GpsStatusBadge from '@/components/GpsStatusBadge';
 import dynamic from 'next/dynamic';
 
@@ -48,6 +49,7 @@ export default function GpsPage() {
   const t = useTranslations('gps');
   const tc = useTranslations('common');
   const user = useAuthGuard();
+  const { isAuthenticated } = useAuth();
   const { theme } = useTheme();
   const { position, fix, loading, error, lastUpdated, stale, isCached, cacheAgeMs, refresh } =
     useGpsCoords();
@@ -86,6 +88,15 @@ export default function GpsPage() {
       if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
     };
   }, []);
+
+  // Clear cached GPS position when the user logs out (ADR-003).
+  const prevAuthRef = useRef(isAuthenticated);
+  useEffect(() => {
+    if (prevAuthRef.current && !isAuthenticated) {
+      clearGpsCache();
+    }
+    prevAuthRef.current = isAuthenticated;
+  }, [isAuthenticated]);
 
   if (!user) {
     return (
