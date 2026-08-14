@@ -123,10 +123,11 @@ if [[ -z "$PMTILES_BIN" ]]; then
 
   echo "Downloading go-pmtiles CLI ..."
   if [[ "$RELEASE_URL" == *.zip ]]; then
-    curl -# -fL "$RELEASE_URL" -o "$TMP_DIR/pmtiles.zip" 2>&1
+    curl -# -fL "$RELEASE_URL" -o "$TMP_DIR/pmtiles.zip"
     unzip -q "$TMP_DIR/pmtiles.zip" -d "$TMP_DIR"
   else
-    curl -# -fL "$RELEASE_URL" 2>&1 | tar -xz -C "$TMP_DIR"
+    curl -# -fL "$RELEASE_URL" -o "$TMP_DIR/pmtiles.tar.gz"
+    tar -xz -C "$TMP_DIR" -f "$TMP_DIR/pmtiles.tar.gz"
   fi
   PMTILES_BIN="$TMP_DIR/pmtiles"
   chmod +x "$PMTILES_BIN"

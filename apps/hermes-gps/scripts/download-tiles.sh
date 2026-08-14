@@ -91,7 +91,8 @@ if [[ -z "$PMTILES_BIN" ]]; then
     curl -sSfL "$RELEASE_URL" -o "$TMP_DIR/pmtiles.zip"
     unzip -q "$TMP_DIR/pmtiles.zip" -d "$TMP_DIR"
   else
-    curl -sSfL "$RELEASE_URL" | tar -xz -C "$TMP_DIR"
+    curl -sSfL "$RELEASE_URL" -o "$TMP_DIR/pmtiles.tar.gz"
+    tar -xz -C "$TMP_DIR" -f "$TMP_DIR/pmtiles.tar.gz"
   fi
   PMTILES_BIN="$TMP_DIR/pmtiles"
   chmod +x "$PMTILES_BIN"
