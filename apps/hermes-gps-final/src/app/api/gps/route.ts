@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { hermesGet } from '@hermes/api';
+import { mockPosition } from '@/lib/mockGps';
 
 /**
  * GET /api/gps
@@ -13,6 +14,10 @@ import { hermesGet } from '@hermes/api';
  */
 export async function GET(request: NextRequest) {
   try {
+    if (process.env.MOCK_GPS === 'true') {
+      return NextResponse.json({ data: mockPosition() }, { status: 200 });
+    }
+
     const cookie = request.headers.get('cookie') ?? undefined;
     const { data, status } = await hermesGet('gps', cookie);
 
