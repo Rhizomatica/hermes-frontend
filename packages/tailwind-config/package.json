@@ -4,6 +4,11 @@
   "private": true,
   "main": "./base.ts",
   "types": "./base.ts",
+  "exports": {
+    ".": "./base.ts",
+    "./base": "./base.ts",
+    "./map-tokens": "./map-tokens.ts"
+  },
   "devDependencies": {
     "tailwindcss": "^3.4.1"
   }
