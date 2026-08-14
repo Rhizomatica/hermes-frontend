@@ -2,8 +2,8 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import type { HermesUser } from '@hermes/api';
 import { useAuth } from './AuthProvider';
-import type { HermesUser } from './tokenStore';
 
 /**
  * useAuthGuard — redirects unauthenticated users to login.
