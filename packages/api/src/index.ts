@@ -75,7 +75,7 @@ function hermesRequest(
   });
 }
 
-export type { GpsPosition, GpsFix, Message, Conversation, Station, HermesUser } from './types';
+export type { GpsPosition, GpsFix, RadioStatus, Message, Conversation, Station, HermesUser } from './types';
 export { destArray, stationId, canonicalize } from './normalize';
 export { buildConversations, filterConversation } from './conversation';
 

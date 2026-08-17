@@ -7,6 +7,7 @@ import { useAuth, useAuthGuard } from '@hermes/shared-auth';
 import { useTheme, ErrorBanner, LoadingSpinner } from '@hermes/ui';
 import { useGpsCoords } from '@/hooks/useGpsCoords';
 import { useGpsHistory } from '@/hooks/useGpsHistory';
+import { useRadioStatus } from '@/hooks/useRadioStatus';
 import { clearGpsCache } from '@/lib/gpsCache';
 import GpsStatusBadge from '@/components/GpsStatusBadge';
 import dynamic from 'next/dynamic';
@@ -33,13 +34,14 @@ function formatCacheAge(ms: number): string {
 }
 
 /**
- * GPS main page — full-screen map with coordinate overlay panel,
- * breadcrumb toggle, GPS status indicators, offline cache badge,
- * and copy-to-clipboard with toast feedback.
+ * GPS main page — full-screen map with a compact bottom panel.
  *
- * Composes MapView, GpsStatusBadge, BreadcrumbToggle, and controls.
- * Auth-aware via useAuthGuard. Uses useGpsCoords for real-time
- * position data and useGpsHistory for breadcrumb trail.
+ * Layout goals:
+ * - Lat/Lon rendered as compact, left-aligned copy buttons.
+ * - Action buttons (refresh, recenter, trail, SOS) consolidated into a
+ *   single clearly-organized control row.
+ * - Status badges include GPS fix plus radio telemetry (power, frequency,
+ *   last HAM sync).
  *
  * @example
  * // Rendered at /gps in co-deployed mode
@@ -54,6 +56,7 @@ export default function GpsPage() {
   const { position, fix, loading, error, lastUpdated, stale, isCached, cacheAgeMs, refresh } =
     useGpsCoords();
   const { history, appendPosition } = useGpsHistory();
+  const radio = useRadioStatus();
 
   const [showTrail, setShowTrail] = useState(false);
   const [copiedLabel, setCopiedLabel] = useState<string | null>(null);
@@ -141,69 +144,21 @@ export default function GpsPage() {
       )}
 
       {/* Bottom panel */}
-      <div className="relative z-10 mt-auto">
-        <div className="flex items-center justify-between rounded-t-2xl bg-background px-4 py-2 shadow-md">
-          <div className="flex items-center gap-2 pt-5">
-            <button
-              onClick={refresh}
-              disabled={loading}
-              aria-label={t('refresh')}
-              className="rounded-lg p-2 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50"
-              style={{ minHeight: '44px', minWidth: '44px' }}
-            >
-              <p className="text-lg">
-                {loading ? '⏳' : '🔄'}
-              </p>
-            </button>
-
-            <button
-              onClick={() => setRecenterToken((v) => v + 1)}
-              disabled={!position}
-              aria-label={t('recenter')}
-              title={t('recenter')}
-              className="rounded-lg p-2 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50"
-              style={{ minHeight: '44px', minWidth: '44px' }}
-            >
-              <p className="text-lg">🎯</p>
-            </button>
-
-            <BreadcrumbToggle
-              visible={showTrail}
-              pointCount={history.length}
-              onToggle={() => setShowTrail((v) => !v)}
-            />
-
-
-            <button
-              onClick={() => alert('SOS button pressed! Implement emergency action here.')}
-              disabled={!position}
-              aria-label={t('sosButton')}
-              title={t('sosButton')}
-              className="absolute right-4 rounded-lg p-2 bg-red-500 hover:bg-red-900 dark:hover:bg-red-900 disabled:opacity-50"
-              style={{ minHeight: '44px', minWidth: '44px' }}
-            >
-              <p className="text-lg">{t('sosButton')}</p>
-            </button>
-
-          </div>
-        </div>
-
-
-        <div className="bg-background px-5 pb-6 pt-1 shadow-lg">
-          {/* Coordinates */}
-          <div className="grid grid-cols-2 gap-2 text-center">
+      <div className="relative z-10 mt-auto flex flex-col gap-3 rounded-t-2xl bg-background px-4 py-3 shadow-md ">
+        {/* Coordinates — compact, left-aligned */}
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex flex-wrap items-start gap-2">
             <button
               onClick={() =>
                 position && handleCopy(position.latitude.toFixed(6), 'lat')
               }
               aria-label={t('copyLatitude')}
-              className="rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-gray-800"
+              className="flex items-center gap-1 rounded-md px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-800"
               style={{ minHeight: '44px' }}
             >
               <span className="text-xs text-foreground/50">Lat</span>
-              <br />
-              <span className="font-mono text-lg">
-                {position?.latitude?.toFixed(6)}
+              <span className="font-mono text-sm">
+                {position?.latitude?.toFixed(6) ?? '—'}
               </span>
             </button>
             <button
@@ -211,45 +166,59 @@ export default function GpsPage() {
                 position && handleCopy(position.longitude.toFixed(6), 'lon')
               }
               aria-label={t('copyLongitude')}
-              className="rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-gray-800"
+              className="flex items-center gap-1 rounded-md px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-800"
               style={{ minHeight: '44px' }}
             >
               <span className="text-xs text-foreground/50">Lon</span>
-              <br />
-              <span className="font-mono text-lg">
-                {position?.longitude?.toFixed(6)}
+              <span className="font-mono text-sm">
+                {position?.longitude?.toFixed(6) ?? '—'}
               </span>
             </button>
-          </div>
 
-          {/* Copied toast */}
-          {copiedLabel && (
-            <div
-              className="mt-1 text-center text-xs text-green-600 dark:text-green-400"
-              role="status"
-              aria-live="polite"
-            >
-              {t('copied', { label: copiedLabel === 'lat' ? 'Lat' : 'Lon' })}
-            </div>
-          )}
-
-          {/* GPS Status badges */}
-          <div className="mt-2 flex flex-col items-center gap-1">
-            <GpsStatusBadge fix={fix} isStale={stale} />
-            {isCached && (
+            {/* Copied toast */}
+            {copiedLabel && (
               <span
-                className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700 dark:bg-amber-900 dark:text-amber-200"
+                className="self-center text-xs text-green-600 dark:text-green-400"
                 role="status"
-                title={t('lastKnownTooltip')}
+                aria-live="polite"
               >
-                ⚠ {t('lastKnown')}
-                {cacheAgeMs != null && ` (${formatCacheAge(cacheAgeMs)})`}
+                {t('copied', { label: copiedLabel === 'lat' ? 'Lat' : 'Lon' })}
               </span>
             )}
+
           </div>
 
-          {/* Info row */}
-          <div className="mt-2 flex items-center justify-center gap-2 text-sm text-foreground/50">
+          {/* SOS — prominent but compact, anchored right */}
+          <button
+            onClick={() => alert('SOS button pressed! Implement emergency action here.')}
+            disabled={!position}
+            aria-label={t('sosButton')}
+            title={t('sosButton')}
+            className="shrink-0 rounded-lg bg-red-500 px-3 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+            style={{ minHeight: '44px' }}
+          >
+            {t('sosButton')}
+          </button>
+        </div>
+
+        {/* GPS + radio status badges */}
+        <div className="flex flex-col items-start gap-1">
+          <GpsStatusBadge fix={fix} isStale={stale} radio={radio} />
+          {isCached && (
+            <span
+              className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700 dark:bg-amber-900 dark:text-amber-200"
+              role="status"
+              title={t('lastKnownTooltip')}
+            >
+              ⚠ {t('lastKnown')}
+              {cacheAgeMs != null && ` (${formatCacheAge(cacheAgeMs)})`}
+            </span>
+          )}
+        </div>
+
+        {/* Upper info strip: altitude, speed, last updated */}
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm text-foreground/50">
+          <div className="flex items-center gap-2">
             <span>
               {t('altitude')}:{' '}
               {position?.altitude != null
@@ -263,19 +232,48 @@ export default function GpsPage() {
                 ? `${position.speed.toFixed(1)}km/h`
                 : '—'}
             </span>
+            <span>·</span>
+            <span>
+              {t('lastUpdated')}:{' '}
+              {lastUpdated
+                ? new Intl.DateTimeFormat('en', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  second: '2-digit',
+                }).format(lastUpdated)
+                : '—'}
+            </span>
           </div>
+        </div>
 
-          {/* Timestamp */}
-          <div className="mt-1 text-center text-xs text-foreground/40">
-            {t('lastUpdated')}:{' '}
-            {lastUpdated
-              ? new Intl.DateTimeFormat('en', {
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-              }).format(lastUpdated)
-              : '—'}
-          </div>
+        {/* Control row: refresh, recenter, trail */}
+        <div className="flex items-center justify-end gap-2 border-t border-gray-200 pt-2 dark:border-gray-700">
+          <button
+            onClick={refresh}
+            disabled={loading}
+            aria-label={t('refresh')}
+            className="rounded-lg p-2 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50"
+            style={{ minHeight: '44px', minWidth: '44px' }}
+          >
+            <span className="text-lg">{loading ? '⏳' : '🔄'}</span>
+          </button>
+
+          <button
+            onClick={() => setRecenterToken((v) => v + 1)}
+            disabled={!position}
+            aria-label={t('recenter')}
+            title={t('recenter')}
+            className="rounded-lg p-2 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50"
+            style={{ minHeight: '44px', minWidth: '44px' }}
+          >
+            <span className="text-lg">🎯</span>
+          </button>
+
+          <BreadcrumbToggle
+            visible={showTrail}
+            pointCount={history.length}
+            onToggle={() => setShowTrail((v) => !v)}
+          />
         </div>
       </div>
     </main>

@@ -30,7 +30,10 @@
     "breadcrumbPoint": "Position at {time}",
     "sosButton": "SOS EMERGENCY",
     "sosButtonTooltip": "Send SOS message with current location",
-    "sosButtonAria": "Send SOS message with current location"
+    "sosButtonAria": "Send SOS message with current location",
+    "radioPower": "Radio power",
+    "frequency": "Operating frequency",
+    "lastHamSync": "Last HAM sync"
   },
   "common": {
     "backToHermes": "← Back to HERMES",

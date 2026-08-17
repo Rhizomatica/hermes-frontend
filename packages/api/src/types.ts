@@ -26,6 +26,22 @@ export interface GpsFix {
 }
 
 /**
+ * Radio/transceiver status from hermes-radio-daemon `radio.status` event.
+ *
+ * This is a forward-looking shape: the backend event may not be wired up yet,
+ * in which case consumers should treat the value as `null` and fall back to a
+ * neutral "—" display. All fields are optional/nullable for resilience.
+ */
+export interface RadioStatus {
+  /** Radio power state (e.g. 'on' | 'off' | 'standby') */
+  power: string | null;
+  /** Current operating frequency in Hz (e.g. 7100000 for 7.100 MHz) */
+  frequency: number | null;
+  /** Last successful sync with the HAM messaging relay (ISO timestamp) */
+  lastHamSync: string | null;
+}
+
+/**
  * A single Hermes message.
  *
  * `inbox` is true for messages received by the local station and false for
