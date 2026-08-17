@@ -43,7 +43,13 @@ export default function LoginPage() {
     <main className="flex min-h-screen flex-col items-center justify-center p-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-orange-500">HERMES</h1>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo-hermes-500-wings.png"
+            alt="HERMES"
+            className="mx-auto h-42 w-42 object-contain"
+          />
+          <h1 className="text-3xl font-bold">HERMES</h1>
           <p className="mt-1 text-base text-foreground/60">High-frequency Emergency and Rural Multimedia Exchange System</p>
         </div>
 

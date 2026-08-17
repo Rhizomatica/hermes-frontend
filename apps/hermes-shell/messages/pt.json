@@ -10,12 +10,24 @@
   "home": {
     "title": "HERMES",
     "greeting": "Bem-vindo(a), {name}",
+    "welcome": "Bem-vindo(a) de volta",
     "gpsViewer": "Visualizador GPS",
     "gpsDescription": "Veja posição em tempo real e mapas offline",
     "chat": "Chat",
     "chatDescription": "Mensagens e informações de rádio",
     "logout": "Sair",
+    "open": "Abrir",
     "loading": "Carregando…"
+  },
+  "user": {
+    "title": "Informações do Usuário",
+    "callsign": "Indicativo",
+    "displayName": "Nome de Exibição",
+    "email": "E-mail",
+    "role": "Função",
+    "status": "Status",
+    "locale": "Idioma",
+    "na": "N/D"
   },
   "common": {
     "backToHermes": "← Voltar ao HERMES",

@@ -10,12 +10,24 @@
   "home": {
     "title": "HERMES",
     "greeting": "Welcome, {name}",
+    "welcome": "Welcome back",
     "gpsViewer": "GPS Viewer",
     "gpsDescription": "View real-time position and offline maps",
     "chat": "Chat",
     "chatDescription": "Messages and radio information",
     "logout": "Sign Out",
+    "open": "Open",
     "loading": "Loading…"
+  },
+  "user": {
+    "title": "User Information",
+    "callsign": "Callsign",
+    "displayName": "Display Name",
+    "email": "Email",
+    "role": "Role",
+    "status": "Status",
+    "locale": "Locale",
+    "na": "N/A"
   },
   "common": {
     "backToHermes": "← Back to HERMES",
