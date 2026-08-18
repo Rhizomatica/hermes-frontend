@@ -31,7 +31,7 @@
     "na": "N/A"
   },
   "common": {
-    "backToHermes": "← Back to HERMES",
+    "backToHermes": "Back",
     "themeToggle": "Toggle theme",
     "localeToggle": "Change language"
   }

@@ -40,7 +40,7 @@
     "lastHamSync": "Última sincronização HAM"
   },
   "common": {
-    "backToHermes": "← Voltar ao HERMES",
+    "backToHermes": "Voltar",
     "themeToggle": "Alternar tema",
     "themeLabel": "Tema",
     "localeToggle": "Mudar idioma"

@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useAuth, useAuthGuard } from '@hermes/shared-auth';
-import { Crosshair, Loader2, LucideFileWarning, Moon, RefreshCw, Siren, Sun } from 'lucide-react';
+import { ChevronLeft, Crosshair, Loader2, LucideFileWarning, Moon, RefreshCw, Siren, Sun } from 'lucide-react';
 import { useTheme, ErrorBanner, LoadingSpinner } from '@hermes/ui';
 import { useGpsCoords } from '@/hooks/useGpsCoords';
 import { useGpsHistory } from '@/hooks/useGpsHistory';
@@ -131,11 +131,9 @@ export default function GpsPage() {
         {/* Back link overlay */}
         <Link
           href={{ pathname: SHELL_URL }}
-          className="absolute left-4 top-4 z-10 rounded-lg bg-background/80 px-3 py-2 text-sm text-blue-500 backdrop-blur-sm"
-          aria-label={tc('backToHermes')}
-          style={{ minHeight: '44px', lineHeight: '44px' }}
-        >
-          {tc('backToHermes')}
+          className="inline-flex left-4 top-4 z-10 rounded-lg bg-background/80 px-3 py-2 text-sm text-blue-500 backdrop-blur-sm"
+          aria-label={tc('backToHermes')}>
+          <ChevronLeft/>{tc('backToHermes')}
         </Link>
 
         {/* Error banner */}

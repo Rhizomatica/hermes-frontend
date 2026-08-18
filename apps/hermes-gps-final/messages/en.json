@@ -40,7 +40,7 @@
     "lastHamSync": "Last HAM sync"
   },
   "common": {
-    "backToHermes": "← Back to HERMES",
+    "backToHermes": "Back",
     "themeToggle": "Toggle theme",
     "themeLabel": "Theme",
     "localeToggle": "Change language"
