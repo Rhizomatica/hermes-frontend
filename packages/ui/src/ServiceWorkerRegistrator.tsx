@@ -9,8 +9,17 @@ import { useEffect } from "react";
  * lives alongside client-only code rather than an inline
  * dangerouslySetInnerHTML script in the server layout.
  */
-export function ServiceWorkerRegistrator() {
+export function ServiceWorkerRegistrator({
+  basePath = '',
+}: {
+  basePath?: string;
+}) {
   useEffect(() => {
+    // Only the app at the origin root owns the service worker. Sub-apps
+    // mounted under a base path (/gps, /chat) share the shell's controller;
+    // registering again would cause controller churn and stale-asset bugs.
+    if (basePath) return;
+
     if ("serviceWorker" in navigator) {
       const register = () => {
         navigator.serviceWorker.register("/sw.js");
@@ -24,7 +33,7 @@ export function ServiceWorkerRegistrator() {
           window.removeEventListener("load", register);
       }
     }
-  }, []);
+  }, [basePath]);
 
   return null;
 }

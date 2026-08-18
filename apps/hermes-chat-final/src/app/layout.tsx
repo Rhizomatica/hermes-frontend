@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import { AuthProvider, LocaleProvider, WebSocketProvider } from '@hermes/shared-auth';
-import { ThemeProvider } from '@hermes/ui';
+import { ThemeProvider, ServiceWorkerRegistrator } from '@hermes/ui';
 import './globals.css';
 
 export const viewport: Viewport = {
@@ -52,16 +52,8 @@ export default async function RootLayout({
             `,
           }}
         />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              if ('serviceWorker' in navigator) {
-                window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js');
-                });
-              }
-            `,
-          }}
+        <ServiceWorkerRegistrator
+          basePath={process.env.NEXT_PUBLIC_BASE_PATH ?? ''}
         />
         <NextIntlClientProvider messages={messages}>
           <AuthProvider>

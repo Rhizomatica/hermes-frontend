@@ -53,7 +53,9 @@ export default async function RootLayout({
             `,
           }}
         />
-        <ServiceWorkerRegistrator />
+        <ServiceWorkerRegistrator
+          basePath={process.env.NEXT_PUBLIC_BASE_PATH ?? ''}
+        />
         {/* LocaleProvider wraps IntlProvider so locale changes re-render the message bundle */}
         <LocaleProvider>
           <IntlProvider>

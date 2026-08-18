@@ -19,6 +19,17 @@ const baseConfig: Omit<Config, 'content'> = {
   theme: {
     extend: {
       // ------------------------------------------------------------------
+      // Semantic color tokens — used across all apps as `bg-background`,
+      // `text-foreground`, `border-foreground`, etc.
+      // Resolved via CSS variables (`--background`, `--foreground`) defined
+      // in each app's globals.css so dark mode can swap them.
+      // ------------------------------------------------------------------
+      colors: {
+        background: 'var(--background)',
+        foreground: 'var(--foreground)',
+      },
+
+      // ------------------------------------------------------------------
       // Screen breakpoints
       // Canonical sBitx: 0–639px (portrait on 7-inch)
       // Larger devices are supported but secondary

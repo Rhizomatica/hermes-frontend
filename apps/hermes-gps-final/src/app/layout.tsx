@@ -52,7 +52,9 @@ export default async function RootLayout({
             `,
           }}
         />
-        <ServiceWorkerRegistrator />
+        <ServiceWorkerRegistrator
+          basePath={process.env.NEXT_PUBLIC_BASE_PATH ?? ''}
+        />
         <NextIntlClientProvider messages={messages}>
           <AuthProvider>
             <ThemeProvider>
