@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useAuth, useAuthGuard, useLocale } from '@hermes/shared-auth';
-import { LogOut, Moon, Sun } from 'lucide-react';
+import { LogOut, Moon, Sun, MapPin, MessagesSquare } from 'lucide-react';
 import { useTheme, LoadingSpinner } from '@hermes/ui';
 import InfoList from '@/components/InfoList';
 
@@ -109,7 +109,7 @@ export default function AppSelector() {
           <Link href={GPS_URL} className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white/70 p-6 transition-all hover:-translate-y-1 hover:border-orange-300 hover:bg-white/90 hover:shadow-xl hover:shadow-orange-500/10 dark:border-gray-800 dark:bg-gray-800/60 dark:hover:bg-gray-800/80">
             <div className="absolute right-0 top-0 h-24 w-24 translate-x-8 -translate-y-8 rounded-full bg-orange-100/70 blur-2xl transition-all group-hover:bg-orange-200/70 dark:bg-orange-500/10" />
             <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500/10 to-orange-500/20 text-3xl">
-              📍
+              <MapPin />
             </span>
             <h2 className="mt-4 text-xl font-bold text-gray-900 dark:text-white">{t('gpsViewer')}</h2>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t('gpsDescription')}</p>
@@ -121,7 +121,7 @@ export default function AppSelector() {
           <Link href={CHAT_URL} className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white/70 p-6 transition-all hover:-translate-y-1 hover:border-orange-300 hover:bg-white/90 hover:shadow-xl hover:shadow-orange-500/10 dark:border-gray-800 dark:bg-gray-800/60 dark:hover:bg-gray-800/80">
             <div className="absolute right-0 top-0 h-24 w-24 translate-x-8 -translate-y-8 rounded-full bg-orange-100/70 blur-2xl transition-all group-hover:bg-orange-200/70 dark:bg-orange-500/10" />
             <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500/10 to-orange-500/20 text-3xl">
-              💬
+              <MessagesSquare />
             </span>
             <h2 className="mt-4 text-xl font-bold text-gray-900 dark:text-white">{t('chat')}</h2>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t('chatDescription')}</p>

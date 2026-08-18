@@ -61,6 +61,7 @@ const baseConfig: Omit<Config, 'content'> = {
       // ------------------------------------------------------------------
       fontFamily: {
         sans: [
+          'Inter',
           'Geist',
           'ui-sans-serif',
           'system-ui',

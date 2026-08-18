@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useAuth, useAuthGuard } from '@hermes/shared-auth';
-import { Crosshair, Loader2, RefreshCw } from 'lucide-react';
+import { Crosshair, Loader2, RefreshCw, Siren } from 'lucide-react';
 import { useTheme, ErrorBanner, LoadingSpinner } from '@hermes/ui';
 import { useGpsCoords } from '@/hooks/useGpsCoords';
 import { useGpsHistory } from '@/hooks/useGpsHistory';
@@ -198,7 +198,10 @@ export default function GpsPage() {
             className="shrink-0 rounded-lg bg-red-500 px-3 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
             style={{ minHeight: '44px' }}
           >
-            {t('sosButton')}
+            <span className="inline-flex items-center gap-1">
+              <Siren className="h-5 w-5" />
+              {t('sosButton')}
+            </span>
           </button>
         </div>
 
@@ -249,30 +252,30 @@ export default function GpsPage() {
 
         {/* Control row: refresh, recenter, trail */}
         <div className="flex items-center justify-end gap-2 border-t border-gray-200 pt-2 dark:border-gray-700">
-            <button
-              onClick={refresh}
-              disabled={loading}
-              aria-label={t('refresh')}
-              className="rounded-lg p-2 text-gray-600 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-700 disabled:opacity-50"
-              style={{ minHeight: '44px', minWidth: '44px' }}
-            >
-              {loading ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <RefreshCw className="h-5 w-5" />
-              )}
-            </button>
+          <button
+            onClick={refresh}
+            disabled={loading}
+            aria-label={t('refresh')}
+            className="rounded-lg p-2 text-gray-600 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-700 disabled:opacity-50"
+            style={{ minHeight: '44px', minWidth: '44px' }}
+          >
+            {loading ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <RefreshCw className="h-5 w-5" />
+            )}
+          </button>
 
-            <button
-              onClick={() => setRecenterToken((v) => v + 1)}
-              disabled={!position}
-              aria-label={t('recenter')}
-              title={t('recenter')}
-              className="rounded-lg p-2 text-gray-600 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-700 disabled:opacity-50"
-              style={{ minHeight: '44px', minWidth: '44px' }}
-            >
-              <Crosshair className="h-5 w-5" />
-            </button>
+          <button
+            onClick={() => setRecenterToken((v) => v + 1)}
+            disabled={!position}
+            aria-label={t('recenter')}
+            title={t('recenter')}
+            className="rounded-lg p-2 text-gray-600 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-700 disabled:opacity-50"
+            style={{ minHeight: '44px', minWidth: '44px' }}
+          >
+            <Crosshair className="h-5 w-5" />
+          </button>
 
           <BreadcrumbToggle
             visible={showTrail}
