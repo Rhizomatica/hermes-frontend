@@ -1,5 +1,15 @@
 services:
-
+  lb-index:
+    image: nginx:alpine
+    container_name: lb-index
+    # balancer, traefik, nginx, haproxy, etc. — this is just a simple example.
+    ports:
+      - "80:8000"
+      - 
+    environment:
+      HERMES_API_URL: ${HERMES_API_URL}
+    restart: unless-stopped
+  
   hermes-chat:
     build:
       context: .
@@ -9,7 +19,7 @@ services:
         PORT: "3000"
     image: hermes-chat:latest
     ports:
-      - "3000:3000"
+      - "3000:${HERMES_API_URL}"
     environment:
       HERMES_API_URL: ${HERMES_API_URL}
     restart: unless-stopped
@@ -23,7 +33,7 @@ services:
         PORT: "3001"
     image: hermes-gps:latest
     ports:
-      - "3001:3001"
+      - "3001:${HERMES_API_URL}"
     environment:
       HERMES_API_URL: ${HERMES_API_URL}
     volumes:
