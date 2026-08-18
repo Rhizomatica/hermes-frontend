@@ -10,6 +10,7 @@
   },
   "home": {
     "title": "Conversations",
+    "loading": "Loading…",
     "searchPlaceholder": "Search by station or callsign",
     "noConversations": "No conversations yet",
     "refresh": "Refresh",

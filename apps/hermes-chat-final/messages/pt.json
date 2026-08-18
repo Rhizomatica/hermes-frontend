@@ -10,6 +10,7 @@
   },
   "home": {
     "title": "Conversas",
+    "loading": "Carregando…",
     "searchPlaceholder": "Buscar por estação ou indicativo",
     "noConversations": "Nenhuma conversa ainda",
     "refresh": "Atualizar",

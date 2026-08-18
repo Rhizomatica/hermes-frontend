@@ -4,6 +4,7 @@
     "passwordLabel": "Password",
     "submit": "Sign In",
     "submitting": "Signing in…",
+    "loading": "Loading…",
     "invalidCredentials": "Invalid email or password.",
     "networkError": "Could not reach the server."
   },

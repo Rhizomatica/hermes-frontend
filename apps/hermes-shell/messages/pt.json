@@ -4,6 +4,7 @@
     "passwordLabel": "Senha",
     "submit": "Entrar",
     "submitting": "Entrando…",
+    "loading": "Carregando…",
     "invalidCredentials": "E-mail ou senha inválidos.",
     "networkError": "Não foi possível conectar ao servidor."
   },

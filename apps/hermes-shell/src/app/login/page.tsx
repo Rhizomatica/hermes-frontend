@@ -34,7 +34,7 @@ export default function LoginPage() {
   if (isLoading) {
     return (
       <main className="flex min-h-screen items-center justify-center p-4">
-        <LoadingSpinner />
+        <LoadingSpinner label={t('loading')} />
       </main>
     );
   }

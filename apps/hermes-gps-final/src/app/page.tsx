@@ -106,7 +106,7 @@ export default function GpsPage() {
   if (!user) {
     return (
       <main className="flex min-h-screen items-center justify-center p-4">
-        <LoadingSpinner />
+        <LoadingSpinner label={t('loading')} />
       </main>
     );
   }
