@@ -1,12 +1,16 @@
 {
   "gps": {
     "title": "Visualizador GPS",
+    "callsign": "Indicativo",
+    "operator": "Operador",
     "loading": "Carregando mapa…",
     "noPosition": "Aguardando posição GPS…",
     "lastUpdated": "Última atualização",
     "staleData": "Desatualizado",
     "refresh": "Atualizar posição",
     "recenter": "Centralizar mapa na posição atual",
+    "refreshLabel": "Atualizar",
+    "recenterLabel": "Centralizar",
     "altitude": "Alt",
     "speed": "Vel",
     "showTrail": "Mostrar rastro",
@@ -38,6 +42,7 @@
   "common": {
     "backToHermes": "← Voltar ao HERMES",
     "themeToggle": "Alternar tema",
+    "themeLabel": "Tema",
     "localeToggle": "Mudar idioma"
   }
 }

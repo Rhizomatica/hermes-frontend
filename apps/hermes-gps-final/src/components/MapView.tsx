@@ -7,7 +7,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { Protocol } from 'pmtiles';
 import { buildStyle } from '@/lib/mapStyle';
 import { getMapTokens } from '@hermes/tailwind-config/map-tokens';
-import { Navigation } from 'lucide-react';
+import { Navigation2 } from 'lucide-react';
 import type { GpsPosition } from '@hermes/api';
 
 export interface MapViewProps {
@@ -176,7 +176,6 @@ export default function MapView({
         width: 48px;
         height: 48px;
         cursor: pointer;
-        transition: transform 0.5s ease;
       `;
 
       // Pulsing glow ring (animated)
@@ -211,7 +210,6 @@ export default function MapView({
         border-radius: 50%;
         opacity: 0.3;
         pointer-events: none;
-        transition: transform 0.5s ease, opacity 0.3s ease;
       `;
       el.appendChild(accuracyEl);
 
@@ -224,7 +222,6 @@ export default function MapView({
         width: 48px;
         height: 48px;
         display: block;
-        transition: transform 0.5s ease;
       `;
       img.className = 'hermes-marker-arrow';
       el.appendChild(img);
@@ -478,7 +475,7 @@ export default function MapView({
             }}
             aria-label={`Station bearing ${Math.round(indicator.angle)}°`}
           >
-            <Navigation
+            <Navigation2
               style={{ height: '1.75rem', width: '1.75rem', color: '#f97316' }}
               fill="currentColor"
             />

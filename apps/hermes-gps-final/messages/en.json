@@ -1,12 +1,16 @@
 {
   "gps": {
-    "title": "GPS Viewer",
+    "title": "HERMES GPS Viewer",
+    "callsign": "Callsign",
+    "operator": "Operator",
     "loading": "Loading map…",
     "noPosition": "Waiting for GPS position…",
     "lastUpdated": "Last updated",
     "staleData": "Stale",
     "refresh": "Refresh position",
     "recenter": "Re-center map on current position",
+    "refreshLabel": "Refresh",
+    "recenterLabel": "Recenter",
     "altitude": "Alt",
     "speed": "Speed",
     "showTrail": "Show breadcrumb trail",
@@ -38,6 +42,7 @@
   "common": {
     "backToHermes": "← Back to HERMES",
     "themeToggle": "Toggle theme",
+    "themeLabel": "Theme",
     "localeToggle": "Change language"
   }
 }

@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useAuth, useAuthGuard } from '@hermes/shared-auth';
-import { Crosshair, Loader2, RefreshCw, Siren } from 'lucide-react';
+import { Crosshair, Loader2, LucideFileWarning, Moon, RefreshCw, Siren, Sun } from 'lucide-react';
 import { useTheme, ErrorBanner, LoadingSpinner } from '@hermes/ui';
 import { useGpsCoords } from '@/hooks/useGpsCoords';
 import { useGpsHistory } from '@/hooks/useGpsHistory';
@@ -52,8 +52,8 @@ export default function GpsPage() {
   const t = useTranslations('gps');
   const tc = useTranslations('common');
   const user = useAuthGuard();
-  const { isAuthenticated } = useAuth();
-  const { theme } = useTheme();
+  const { isAuthenticated, user: authUser } = useAuth();
+  const { theme, toggle: toggleTheme } = useTheme();
   const { position, fix, loading, error, lastUpdated, stale, isCached, cacheAgeMs, refresh } =
     useGpsCoords();
   const { history, appendPosition } = useGpsHistory();
@@ -112,42 +112,74 @@ export default function GpsPage() {
   }
 
   return (
-    <main className="relative flex min-h-screen flex-col">
-      {/* Map fills remaining space */}
-      <div className="absolute inset-0">
-        <MapView
-          latitude={position?.latitude ?? null}
-          longitude={position?.longitude ?? null}
-          heading={position?.heading ?? null}
-          hdop={fix?.hdop ?? null}
-          isDark={theme === 'dark'}
-          breadcrumb={history}
-          showBreadcrumb={showTrail}
-          recenterToken={recenterToken}
-        />
+    <main className="relative flex min-h-screen flex-col landscape:flex-row">
+      {/* Map region fills remaining space */}
+      <div className="relative min-h-0 min-w-0 flex-1">
+        <div className="absolute inset-0">
+          <MapView
+            latitude={position?.latitude ?? null}
+            longitude={position?.longitude ?? null}
+            heading={position?.heading ?? null}
+            hdop={fix?.hdop ?? null}
+            isDark={theme === 'dark'}
+            breadcrumb={history}
+            showBreadcrumb={showTrail}
+            recenterToken={recenterToken}
+          />
+        </div>
+
+        {/* Back link overlay */}
+        <Link
+          href={{ pathname: SHELL_URL }}
+          className="absolute left-4 top-4 z-10 rounded-lg bg-background/80 px-3 py-2 text-sm text-blue-500 backdrop-blur-sm"
+          aria-label={tc('backToHermes')}
+          style={{ minHeight: '44px', lineHeight: '44px' }}
+        >
+          {tc('backToHermes')}
+        </Link>
+
+        {/* Error banner */}
+        {error && (
+          <div className="absolute left-4 right-4 top-16 z-10">
+            <ErrorBanner message={error} />
+          </div>
+        )}
+
+        {/* SOS — prominent emergency action, separated from the panel */}
+        <button
+          onClick={() => alert('SOS button pressed! Implement emergency action here.')}
+          disabled={!position}
+          aria-label={t('sosButton')}
+          title={t('sosButton')}
+          className="absolute bottom-4 right-4 z-20 flex items-center gap-2 rounded-full bg-red-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-red-600/30 hover:bg-red-700 active:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{ minHeight: '44px', minWidth: '44px' }}
+        >
+          <Siren className="h-5 w-5" />
+          <span className="hidden sm:inline">{t('sosButton')}</span>
+        </button>
       </div>
 
-      {/* Back link overlay */}
-      <Link
-        href={{ pathname: SHELL_URL }}
-        className="absolute left-4 top-4 z-10 rounded-lg bg-background/80 px-3 py-2 text-sm text-blue-500 backdrop-blur-sm"
-        aria-label={tc('backToHermes')}
-        style={{ minHeight: '44px', lineHeight: '44px' }}
-      >
-        {tc('backToHermes')}
-      </Link>
+      {/* Side panel — left on landscape, bottom on portrait */}
+      <div className="relative z-10 flex flex-col gap-3 rounded-t-2xl border-gray-200 bg-background px-4 py-3 shadow-md dark:border-gray-700 landscape:w-72 landscape:shrink-0 landscape:rounded-t-none landscape:border-r landscape:justify-center landscape:order-first">
+        {/* Minimal user info */}
+        {authUser && (
+          <div className="flex items-center gap-2 border-b border-gray-200 pb-2 dark:border-gray-700">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-500 text-xs font-bold text-white">
+              {(authUser.displayName || authUser.callsign).slice(0, 2).toUpperCase()}
+            </div>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold">
+                {authUser.displayName || authUser.callsign}
+              </p>
+              <p className="truncate text-xs text-foreground/60">
+                {t('callsign')}: {authUser.callsign}
+              </p>
+            </div>
+          </div>
+        )}
 
-      {/* Error banner */}
-      {error && (
-        <div className="absolute left-4 right-4 top-16 z-10">
-          <ErrorBanner message={error} />
-        </div>
-      )}
-
-      {/* Bottom panel */}
-      <div className="relative z-10 mt-auto flex flex-col gap-3 rounded-t-2xl bg-background px-4 py-3 shadow-md ">
         {/* Coordinates — compact, left-aligned */}
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start justify-between gap-3 landscape:flex-col">
           <div className="flex flex-wrap items-start gap-2">
             <button
               onClick={() =>
@@ -189,20 +221,6 @@ export default function GpsPage() {
 
           </div>
 
-          {/* SOS — prominent but compact, anchored right */}
-          <button
-            onClick={() => alert('SOS button pressed! Implement emergency action here.')}
-            disabled={!position}
-            aria-label={t('sosButton')}
-            title={t('sosButton')}
-            className="shrink-0 rounded-lg bg-red-500 px-3 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
-            style={{ minHeight: '44px' }}
-          >
-            <span className="inline-flex items-center gap-1">
-              <Siren className="h-5 w-5" />
-              {t('sosButton')}
-            </span>
-          </button>
         </div>
 
         {/* GPS + radio status badges */}
@@ -214,14 +232,14 @@ export default function GpsPage() {
               role="status"
               title={t('lastKnownTooltip')}
             >
-              ⚠ {t('lastKnown')}
+              <LucideFileWarning /> {t('lastKnown')}
               {cacheAgeMs != null && ` (${formatCacheAge(cacheAgeMs)})`}
             </span>
           )}
         </div>
 
         {/* Upper info strip: altitude, speed, last updated */}
-        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm text-foreground/50">
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm text-foreground/50 landscape:flex-col landscape:items-start landscape:gap-1">
           <div className="flex items-center gap-2">
             <span>
               {t('altitude')}:{' '}
@@ -251,19 +269,19 @@ export default function GpsPage() {
         </div>
 
         {/* Control row: refresh, recenter, trail */}
-        <div className="flex items-center justify-end gap-2 border-t border-gray-200 pt-2 dark:border-gray-700">
+        <div className="flex items-center justify-end gap-2 border-t border-gray-200 pt-2 dark:border-gray-700 landscape:flex-col landscape:items-stretch">
           <button
             onClick={refresh}
             disabled={loading}
             aria-label={t('refresh')}
-            className="rounded-lg p-2 text-gray-600 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-700 disabled:opacity-50"
-            style={{ minHeight: '44px', minWidth: '44px' }}
+            className="flex items-center gap-2 rounded-lg p-2 text-gray-600 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-700 disabled:opacity-50"
           >
             {loading ? (
               <Loader2 className="h-5 w-5 animate-spin" />
             ) : (
               <RefreshCw className="h-5 w-5" />
             )}
+            <span className="hidden landscape:inline text-sm">{t('refreshLabel')}</span>
           </button>
 
           <button
@@ -271,10 +289,24 @@ export default function GpsPage() {
             disabled={!position}
             aria-label={t('recenter')}
             title={t('recenter')}
-            className="rounded-lg p-2 text-gray-600 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-700 disabled:opacity-50"
-            style={{ minHeight: '44px', minWidth: '44px' }}
+            className="flex items-center gap-2 rounded-lg p-2 text-gray-600 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-700 disabled:opacity-50"
           >
             <Crosshair className="h-5 w-5" />
+            <span className="hidden landscape:inline text-sm">{t('recenterLabel')}</span>
+          </button>
+
+          <button
+            onClick={toggleTheme}
+            aria-label={tc('themeToggle')}
+            title={tc('themeToggle')}
+            className="flex items-center gap-2 rounded-lg p-2 text-gray-600 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-700"
+          >
+            {theme === 'dark' ? (
+              <Sun className="h-5 w-5" />
+            ) : (
+              <Moon className="h-5 w-5" />
+            )}
+            <span className="hidden landscape:inline text-sm">{tc('themeLabel')}</span>
           </button>
 
           <BreadcrumbToggle
