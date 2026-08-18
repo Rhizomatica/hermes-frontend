@@ -46,6 +46,25 @@ function ensureProtocol(): void {
   protocolRegistered = true;
 }
 
+// Initial bearing (degrees, 0 = north) from one coordinate to another.
+// Coordinates are [longitude, latitude] to match MapLibre conventions.
+function bearing(from: [number, number], to: [number, number]): number {
+  const toRad = Math.PI / 180;
+  const toDeg = 180 / Math.PI;
+  const [lon1, lat1] = from;
+  const [lon2, lat2] = to;
+  const phi1 = lat1 * toRad;
+  const phi2 = lat2 * toRad;
+  const dLon = (lon2 - lon1) * toRad;
+
+  const y = Math.sin(dLon) * Math.cos(phi2);
+  const x =
+    Math.cos(phi1) * Math.sin(phi2) -
+    Math.sin(phi1) * Math.cos(phi2) * Math.cos(dLon);
+
+  return (Math.atan2(y, x) * toDeg + 360) % 360;
+}
+
 /**
  * Offline-capable map component using Maplibre GL JS + PMTiles.
  *
@@ -80,6 +99,7 @@ export default function MapView({
   const markerElRef = useRef<HTMLDivElement | null>(null);
   const [tileError, setTileError] = useState(false);
   const [mapReady, setMapReady] = useState(false);
+  const [indicator, setIndicator] = useState<{ angle: number; distanceKm: number } | null>(null);
   const t = useTranslations('gps');
 
   // Initialize map
@@ -250,6 +270,52 @@ export default function MapView({
     markerRef.current.setLngLat([longitude, latitude]);
   }, [latitude, longitude, heading, hdop]);
 
+  // Show a direction indicator when the marker is outside the viewport.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    const update = () => {
+      if (latitude == null || longitude == null) {
+        setIndicator(null);
+        return;
+      }
+
+      const center = map.getCenter();
+      const point = map.project([longitude, latitude]);
+      const { width, height } = map.getContainer().getBoundingClientRect();
+      const margin = 24;
+
+      const inside =
+        point.x >= margin &&
+        point.x <= width - margin &&
+        point.y >= margin &&
+        point.y <= height - margin;
+
+      if (inside) {
+        setIndicator(null);
+        return;
+      }
+
+      const angle = bearing([center.lng, center.lat], [longitude, latitude]);
+      const distanceKm =
+        new maplibregl.LngLat(center.lng, center.lat).distanceTo(
+          new maplibregl.LngLat(longitude, latitude),
+        ) / 1000;
+      setIndicator({ angle, distanceKm });
+    };
+
+    update();
+    map.on('move', update);
+    map.on('zoom', update);
+    map.on('resize', update);
+    return () => {
+      map.off('move', update);
+      map.off('zoom', update);
+      map.off('resize', update);
+    };
+  }, [latitude, longitude]);
+
   // ResizeObserver for responsive sizing
   const handleResize = useCallback(() => {
     if (mapRef.current) mapRef.current.resize();
@@ -382,6 +448,60 @@ export default function MapView({
         aria-label="Offline map view"
         role="application"
       />
+      {indicator && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '1.5rem',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '0.25rem',
+            pointerEvents: 'none',
+            zIndex: 10,
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              height: '3rem',
+              width: '3rem',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: '9999px',
+              background: 'rgba(255,255,255,0.9)',
+              boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)',
+              transform: `rotate(${indicator.angle}deg)`,
+            }}
+            aria-label={`Station bearing ${Math.round(indicator.angle)}°`}
+          >
+            <svg
+              style={{ height: '1.75rem', width: '1.75rem', color: '#f97316' }}
+              viewBox="0 0 24 24"
+              fill="currentColor"
+            >
+              <path d="M12 2 L19 21 L12 16 L5 21 Z" />
+            </svg>
+          </div>
+          <span
+            style={{
+              borderRadius: '9999px',
+              background: 'rgba(255,255,255,0.8)',
+              padding: '0.125rem 0.5rem',
+              fontSize: '0.75rem',
+              fontWeight: 600,
+              color: '#374151',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+            }}
+          >
+            {indicator.distanceKm >= 100
+              ? `${Math.round(indicator.distanceKm)} km`
+              : `${indicator.distanceKm.toFixed(1)} km`}
+          </span>
+        </div>
+      )}
       {tileError && (
         <div
           role="alert"

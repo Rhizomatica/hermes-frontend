@@ -1,8 +1,7 @@
 import type { Metadata, Viewport } from 'next';
-import { NextIntlClientProvider } from 'next-intl';
-import { getMessages } from 'next-intl/server';
 import { AuthProvider, LocaleProvider, WebSocketProvider } from '@hermes/shared-auth';
 import { ThemeProvider, ServiceWorkerRegistrator } from '@hermes/ui';
+import IntlProvider from '@/components/IntlProvider';
 import './globals.css';
 
 export const viewport: Viewport = {
@@ -31,8 +30,6 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const messages = await getMessages();
-
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="min-h-screen bg-background text-foreground antialiased">
@@ -55,17 +52,18 @@ export default async function RootLayout({
         <ServiceWorkerRegistrator
           basePath={process.env.NEXT_PUBLIC_BASE_PATH ?? ''}
         />
-        <NextIntlClientProvider messages={messages}>
-          <AuthProvider>
-            <ThemeProvider>
-              <LocaleProvider>
+        {/* LocaleProvider wraps IntlProvider so locale changes re-render the message bundle */}
+        <LocaleProvider>
+          <IntlProvider>
+            <AuthProvider>
+              <ThemeProvider>
                 <WebSocketProvider>
                   {children}
                 </WebSocketProvider>
-              </LocaleProvider>
-            </ThemeProvider>
-          </AuthProvider>
-        </NextIntlClientProvider>
+              </ThemeProvider>
+            </AuthProvider>
+          </IntlProvider>
+        </LocaleProvider>
       </body>
     </html>
   );
