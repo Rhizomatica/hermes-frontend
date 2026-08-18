@@ -7,6 +7,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { Protocol } from 'pmtiles';
 import { buildStyle } from '@/lib/mapStyle';
 import { getMapTokens } from '@hermes/tailwind-config/map-tokens';
+import { Navigation } from 'lucide-react';
 import type { GpsPosition } from '@hermes/api';
 
 export interface MapViewProps {
@@ -477,13 +478,10 @@ export default function MapView({
             }}
             aria-label={`Station bearing ${Math.round(indicator.angle)}°`}
           >
-            <svg
+            <Navigation
               style={{ height: '1.75rem', width: '1.75rem', color: '#f97316' }}
-              viewBox="0 0 24 24"
               fill="currentColor"
-            >
-              <path d="M12 2 L19 21 L12 16 L5 21 Z" />
-            </svg>
+            />
           </div>
           <span
             style={{

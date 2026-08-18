@@ -12,7 +12,7 @@
     "@hermes/api": "*",
     "@hermes/tailwind-config": "*",
     "@hermes/ui": "*",
-    "lucide-react": "^1.7.0",
+    "lucide-react": "^1.31.0",
     "next": "^16.2.4",
     "next-intl": "^4.8.3",
     "react": "^19.0.0",
