@@ -113,13 +113,7 @@ function RadioBadges({
     <>
       {/* Radio power */}
       <span
-        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 ${
-          powerOn
-            ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200'
-            : power
-              ? 'bg-gray-200 text-gray-600 dark:bg-orange-700 dark:text-gray-300'
-              : 'bg-gray-100 text-foreground/40 dark:bg-orange-800'
-        }`}
+        className='inline-flex items-center gap-1 rounded-full px-2 py-0.5 bg-orange-200 text-orange-700  dark:bg-orange-700 dark:text-orange-200'
         title={t('radioPower')}
       >
         <RadioTower className="h-4 w-4" aria-hidden="true" /> {power ?? '—'}
