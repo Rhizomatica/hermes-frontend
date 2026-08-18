@@ -2,6 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import type { GpsFix, RadioStatus } from '@hermes/api';
+import { SatelliteDish, RadioTower, Clock } from 'lucide-react';
 
 export interface GpsStatusBadgeProps {
   /** GPS fix quality data from useGpsCoords (null = no data) */
@@ -63,7 +64,7 @@ export default function GpsStatusBadge({ fix, isStale, radio }: GpsStatusBadgePr
         title={t('satellitesTooltip', { count: fix.satellites })}
         aria-label={t('satellitesAria', { count: fix.satellites })}
       >
-        🛰 {fix.satellites}
+        <SatelliteDish className="h-4 w-4" aria-hidden="true" /> {fix.satellites}
       </span>
 
       {/* HDOP */}
@@ -121,7 +122,7 @@ function RadioBadges({
         }`}
         title={t('radioPower')}
       >
-        📻 {power ?? '—'}
+        <RadioTower className="h-4 w-4" aria-hidden="true" /> {power ?? '—'}
       </span>
 
       {/* Frequency */}
@@ -137,13 +138,13 @@ function RadioBadges({
         className="inline-flex items-center gap-1 rounded-full bg-teal-100 px-2 py-0.5 text-teal-700 dark:bg-teal-900 dark:text-teal-200"
         title={t('lastHamSync')}
       >
-        ⏱ HAM {formatSyncTime(lastHamSync)}
+        <Clock className="h-4 w-4" aria-hidden="true" /> HAM {formatSyncTime(lastHamSync)}
       </span>
     </>
   );
 }
 
-/** Format an ISO timestamp to a compact HH:MM:SS string, or "—". */
+/** Format an ISO timestamp to a compact HH:MM string, or "—". */
 function formatSyncTime(iso: string | null): string {
   if (!iso) return '—';
   const date = new Date(iso);
