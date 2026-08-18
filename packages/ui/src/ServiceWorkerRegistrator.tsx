@@ -11,10 +11,19 @@ import { useEffect } from "react";
  */
 export function ServiceWorkerRegistrator({
   basePath = '',
+  enabled = true,
 }: {
   basePath?: string;
+  enabled?: boolean;
 }) {
   useEffect(() => {
+    // Service workers are only meaningful in production. In dev each app
+    // runs on its own origin (ports 4000/4001/4002) without the shared
+    // shell controller, and registering a worker would just cache stale
+    // bundles during fast iteration. Skipping avoids 404s for apps that
+    // lack a public/sw.js.
+    if (!enabled) return;
+
     // Only the app at the origin root owns the service worker. Sub-apps
     // mounted under a base path (/gps, /chat) share the shell's controller;
     // registering again would cause controller churn and stale-asset bugs.
@@ -33,7 +42,7 @@ export function ServiceWorkerRegistrator({
           window.removeEventListener("load", register);
       }
     }
-  }, [basePath]);
+  }, [basePath, enabled]);
 
   return null;
 }

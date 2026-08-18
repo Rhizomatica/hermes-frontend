@@ -42,7 +42,7 @@ export default async function RootLayout({
             __html: `
               (function() {
                 try {
-                  var theme = localStorage.getItem('hermes-theme');
+                  var theme = (document.cookie.match(/(?:^|;\\s*)hermes-theme=([^;]*)/) || [])[1] || localStorage.getItem('hermes-theme');
                   if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
                     document.documentElement.classList.add('dark');
                   } else {
@@ -55,6 +55,7 @@ export default async function RootLayout({
         />
         <ServiceWorkerRegistrator
           basePath={process.env.NEXT_PUBLIC_BASE_PATH ?? ''}
+          enabled={process.env.NODE_ENV === 'production'}
         />
         {/* LocaleProvider wraps IntlProvider so locale changes re-render the message bundle */}
         <LocaleProvider>
