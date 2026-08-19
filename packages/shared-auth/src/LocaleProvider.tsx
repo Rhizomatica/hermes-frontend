@@ -1,8 +1,7 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-
-type Locale = 'en' | 'pt';
+import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
+import { isLocale, LOCALE_COOKIE, LOCALE_STORAGE_KEY, type Locale } from './locale';
 
 export interface LocaleContextValue {
   locale: Locale;
@@ -11,22 +10,27 @@ export interface LocaleContextValue {
 
 const LocaleContext = createContext<LocaleContextValue | null>(null);
 
-export function LocaleProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>('en');
+interface LocaleProviderProps {
+  /** Locale resolved server-side from the shared cookie, so SSR and the first client render agree. */
+  initialLocale?: Locale;
+  children: ReactNode;
+}
 
-  // Hydrate the locale from localStorage only after mount so the initial
-  // server and client renders match (avoids hydration mismatch when a
-  // non-English locale is persisted). Defaults to 'en' to mirror the SSR.
-  useEffect(() => {
-    if (typeof localStorage === 'undefined') return;
-    const persisted = localStorage.getItem('hermes-locale') as Locale | null;
-    if (persisted === 'en' || persisted === 'pt') {
-      setLocaleState(persisted);
-    }
-  }, []);
+/** Persist the locale to a host-scoped cookie (shared across sub-apps and visible to the server). */
+function setLocaleCookie(value: Locale): void {
+  if (typeof document === 'undefined') return;
+  document.cookie = `${LOCALE_COOKIE}=${value}; Path=/; SameSite=Lax; Max-Age=31536000`;
+}
 
+export function LocaleProvider({ initialLocale = 'en', children }: LocaleProviderProps) {
+  // Start from the server-resolved locale; do NOT read localStorage during render
+  // (avoids the server/client hydration mismatch).
+  const [locale, setLocaleState] = useState<Locale>(initialLocale);
+
+  // Keep in sync with the shared cookie when it changes elsewhere (e.g. shell).
   const setLocale = useCallback((next: Locale) => {
-    if (typeof localStorage !== 'undefined') localStorage.setItem('hermes-locale', next);
+    setLocaleCookie(next);
+    if (typeof localStorage !== 'undefined') localStorage.setItem(LOCALE_STORAGE_KEY, next);
     setLocaleState(next);
   }, []);
 
@@ -39,3 +43,5 @@ export function useLocale(): LocaleContextValue {
   if (!ctx) throw new Error('useLocale must be used within <LocaleProvider>');
   return ctx;
 }
+
+export { isLocale };

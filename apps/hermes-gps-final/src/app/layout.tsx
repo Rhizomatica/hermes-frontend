@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { cookies } from 'next/headers';
-import { AuthProvider, LocaleProvider, WebSocketProvider } from '@hermes/shared-auth';
+import { AuthProvider, LocaleProvider, WebSocketProvider, isLocale, type Locale } from '@hermes/shared-auth';
 import { ThemeProvider, ServiceWorkerRegistrator } from '@hermes/ui';
 import IntlProvider from '@/components/IntlProvider';
 import './globals.css';
@@ -35,10 +35,12 @@ export default async function RootLayout({
   // is present on the initial HTML (removes the client-side flash-prevention
   // <script>, which React 19 flags during hydration).
   const theme = (await cookies()).get('hermes-theme')?.value;
+  const storedLocale = (await cookies()).get('hermes-locale')?.value;
+  const locale: Locale = isLocale(storedLocale) ? storedLocale : 'en';
 
   return (
     <html
-      lang="en"
+      lang={locale}
       className={theme === 'dark' ? 'dark' : undefined}
       suppressHydrationWarning
     >
@@ -48,7 +50,7 @@ export default async function RootLayout({
           enabled={process.env.NODE_ENV === 'production'}
         />
         {/* LocaleProvider wraps IntlProvider so locale changes re-render the message bundle */}
-        <LocaleProvider>
+        <LocaleProvider initialLocale={locale}>
           <IntlProvider>
             <AuthProvider>
               <ThemeProvider>
