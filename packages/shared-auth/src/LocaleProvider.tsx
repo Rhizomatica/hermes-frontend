@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 type Locale = 'en' | 'pt';
 
@@ -12,10 +12,18 @@ export interface LocaleContextValue {
 const LocaleContext = createContext<LocaleContextValue | null>(null);
 
 export function LocaleProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>(() => {
-    if (typeof localStorage === 'undefined') return 'en';
-    return (localStorage.getItem('hermes-locale') as Locale) || 'en';
-  });
+  const [locale, setLocaleState] = useState<Locale>('en');
+
+  // Hydrate the locale from localStorage only after mount so the initial
+  // server and client renders match (avoids hydration mismatch when a
+  // non-English locale is persisted). Defaults to 'en' to mirror the SSR.
+  useEffect(() => {
+    if (typeof localStorage === 'undefined') return;
+    const persisted = localStorage.getItem('hermes-locale') as Locale | null;
+    if (persisted === 'en' || persisted === 'pt') {
+      setLocaleState(persisted);
+    }
+  }, []);
 
   const setLocale = useCallback((next: Locale) => {
     if (typeof localStorage !== 'undefined') localStorage.setItem('hermes-locale', next);
