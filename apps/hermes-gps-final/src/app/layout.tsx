@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import { cookies } from 'next/headers';
 import { AuthProvider, LocaleProvider, WebSocketProvider } from '@hermes/shared-auth';
 import { ThemeProvider, ServiceWorkerRegistrator } from '@hermes/ui';
 import IntlProvider from '@/components/IntlProvider';
@@ -30,25 +31,18 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // Resolve the theme server-side from the shared cookie so the `dark` class
+  // is present on the initial HTML (removes the client-side flash-prevention
+  // <script>, which React 19 flags during hydration).
+  const theme = (await cookies()).get('hermes-theme')?.value;
+
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html
+      lang="en"
+      className={theme === 'dark' ? 'dark' : undefined}
+      suppressHydrationWarning
+    >
       <body className="min-h-screen bg-background text-foreground antialiased">
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                try {
-                  var theme = (document.cookie.match(/(?:^|;\\s*)hermes-theme=([^;]*)/) || [])[1] || localStorage.getItem('hermes-theme');
-                  if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                    document.documentElement.classList.add('dark');
-                  } else {
-                    document.documentElement.classList.remove('dark');
-                  }
-                } catch(e) {}
-              })();
-            `,
-          }}
-        />
         <ServiceWorkerRegistrator
           basePath={process.env.NEXT_PUBLIC_BASE_PATH ?? ''}
           enabled={process.env.NODE_ENV === 'production'}
