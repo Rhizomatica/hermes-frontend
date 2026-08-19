@@ -12,7 +12,7 @@ export default function LoadingSpinner({
   label = "Loading…",
 }: LoadingSpinnerProps) {
   return (
-    <div className={`flex flex-col items-center justify-center gap-3 bg-transparent ${className}`}>
+    <div className={`flex flex-col items-center justify-center gap-3 bg-transparent${className ? ` ${className}` : ""}`}>
       <Loader2
         className="animate-spin text-orange-500"
         style={{ width: size, height: size }}

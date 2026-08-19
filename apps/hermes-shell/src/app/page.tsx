@@ -85,7 +85,7 @@ export default function AppSelector() {
         {/* Greeting hero */}
         <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 text-xl font-black text-white shadow-xl shadow-orange-500/30 ring-4 ring-white dark:ring-gray-800">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 text-xl font-black text-white shadow-xl shadow-orange-500/20">
               {initials}
             </div>
             <div>
