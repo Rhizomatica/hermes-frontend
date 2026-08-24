@@ -42,7 +42,7 @@ export function buildConversations(
   return Array.from(stationMap.values())
     .map(({ canonical, msgs }) => {
       const sorted = [...msgs].sort(
-        (a, b) => new Date(b.sent_at).getTime() - new Date(a.sent_at).getTime(),
+        (a, b) => sentAt(b) - sentAt(a),
       );
       const lastMessage = sorted[0];
       // Prefer the server-provided unread flag; fall back to inbox count.
@@ -56,11 +56,7 @@ export function buildConversations(
         unreadCount,
       };
     })
-    .sort(
-      (a, b) =>
-        new Date(b.lastMessage.sent_at).getTime() -
-        new Date(a.lastMessage.sent_at).getTime(),
-    );
+    .sort((a, b) => sentAt(b.lastMessage) - sentAt(a.lastMessage));
 }
 
 /**
@@ -84,5 +80,15 @@ export function filterConversation(
         ? canonicalize(msg.orig, aliasMap) === canonical
         : destArray(msg.dest).some((d) => canonicalize(d, aliasMap) === canonical),
     )
-    .sort((a, b) => new Date(a.sent_at).getTime() - new Date(b.sent_at).getTime());
+    .sort((a, b) => sentAt(a) - sentAt(b));
+}
+
+/**
+ * Safely extract an epoch-millisecond timestamp from a message. Malformed or
+ * absent `sent_at` values collapse to `-Infinity` so sorting remains stable and
+ * such messages never masquerade as "most recent".
+ */
+function sentAt(msg: Message): number {
+  const t = new Date(msg.sent_at).getTime();
+  return Number.isFinite(t) ? t : -Infinity;
 }

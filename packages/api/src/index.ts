@@ -1,8 +1,6 @@
 import http from 'node:http';
 import https from 'node:https';
 
-const insecureAgent = new https.Agent({ rejectUnauthorized: false });
-
 function getBase(): string {
   const url = process.env.HERMES_API_URL ?? 'http://localhost:3000';
   return url.endsWith('/') ? url.slice(0, -1) : url;
@@ -51,7 +49,6 @@ function hermesRequest(
         path: url.pathname + url.search,
         method,
         headers,
-        agent: isHttps ? insecureAgent : undefined,
       },
       (res) => {
         let raw = '';
@@ -135,7 +132,6 @@ export function hermesPostMultipart(
         path: url.pathname + url.search,
         method: 'POST',
         headers,
-        agent: isHttps ? insecureAgent : undefined,
       },
       (res) => {
         let raw = '';
@@ -173,7 +169,6 @@ export function hermesGetBuffer(
         path: url.pathname + url.search,
         method: 'GET',
         headers: { ...extraHeaders },
-        agent: isHttps ? insecureAgent : undefined,
       },
       (res) => {
         const chunks: Buffer[] = [];
