@@ -37,19 +37,39 @@ export async function POST(request: NextRequest) {
   const access = authData.access ?? authData.accessToken;
   const refresh = authData.refresh ?? authData.refreshToken;
   if (access) {
-    response.headers.set('Set-Cookie', `hermes_token=${access}; SameSite=Lax; Path=/; Max-Age=604800`);
+    response.headers.set(
+      'Set-Cookie',
+      `hermes_token=${access}; HttpOnly; SameSite=Lax; Path=/; Max-Age=604800`,
+    );
   }
   if (refresh) {
-    response.headers.append('Set-Cookie', `hermes_refresh=${refresh}; SameSite=Lax; Path=/; Max-Age=2592000`);
+    response.headers.append(
+      'Set-Cookie',
+      `hermes_refresh=${refresh}; HttpOnly; SameSite=Lax; Path=/; Max-Age=2592000`,
+    );
   }
-  // Backend refresh returns only tokens — fetch the user profile and persist it
-  // as a cookie so the session is shared across dev ports.
+  // Persist a display-only user projection (no role/status) for offline grace.
   const user = authData.user ?? (access ? await fetchUserFromBackend(access) : undefined);
-  if (user) {
-    const userJson = encodeURIComponent(JSON.stringify(user));
+  const cached = user ? toCachedUser(user) : null;
+  if (cached) {
+    const userJson = encodeURIComponent(JSON.stringify(cached));
     response.headers.append('Set-Cookie', `hermes_user=${userJson}; SameSite=Lax; Path=/; Max-Age=604800`);
   }
   return response;
+}
+
+/** Strip authorization claims (role, status) before writing the client cookie. */
+function toCachedUser(user: unknown): Record<string, unknown> | null {
+  if (!user || typeof user !== 'object') return null;
+  const u = user as Record<string, unknown>;
+  return {
+    id: u.id ?? null,
+    callsign: u.callsign ?? null,
+    displayName: u.displayName ?? null,
+    email: u.email ?? null,
+    locale: u.locale ?? null,
+    avatarPath: u.avatarPath ?? null,
+  };
 }
 
 /** Fetch the authenticated user profile from the backend using a bearer token. */
