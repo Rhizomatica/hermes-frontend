@@ -9,7 +9,7 @@ import {
   useReducer,
   type ReactNode,
 } from 'react';
-import { detectTokenStore, type TokenStore } from './tokenStore';
+import { detectTokenStore, type CachedUser, type TokenStore } from './tokenStore';
 
 import { HermesUser } from '@hermes/api';
 
@@ -54,7 +54,7 @@ export interface AuthContextValue {
   isLoading: boolean;
   error: string | null;
   login: (callsign: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -66,8 +66,11 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 /**
  * AuthProvider — manages authentication state for the app tree.
  *
- * On mount, validates any existing token by calling `GET /api/auth/me`.
- * Token refresh: on 401, attempts POST /api/auth/refresh, retries.
+ * Option A (ADR-003): tokens are HttpOnly cookies owned by the API proxy and
+ * are never read from JavaScript. On mount we validate the session with a
+ * single `GET /api/auth/me`; the server resolves identity from the HttpOnly
+ * cookie. A cached (display-only) user is used solely for offline grace when
+ * the network is unreachable — never as proof of authentication.
  *
  * @example
  * <AuthProvider>
@@ -84,83 +87,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const store: TokenStore = useMemo(() => detectTokenStore(), []);
 
   useEffect(() => {
-    const token = store.getAccessToken();
-
-    if (!token) {
-      dispatch({ type: 'UNAUTHENTICATED' });
-      return;
-    }
-
-    const cached = store.getUser();
-    if (cached) {
-      dispatch({ type: 'AUTHENTICATED', user: cached });
-      return;
-    }
-
     dispatch({ type: 'LOADING' });
     let cancelled = false;
 
     async function validate() {
       try {
-        const token = store.getAccessToken();
-        const headers: Record<string, string> = {};
-        if (token) headers['Authorization'] = `Bearer ${token}`;
-        const res = await fetch('/api/auth/me', { headers });
-
+        const res = await fetch('/api/auth/me');
         if (res.ok) {
-          const data = (await res.json()) as HermesUser;
-          store.setUser(data);
-          if (!cancelled) dispatch({ type: 'AUTHENTICATED', user: data });
+          const user = (await res.json()) as HermesUser;
+          // Cache a display-only projection for offline grace.
+          store.setUser(user);
+          if (!cancelled) dispatch({ type: 'AUTHENTICATED', user });
           return;
         }
-
-        // Token invalid — try refresh
-        const refreshToken = store.getRefreshToken();
-        if (refreshToken) {
-          const refreshRes = await fetch('/api/auth/refresh', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ refresh: refreshToken }),
-          });
-
-          if (refreshRes.ok) {
-            const refreshData = (await refreshRes.json()) as {
-              access?: string;
-              refresh?: string;
-              accessToken?: string;
-              refreshToken?: string;
-            };
-            const access = refreshData.access ?? refreshData.accessToken ?? '';
-            const refresh = refreshData.refresh ?? refreshData.refreshToken ?? '';
-            store.setTokens(access, refresh);
-
-            // Backend does not return the user on refresh — re-fetch it.
-            const meHeaders: Record<string, string> = {};
-            if (access) meHeaders['Authorization'] = `Bearer ${access}`;
-            const meRes = await fetch('/api/auth/me', { headers: meHeaders });
-            if (meRes.ok) {
-              const me = (await meRes.json()) as HermesUser;
-              store.setUser(me);
-              if (!cancelled) dispatch({ type: 'AUTHENTICATED', user: me });
-              return;
-            }
-          }
+        if (res.status === 401) {
+          store.clearTokens();
+          if (!cancelled) dispatch({ type: 'UNAUTHENTICATED' });
+          return;
         }
-
-        store.clearTokens();
-        if (!cancelled) dispatch({ type: 'UNAUTHENTICATED' });
+        // Any other failure: fall through to offline-grace handling below.
+        throw new Error(`Unexpected /api/auth/me status ${res.status}`);
       } catch {
-        const cachedUser = store.getUser();
-        if (cachedUser) {
-          dispatch({ type: 'AUTHENTICATED', user: cachedUser });
-        } else {
+        // Network unreachable — provide offline grace using the display-only
+        // cached user when available. This keeps already-open sessions usable
+        // when the daemon/backend is briefly unreachable, without trusting the
+        // cache as proof of authorization (it carries no role/status).
+        const cached = store.getUser() as CachedUser | null;
+        if (cached && !cancelled) {
+          dispatch({ type: 'AUTHENTICATED', user: cached as unknown as HermesUser });
+        } else if (!cancelled) {
           dispatch({ type: 'UNAUTHENTICATED', error: 'Could not reach the server.' });
         }
       }
     }
 
     validate();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [store]);
 
   const login = useCallback(
@@ -173,39 +137,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (!res.ok) {
-        const err = (await res.json()) as { message?: string };
+        const err = (await res.json().catch(() => ({}))) as { message?: string };
         const message = err.message ?? 'Invalid credentials.';
         dispatch({ type: 'UNAUTHENTICATED', error: message });
         throw new Error(message);
       }
 
-      const data = (await res.json()) as {
-        access?: string;
-        refresh?: string;
-        accessToken?: string;
-        refreshToken?: string;
-        user?: HermesUser;
-      };
-
-      const access = data.access ?? data.accessToken ?? '';
-      const refresh = data.refresh ?? data.refreshToken ?? '';
-      store.setTokens(access, refresh);
-
-      // Backend login returns only tokens — fetch the user identity.
-      const headers: Record<string, string> = {};
-      if (access) headers['Authorization'] = `Bearer ${access}`;
-      const meRes = await fetch('/api/auth/me', { headers });
+      // The proxy has set HttpOnly tokens; fetch authoritative identity.
+      const meRes = await fetch('/api/auth/me');
       if (meRes.ok) {
         const user = (await meRes.json()) as HermesUser;
         store.setUser(user);
         dispatch({ type: 'AUTHENTICATED', user });
-        return;
-      }
-
-      // Fall back to any user embedded in the login response (legacy).
-      if (data.user) {
-        store.setUser(data.user);
-        dispatch({ type: 'AUTHENTICATED', user: data.user });
         return;
       }
 
@@ -216,9 +159,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [store],
   );
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    // Clear client-readable state immediately, then have the server clear the
+    // HttpOnly cookies (best-effort; a failure still logs the local session out).
     store.clearTokens();
     dispatch({ type: 'LOGOUT' });
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch {
+      // Ignore — local logout already complete.
+    }
   }, [store]);
 
   const value = useMemo<AuthContextValue>(

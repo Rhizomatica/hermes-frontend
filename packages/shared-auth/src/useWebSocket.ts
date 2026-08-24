@@ -7,10 +7,16 @@ export interface WebSocketEvent {
   payload: Record<string, unknown>;
 }
 
+export type WebSocketState = 'connecting' | 'connected' | 'disconnected' | 'reconnecting';
+
 export interface WebSocketContextValue {
+  /** ADR-002 4-state machine. */
+  connectionState: WebSocketState;
+  /** Derived boolean for backward-compatible consumers. */
   connected: boolean;
   lastEvent: WebSocketEvent | null;
   subscribe: (eventType: string, handler: (event: WebSocketEvent) => void) => () => void;
+  send: (eventType: string, payload: unknown) => void;
 }
 
 export const WebSocketContext = createContext<WebSocketContextValue | null>(null);
@@ -29,9 +35,11 @@ export function useWebSocket(): WebSocketContextValue {
   // Server-side rendering — return stub
   if (typeof window === 'undefined') {
     return {
+      connectionState: 'disconnected',
       connected: false,
       lastEvent: null,
       subscribe: () => () => {},
+      send: () => {},
     };
   }
 

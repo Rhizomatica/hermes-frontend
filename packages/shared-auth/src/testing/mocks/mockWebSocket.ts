@@ -4,6 +4,7 @@ export function mockWebSocket(initialConnected = true) {
   const handlers = new Map<string, Set<(event: WebSocketEvent) => void>>();
 
   const value: WebSocketContextValue = {
+    connectionState: initialConnected ? 'connected' : 'disconnected',
     connected: initialConnected,
     lastEvent: null,
     subscribe: (eventType: string, handler: (event: WebSocketEvent) => void) => {
@@ -11,6 +12,7 @@ export function mockWebSocket(initialConnected = true) {
       handlers.get(eventType)?.add(handler);
       return () => { handlers.get(eventType)?.delete(handler); };
     },
+    send: () => {},
   };
 
   function emit(event: WebSocketEvent) {

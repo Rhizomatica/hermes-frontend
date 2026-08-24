@@ -25,7 +25,10 @@ export function useAuthGuard(): HermesUser | null {
     : process.env.NEXT_PUBLIC_LOGIN_URL ?? '/login';
 
   // Cross-origin shells can't use router.replace — use window.location instead.
-  const isCrossOrigin = typeof window !== 'undefined' && shellUrl && !window.location.origin.startsWith(shellUrl);
+  // Compare exact origins (not string prefixes) to avoid conflating hosts that
+  // share a prefix (e.g. localhost:400 vs localhost:4001).
+  const isCrossOrigin =
+    typeof window !== 'undefined' && shellUrl ? !isSameOrigin(window.location.origin, shellUrl) : false;
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -40,4 +43,16 @@ export function useAuthGuard(): HermesUser | null {
   if (isLoading || !isAuthenticated) return null;
 
   return user;
+}
+
+/**
+ * Compares two URLs by exact origin. Returns true when both parse to the same
+ * scheme, host, and (effective) port.
+ */
+function isSameOrigin(a: string, b: string): boolean {
+  try {
+    return new URL(a).origin === new URL(b).origin;
+  } catch {
+    return a === b;
+  }
 }

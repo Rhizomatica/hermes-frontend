@@ -1,20 +1,38 @@
 /**
  * TokenStore abstraction (ADR-003).
  *
- * CookieTokenStore for production (HttpOnly cookies set by API proxy).
- * LocalStorageTokenStore for dev fallback.
- * Auto-detection based on cookie presence.
+ * In production, access/refresh tokens are HttpOnly cookies set by the API
+ * proxy and are therefore unreadable from JavaScript. The client must NOT
+ * read or echo tokens; it bootstraps identity via `GET /api/auth/me`, which
+ * the server resolves against the HttpOnly cookie. `getAccessToken()` and
+ * `getRefreshToken()` are retained only for the development localStorage
+ * fallback where there is no cookie proxy.
+ *
+ * The `hermes_user` cookie is client-readable but intentionally strips
+ * authorization claims (`role`, `status`) so it cannot be forged to escalate
+ * privileges. Authoritative identity/authorization always comes from
+ * `GET /api/auth/me`.
  */
 
 import { HermesUser } from '@hermes/api';
+
+/**
+ * A client-safe projection of the user persisted to the (non-HttpOnly)
+ * `hermes_user` cookie. Deliberately excludes `role` and `status` so a forged
+ * cookie cannot grant admin/privileged access (ADR-003 / audit F3).
+ */
+export type CachedUser = Pick<
+  HermesUser,
+  'id' | 'callsign' | 'displayName' | 'email' | 'locale' | 'avatarPath'
+>;
 
 export interface TokenStore {
   getAccessToken(): string | null;
   getRefreshToken(): string | null;
   setTokens(access: string, refresh: string): void;
   clearTokens(): void;
-  getUser(): HermesUser | null;
-  setUser(user: HermesUser): void;
+  getUser(): CachedUser | null;
+  setUser(user: CachedUser): void;
 }
 
 // ------------------------------------------------------------------
@@ -31,16 +49,28 @@ function getCookie(name: string): string | null {
   return match ? match[1] : null;
 }
 
+/**
+ * Strip authorization claims and JSON-only fields before persisting the user
+ * to a client-writable cookie. The cookie exists only for optimistic display;
+ * authorization is always re-derived from the server.
+ */
+function toCachedUser(user: CachedUser): CachedUser {
+  const { id, callsign, displayName, email, locale, avatarPath } = user;
+  return { id, callsign, displayName, email, locale, avatarPath: avatarPath ?? null };
+}
+
 export const cookieTokenStore: TokenStore = {
+  // Tokens are HttpOnly — inaccessible from JavaScript. Returning null here
+  // forces consumers to rely on the server-side /api/auth/me bootstrap.
   getAccessToken() {
-    return getCookie(COOKIE_ACCESS);
+    return null;
   },
   getRefreshToken() {
-    return getCookie(COOKIE_REFRESH);
+    return null;
   },
   setTokens(_access: string, _refresh: string) {
-    // Cookies are set by API proxy via Set-Cookie headers
-    // Client cannot write HttpOnly cookies — no-op
+    // Cookies are set by the API proxy via Set-Cookie headers.
+    // Client cannot write HttpOnly cookies — no-op.
   },
   clearTokens() {
     if (typeof document !== 'undefined') {
@@ -50,18 +80,18 @@ export const cookieTokenStore: TokenStore = {
       document.cookie = `${COOKIE_USER}=${expire}`;
     }
   },
-  getUser(): HermesUser | null {
+  getUser(): CachedUser | null {
     const raw = getCookie(COOKIE_USER);
     if (!raw) return null;
     try {
-      return JSON.parse(decodeURIComponent(raw)) as HermesUser;
+      return toCachedUser(JSON.parse(decodeURIComponent(raw)) as CachedUser);
     } catch {
       return null;
     }
   },
-  setUser(user: HermesUser) {
+  setUser(user: CachedUser) {
     if (typeof document !== 'undefined') {
-      const json = encodeURIComponent(JSON.stringify(user));
+      const json = encodeURIComponent(JSON.stringify(toCachedUser(user)));
       document.cookie = `${COOKIE_USER}=${json}; Path=/; SameSite=Lax; Max-Age=604800`;
     }
   },
@@ -91,19 +121,19 @@ export const localStorageTokenStore: TokenStore = {
     localStorage.removeItem('hermes_refresh');
     localStorage.removeItem('hermes_user');
   },
-  getUser(): HermesUser | null {
+  getUser(): CachedUser | null {
     if (typeof localStorage === 'undefined') return null;
     const raw = localStorage.getItem('hermes_user');
     if (!raw) return null;
     try {
-      return JSON.parse(raw) as HermesUser;
+      return toCachedUser(JSON.parse(raw) as CachedUser);
     } catch {
       return null;
     }
   },
-  setUser(user: HermesUser) {
+  setUser(user: CachedUser) {
     if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('hermes_user', JSON.stringify(user));
+      localStorage.setItem('hermes_user', JSON.stringify(toCachedUser(user)));
     }
   },
 };
@@ -113,6 +143,10 @@ export const localStorageTokenStore: TokenStore = {
 // ------------------------------------------------------------------
 
 export function detectTokenStore(): TokenStore {
+  // In production the access token is HttpOnly and unreadable, so the cookie
+  // presence check is unreliable. Choose the cookie store whenever we cannot
+  // read a token via localStorage AND are not in a pure dev context; this keeps
+  // the abstraction stable without exposing HttpOnly token read attempts.
   if (typeof document !== 'undefined' && getCookie(COOKIE_ACCESS)) {
     return cookieTokenStore;
   }
