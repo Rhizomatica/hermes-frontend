@@ -1,25 +1,14 @@
 services:
-  lb-index:
-    image: nginx:alpine
-    container_name: lb-index
-    # balancer, traefik, nginx, haproxy, etc. — this is just a simple example.
-    ports:
-      - "80:8000"
-      - 
-    environment:
-      HERMES_API_URL: ${HERMES_API_URL}
-    restart: unless-stopped
-  
   hermes-chat:
     build:
       context: .
       dockerfile: Dockerfile
       args:
-        APP: hermes-chat
+        APP: hermes-chat-final
         PORT: "3000"
     image: hermes-chat:latest
     ports:
-      - "3000:${HERMES_API_URL}"
+      - "3000:3000"
     environment:
       HERMES_API_URL: ${HERMES_API_URL}
     restart: unless-stopped
@@ -29,15 +18,15 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        APP: hermes-gps
+        APP: hermes-gps-final
         PORT: "3001"
     image: hermes-gps:latest
     ports:
-      - "3001:${HERMES_API_URL}"
+      - "3001:3001"
     environment:
       HERMES_API_URL: ${HERMES_API_URL}
     volumes:
       # brazil.pmtiles is too large to bake into the image — mount from the host.
-      # Run  npm run download-tiles  inside apps/hermes-gps/ first.
-      - ./apps/hermes-gps/public/brazil.pmtiles:/app/apps/hermes-gps/public/brazil.pmtiles:ro
+      # Run  npm run download-tiles  inside apps/hermes-gps-final/ first.
+      - ./apps/hermes-gps-final/public/brazil.pmtiles:/app/apps/hermes-gps-final/public/brazil.pmtiles:ro
     restart: unless-stopped
