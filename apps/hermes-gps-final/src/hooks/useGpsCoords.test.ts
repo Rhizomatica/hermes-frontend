@@ -5,10 +5,14 @@ import { useGpsCoords } from './useGpsCoords';
 // Mock @hermes/shared-auth WebSocket
 const mockSubscribe = vi.fn();
 const mockUnsub = vi.fn();
+// Mutable connection state so individual tests can simulate a disconnected
+// WebSocket. The `vi.mock` factory is hoisted above module evaluation, so this
+// state must live in `vi.hoisted` to avoid TDZ/reference errors.
+const mockConnected = vi.hoisted(() => ({ current: true }));
 
 vi.mock('@hermes/shared-auth', () => ({
   useWebSocket: () => ({
-    connected: true,
+    connected: mockConnected.current,
     subscribe: mockSubscribe,
   }),
 }));
@@ -16,6 +20,7 @@ vi.mock('@hermes/shared-auth', () => ({
 describe('useGpsCoords', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockConnected.current = true;
     mockSubscribe.mockReturnValue(mockUnsub);
     globalThis.fetch = vi.fn();
   });
@@ -126,13 +131,7 @@ describe('useGpsCoords', () => {
 
   describe('when WebSocket is disconnected', () => {
     it('falls back to REST polling', async () => {
-      // Override the mock for this test
-      vi.doMock('@hermes/shared-auth', () => ({
-        useWebSocket: () => ({
-          connected: false,
-          subscribe: mockSubscribe,
-        }),
-      }));
+      mockConnected.current = false;
 
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
