@@ -25,7 +25,10 @@
     "typecheck": "turbo run typecheck",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "turbo run test:e2e"
+    "test:e2e": "turbo run test:e2e",
+    "clean": "node scripts/clean.mjs",
+    "reinstall": "npm run clean && npm ci",
+    "rebuild": "npm run reinstall && npm run build"
   },
   "devDependencies": {
     "dotenv": "^16.6.1",
