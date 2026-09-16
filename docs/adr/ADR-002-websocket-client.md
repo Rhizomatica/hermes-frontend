@@ -8,9 +8,11 @@
 
 ## Context
 
-Both `hermes-gps-final` and `hermes-chat-final` need real-time data from the [hermes-radio-daemon](https://github.com/Rhizomatica/hermes-radio-daemon) WebSocket server. The daemon emits events for GPS position updates, message delivery notifications, station online/offline status, and caller logs.
+Both `hermes-gps-final` and `hermes-chat-final` need real-time data from the [hermes-radio-daemon](https://github.com/Rhizomatica/hermes-radio-daemon) WebSocket server. The daemon emits events for GPS position updates, message delivery notifications, station last-heard timestamps, HF link status, and caller logs.
 
 Two apps consume the same WebSocket but subscribe to different event types. A shared WebSocket connection (one per browser tab) reduces server load and simplifies connection management.
+
+**HF Reality Constraint**: The WebSocket connects to the local `hermes-radio-daemon` (localhost:8081), **not** to remote stations over HF. The daemon's connection state reflects local service health only — not HF link availability. A separate `radioDaemon.hfStatus` event provides HF link awareness (see Event Catalog). Concepts that assume sub-second Internet latency (typing indicators, real-time presence, "online" status) are incompatible with HF store-and-forward communication and are **explicitly excluded** from this architecture.
 
 ## Decision
 
@@ -69,8 +71,8 @@ Events consumed from `hermes-radio-daemon`:
 | `message.new` | `hermes-chat-final` | `Message` object |
 | `message.delivered` | `hermes-chat-final` | `{ messageId, timestamp, station }` |
 | `message.synced` | `hermes-chat-final` | `{ messageId, station }` |
-| `station.online` | `hermes-chat-final` | `{ stationId, timestamp }` |
-| `station.offline` | `hermes-chat-final` | `{ stationId, timestamp }` |
+| `station.lastHeard` | `hermes-chat-final` | `{ stationId, timestamp, signalReport?, frequency? }` |
+| `radioDaemon.hfStatus` | `hermes-chat-final` | `{ linkAvailable, nextWindow?, queueDepth, currentTransmission? }` |
 | `caller.new` | `hermes-chat-final` | `CallerEntry` object |
 
 Events sent to `hermes-radio-daemon` (future phases):
@@ -78,8 +80,6 @@ Events sent to `hermes-radio-daemon` (future phases):
 | Event Type | Sent By | Payload |
 |---|---|---|
 | `message.send` | `hermes-chat-final` | `SendPayload` |
-| `typing.start` | `hermes-chat-final` | `{ station }` |
-| `typing.stop` | `hermes-chat-final` | `{ station }` |
 
 ## Consequences
 
@@ -96,7 +96,7 @@ Events sent to `hermes-radio-daemon` (future phases):
 
 ### Mitigations
 - Each domain hook (`useGpsCoords`, `useChatData`) wraps `subscribe` with typed interfaces — raw event strings are never used in components
-- Apps degrade gracefully when `connectionState !== 'connected'`: GPS falls back to REST polling, Chat shows "offline" badge
+- Apps degrade gracefully when `connectionState !== 'connected'`: GPS falls back to REST polling, Chat shows "Radio system: Offline" badge (WebSocket to local daemon) with a separate HF link status indicator ("HF link: No propagation expected until 08:00 UTC")
 - The provider uses React Context with a stable reference — it does not cause unnecessary re-renders
 
 ## Alternatives Considered
@@ -105,7 +105,7 @@ Events sent to `hermes-radio-daemon` (future phases):
 |---|---|
 | Per-app WebSocket connections | Two connections to same daemon waste server resources; no benefit since events are already namespaced |
 | Socket.IO instead of raw WebSocket | `hermes-radio-daemon` uses raw WebSocket with `hermes-v1` subprotocol; adding Socket.IO would require daemon changes |
-| SSE (Server-Sent Events) instead of WebSocket | Unidirectional — cannot send `message.send` or typing indicators to daemon in future phases |
+| SSE (Server-Sent Events) instead of WebSocket | Unidirectional — cannot send `message.send` to daemon |
 | No shared provider — each hook manages its own WS | Duplicates connection logic, reconnection logic, and connection state tracking across hooks |
 
 ## References

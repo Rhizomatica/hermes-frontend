@@ -1,0 +1,12 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>HERMES — IndexedDB Persistence Test</title><style>body{font-family:sans-serif;max-width:600px;margin:2rem auto;padding:0 1rem}.pass{color:green;font-weight:bold}.fail{color:red;font-weight:bold}button{padding:.5rem 1rem;margin:.5rem 0}pre{background:#f5f5f5;padding:1rem;border-radius:4px}</style></head><body><h1>IndexedDB Persistence Test (sBitx)</h1><div id="results"><h2>Test 1: Write</h2><pre id="write-result">Running...</pre><h2>Test 2: Read</h2><pre id="read-result">Running...</pre><h2>Storage Quota</h2><pre id="quota-result">Running...</pre></div><button onclick="runTests()">Re-run</button><button onclick="clearStorage()">Clear</button><script>
+const DB='hermes-persistence-test',ST='test-store',TK='persistence-check';
+function s(e,m,p){e.textContent=m;e.className=p?'pass':'fail'}
+function o(){return new Promise((r,j)=>{const q=indexedDB.open(DB,1);q.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains(ST))d.createObjectStore(ST)};q.onsuccess=e=>r(e.target.result);q.onerror=e=>j(e.target.error)})}
+async function runTests(){
+const w=document.getElementById('write-result'),r=document.getElementById('read-result'),q=document.getElementById('quota-result');
+try{const d=await o();const t=d.transaction(ST,'readwrite');const st=t.objectStore(ST);const td={timestamp:new Date().toISOString(),value:'test'};await new Promise((rs,rj)=>{const rq=st.put(td,TK);rq.onsuccess=rs;rq.onerror=rj});d.close();s(w,'Data written at '+td.timestamp,true)}catch(e){s(w,'Write failed: '+e.message,false)}
+try{const d=await o();const t=d.transaction(ST,'readonly');const st=t.objectStore(ST);const data=await new Promise((rs,rj)=>{const rq=st.get(TK);rq.onsuccess=e=>rs(e.target.result);rq.onerror=rj});d.close();data?s(r,'Data persists! '+data.timestamp,true):s(r,'No data found (first run?)',false)}catch(e){s(r,'Read failed: '+e.message,false)}
+try{if('storage'in navigator&&'estimate'in navigator.storage){const e=await navigator.storage.estimate();s(q,(e.quota/1048576).toFixed(0)+'MB quota, '+(e.usage/1048576).toFixed(1)+'MB used',true)}else s(q,'Storage API unavailable',false)}catch(e){s(q,'Quota check failed: '+e.message,false)}}
+async function clearStorage(){await new Promise((r,j)=>{const q=indexedDB.deleteDatabase(DB);q.onsuccess=r;q.onerror=j});alert('Cleared.')}
+runTests();
+</script></body></html>

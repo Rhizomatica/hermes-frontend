@@ -1,96 +1,59 @@
-# Hermes — Frontend Monorepo
+# HERMES Frontend
 
-**HERMES** (High-frequency Emergency and Rural Multimedia Exchange System) is a project by [Rhizomatica](https://www.rhizomatica.org/hermes/) that enables communities in remote or disaster-affected areas to exchange messages, files, and GPS coordinates over **HF radio** (3–30 MHz shortwave). HF radio propagates over the horizon via ionospheric reflection, making it one of the few communication methods that works without infrastructure — no internet, no cell towers, no satellites required.
+Monorepo for the HERMES sBitx Radio Ground Station — three Next.js 16 apps designed for Raspberry Pi ARM64, 7-inch 800×480 touchscreen (ADR-008).
 
-This repository is the frontend monorepo that consumes the [Hermes API](https://github.com/Rhizomatica/hermes-api) and provides two independent web applications:
-
-| App | Port | Purpose |
-|---|---|---|
-| `hermes-chat` | `:3000` | Messaging client — send/receive messages and files between Hermes stations |
-| `hermes-gps` | `:3001` | Geolocation viewer — displays the station's current GPS coordinates in real time |
-
----
-
-## Tech Stack
-
-| Technology | Version |
-|---|---|
-| Node.js | 25.6.1 |
-| npm | 11.9.0 |
-| Turborepo | 2.9.6 |
-| Next.js | 16.2.4 |
-| React | 19.0.0 |
-| TypeScript | 5.7.2 |
-| Tailwind CSS | 3.4.17 |
-| next-intl | 4.8.3 |
-| lucide-react | 1.7.0 |
-
----
-
-## Project Structure
+## Architecture
 
 ```
-hermes/
-├── apps/
-│   ├── hermes-chat/        # Messaging app (Next.js, port 3000)
-│   └── hermes-gps/         # GPS viewer app (Next.js, port 3001)
-├── packages/
-│   ├── api/                # @hermes/api — shared Hermes API client
-│   ├── ui/                 # @hermes/ui — shared React components
-│   └── tailwind-config/    # @hermes/tailwind-config — shared Tailwind base config
-├── package.json            # Workspace root
-├── turbo.json              # Turborepo pipeline
-└── tsconfig.base.json      # Shared TypeScript config
+nginx: / → shell  /gps → gps  /chat → chat
+├── apps/hermes-shell       (port 4000) Auth + App Selector
+├── apps/hermes-gps-final   (port 4001) Offline GPS Maps
+├── apps/hermes-chat-final  (port 4002) Messaging
+├── packages/shared-auth    Auth, WebSocket, i18n
+├── packages/api            Dual-mode API client
+├── packages/ui             Shared components
+└── packages/tailwind-config Design tokens
 ```
 
----
-
-## Getting Started
-
-### Prerequisites
-
-Copy the environment file and set your Hermes API URL:
-
-```bash
-cp .env.example apps/hermes-chat/.env.local
-cp .env.example apps/hermes-gps/.env.local
-```
-
-Edit each `.env.local`:
-
-```env
-HERMES_API_URL=https://<your-station-ip>
-```
-
-### Install dependencies
+## Quick Start
 
 ```bash
 npm install
+cp .env.example .env.local
+npm run dev          # All three apps
+npm run dev:shell    # Shell only (port 4000)
+npm run dev:gps      # GPS only (port 4001)
+npm run dev:chat     # Chat only (port 4002)
 ```
 
-### Run
+## Testing
 
 ```bash
-# Run hermes-chat only (port 3000)
-npm run dev:chat
-
-# Run hermes-gps only (port 3001)
-npm run dev:gps
-
-# Run both apps in parallel via Turborepo
-npm run dev
+npm test             # Unit tests
+npm run test:e2e     # E2E tests
+npm run typecheck    # TypeScript check
+npm run lint         # ESLint
 ```
 
-### Build
+## Deployment (sBitx)
 
 ```bash
-# Build all apps (shared packages are built first automatically)
-npm run build
+./scripts/build-arm64.sh hermes-shell
+./scripts/deploy-sbitx.sh hermes-shell 10.70.96.5
+./scripts/rollback-sbitx.sh hermes-shell
 ```
 
----
+## Phase Status
 
-## API
+| Phase | Status |
+|---|---|
+| Phase 1 — Shell, Foundation & Login | ✅ Complete |
+| Phase 2 — GPS Application | 📋 Planned |
+| Phase 3 — Chat Application | 📋 Planned |
 
-Both apps proxy requests to the [Hermes REST API](https://github.com/Rhizomatica/hermes-api).
-The shared `@hermes/api` package (`packages/api/`) handles all HTTP communication with the backend over HTTPS (with self-signed certificate support for on-device deployments).
+## Key Docs
+
+- [Development Plan](docs/development-plan.md)
+- [Engineering Standards](docs/governance/engineering-standards.md)
+- [Architecture](docs/architecture/frontend-overview.md)
+- [ADRs](docs/adr/)

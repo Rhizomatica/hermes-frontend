@@ -1,10 +1,11 @@
+import http from 'node:http';
 import https from 'node:https';
 
 const insecureAgent = new https.Agent({ rejectUnauthorized: false });
 
 function getBase(): string {
   const url = process.env.HERMES_API_URL ?? 'https://10.70.96.5';
-  return url.endsWith('/') ? url : url + '/api/';
+  return url.endsWith('/') ? url.slice(0, -1) : url;
 }
 
 function hermesRequest(
@@ -13,7 +14,10 @@ function hermesRequest(
   body?: string,
   cookie?: string,
 ): Promise<{ data: unknown; status: number }> {
-  const url = new URL(path, getBase());
+  const base = getBase();
+  const url = new URL(path.startsWith('/') ? path : '/' + path, base);
+  const isHttps = url.protocol === 'https:';
+
   return new Promise((resolve) => {
     const headers: Record<string, string | number> = {
       'Content-Type': 'application/json',
@@ -21,14 +25,16 @@ function hermesRequest(
     if (body) headers['Content-Length'] = Buffer.byteLength(body);
     if (cookie) headers['Cookie'] = cookie;
 
-    const req = https.request(
+    const transport = isHttps ? https : http;
+
+    const req = transport.request(
       {
         hostname: url.hostname,
-        port: url.port || 443,
+        port: url.port || (isHttps ? 443 : 80),
         path: url.pathname + url.search,
         method,
         headers,
-        agent: insecureAgent,
+        agent: isHttps ? insecureAgent : undefined,
       },
       (res) => {
         let raw = '';
@@ -52,6 +58,8 @@ function hermesRequest(
   });
 }
 
+export type { GpsPosition, GpsFix } from './types';
+
 export const hermesGet = (path: string, cookie?: string) =>
   hermesRequest(path, 'GET', undefined, cookie);
 
@@ -74,8 +82,10 @@ export function hermesPostMultipart(
   file: MultipartFile,
   cookie?: string,
 ): Promise<{ data: unknown; status: number }> {
-  const url = new URL(path, getBase());
+  const base = getBase();
+  const url = new URL(path.startsWith('/') ? path : '/' + path, base);
   const boundary = `----HermesBoundary${Date.now().toString(16)}`;
+  const isHttps = url.protocol === 'https:';
 
   const parts: Buffer[] = [];
   for (const [name, value] of fields) {
@@ -90,6 +100,7 @@ export function hermesPostMultipart(
   parts.push(Buffer.from(`\r\n--${boundary}--\r\n`));
 
   const body = Buffer.concat(parts);
+  const transport = isHttps ? https : http;
 
   return new Promise((resolve) => {
     const headers: Record<string, string | number> = {
@@ -98,14 +109,14 @@ export function hermesPostMultipart(
     };
     if (cookie) headers['Cookie'] = cookie;
 
-    const req = https.request(
+    const req = transport.request(
       {
         hostname: url.hostname,
-        port: url.port || 443,
+        port: url.port || (isHttps ? 443 : 80),
         path: url.pathname + url.search,
         method: 'POST',
         headers,
-        agent: insecureAgent,
+        agent: isHttps ? insecureAgent : undefined,
       },
       (res) => {
         let raw = '';
@@ -129,18 +140,21 @@ export function hermesGetBuffer(
   path: string,
   cookie?: string,
 ): Promise<{ buffer: Buffer; status: number; contentType: string }> {
-  const url = new URL(path, getBase());
+  const base = getBase();
+  const url = new URL(path.startsWith('/') ? path : '/' + path, base);
+  const isHttps = url.protocol === 'https:';
+  const transport = isHttps ? https : http;
 
   return new Promise((resolve) => {
     const extraHeaders: Record<string, string> = cookie ? { Cookie: cookie } : {};
-    const req = https.request(
+    const req = transport.request(
       {
         hostname: url.hostname,
-        port: url.port || 443,
+        port: url.port || (isHttps ? 443 : 80),
         path: url.pathname + url.search,
         method: 'GET',
         headers: { ...extraHeaders },
-        agent: insecureAgent,
+        agent: isHttps ? insecureAgent : undefined,
       },
       (res) => {
         const chunks: Buffer[] = [];

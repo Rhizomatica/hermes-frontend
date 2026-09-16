@@ -1,0 +1,23 @@
+{
+  "gps": {
+    "title": "GPS Viewer",
+    "loading": "Loading map…",
+    "noPosition": "Waiting for GPS position…",
+    "lastUpdated": "Last updated",
+    "staleData": "Stale",
+    "refresh": "Refresh position",
+    "altitude": "Alt",
+    "speed": "Speed",
+    "showTrail": "Show breadcrumb trail",
+    "hideTrail": "Hide breadcrumb trail",
+    "trailOn": "Trail ON",
+    "trailOff": "Trail OFF",
+    "copyLatitude": "Copy latitude",
+    "copyLongitude": "Copy longitude"
+  },
+  "common": {
+    "backToHermes": "← Back to HERMES",
+    "themeToggle": "Toggle theme",
+    "localeToggle": "Change language"
+  }
+}

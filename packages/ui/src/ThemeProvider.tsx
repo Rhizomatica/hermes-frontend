@@ -14,11 +14,13 @@ const ThemeContext = createContext<ThemeContextValue>({
   toggle: () => {},
 });
 
+const STORAGE_KEY = "hermes-theme";
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>("dark");
 
   useEffect(() => {
-    const saved = localStorage.getItem("hermes_theme") as Theme | null;
+    const saved = localStorage.getItem(STORAGE_KEY) as Theme | null;
     const preferred: Theme = window.matchMedia("(prefers-color-scheme: dark)").matches
       ? "dark"
       : "light";
@@ -30,7 +32,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   function toggle() {
     setTheme((prev) => {
       const next: Theme = prev === "dark" ? "light" : "dark";
-      localStorage.setItem("hermes_theme", next);
+      localStorage.setItem(STORAGE_KEY, next);
       document.documentElement.classList.toggle("dark", next === "dark");
       return next;
     });

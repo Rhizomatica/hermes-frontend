@@ -11,11 +11,7 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
-<<<<<<<< HEAD:packages/config/typescript/base.json
-    "jsx": "preserve"
-========
     "jsx": "preserve",
     "incremental": true
->>>>>>>> main:tsconfig.base.json
   }
 }

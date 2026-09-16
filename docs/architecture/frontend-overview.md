@@ -15,7 +15,7 @@ It consumes two backend systems, both running on the same device:
 | System | Purpose | Protocol | Local URL |
 |---|---|---|---|
 | [hermes-backend](https://github.com/Rhizomatica/hermes-backend) | REST API: auth, messages, files, stations, GPS data | HTTP (localhost) | `http://localhost:8080` |
-| [hermes-radio-daemon](https://github.com/Rhizomatica/hermes-radio-daemon) | Real-time events: GPS position, message delivery, station status | WebSocket `hermes-v1` | `ws://localhost:8081` |
+| [hermes-radio-daemon](https://github.com/Rhizomatica/hermes-radio-daemon) | Real-time events: GPS position, message delivery, station last-heard, HF link status | WebSocket `hermes-v1` | `ws://localhost:8081` |
 
 ### Deployment Targets
 
@@ -158,7 +158,7 @@ It consumes two backend systems, both running on the same device:
 │
 ├── /chat/[station]
 │   └── ChatScreen
-│       ├── ChatHeader (back, station name, online status, refresh)
+│       ├── ChatHeader (back, station name, last-heard status, refresh)
 │       ├── NextSyncBadge
 │       ├── MessageList
 │       │   ├── LoadingSpinner (top, history load)
@@ -167,7 +167,7 @@ It consumes two backend systems, both running on the same device:
 │       │       ├── DeleteMessageButton (own messages)
 │       │       ├── LockIcon / UnlockButton (encrypted)
 │       │       ├── FileAttachment (images, audio, docs)
-│       │       ├── DoubleCheck (sent/synced status)
+│       │       ├── DeliveryStatus (5-stage HF delivery pipeline)
 │       │       └── Timestamp
 │       ├── NewMessagesCue (floating button)
 │       ├── ErrorBanner
@@ -234,38 +234,52 @@ WebSocketProvider (@hermes/shared-auth)
     ├── Parse JSON message
     ├── Route to subscribers by eventType
     │
-    ├── gps.position ────→ useGpsCoords.subscribe() → setCoords()
-    ├── gps.fix ─────────→ useGpsCoords.subscribe() → setFix()
-    ├── message.new ─────→ useChatData.subscribe() → setMessages()
-    ├── message.delivered → useChatData.subscribe() → setSyncedIds()
-    ├── station.online ──→ useChatData.subscribe() → setOnlineStatus()
-    └── caller.new ──────→ useCallerList.subscribe() → setCallers()
+    ├── gps.position ────────→ useGpsCoords.subscribe() → setCoords()
+    ├── gps.fix ─────────────→ useGpsCoords.subscribe() → setFix()
+    ├── message.new ─────────→ useChatData.subscribe() → setMessages()
+    ├── message.delivered ───→ useChatData.subscribe() → setSyncedIds()
+    ├── message.synced ──────→ useChatData.subscribe() → setSyncedIds()
+    ├── station.lastHeard ───→ useChatData.subscribe() → setLastHeard()
+    ├── radioDaemon.hfStatus → useChatData.subscribe() → setHfStatus()
+    └── caller.new ──────────→ useCallerList.subscribe() → setCallers()
 ```
 
-### 4.3 Offline Message Queue Flow
+### 4.3 HF Message Delivery Pipeline (5-Stage)
 
 ```
 User taps "Send"
     │
     ▼
-useSendMessage.sendMessage()
-    │
-    ├── connectionState === 'connected'?
-    │   ├── Yes → POST /api/messages → success
-    │   └── No  → enqueue to IndexedDB
+Save to IndexedDB (status: 'composed')
     │
     ▼
-On reconnect (connectionState → 'connected'):
+POST /api/messages (if backend reachable)
     │
-    useOfflineQueue.drainQueue()
-    │
-    ├── For each pending (FIFO):
-    │   ├── POST /api/messages
-    │   ├── Success → delete from IndexedDB, insert optimistic message
-    │   └── Failure → retryCount++; if >3 → status: 'failed'
+    ├── 2xx → status: 'queued' (awaiting HF transmission window)
+    └── !2xx → keep as 'composed', retry on reconnect
     │
     ▼
-UI updates: pending count badge, failed message retry button
+hermes-backend + Mercury modem handle HF scheduling
+    │
+    ▼
+radioDaemon.hfStatus event → currentTransmission = uuid
+    │
+    └── status: 'transmitting' (animated radio waves icon)
+    │
+    ▼
+message.synced event
+    │
+    └── status: 'transmitted' (awaiting remote ACK)
+    │
+    ▼
+message.delivered event
+    │
+    └── status: 'delivered' (green double checkmark)
+    │
+    ▼
+On failure (after backend retries exhausted):
+    │
+    └── status: 'failed' (red X with manual retry option)
 ```
 
 ---
