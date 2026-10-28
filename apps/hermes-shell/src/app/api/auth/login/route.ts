@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { hermesPost, hermesGet } from '@hermes/api';
+import { hermesPost } from '@hermes/api';
 
 /**
  * POST /api/auth/login
  *
- * Proxies login credentials to hermes-backend.
- * Sets hermes_token and hermes_refresh Set-Cookie headers on success.
+ * Proxies login credentials to the station API (hermes-radio-daemon).
+ * Sets the hermes_session cookie on success.
  *
- * Backend expects: { callsign, password } → { access, refresh, user }
+ * Backend: POST /api/v2/session  { username, password }
+ *        → 201 { user, token, expires_at } + Set-Cookie: hermes_session
  */
 export async function POST(request: NextRequest) {
   let body: Record<string, unknown>;
@@ -17,50 +18,38 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message: 'Invalid request body.' }, { status: 400 });
   }
 
-  const callsign = typeof body.callsign === 'string' ? body.callsign : '';
+  const username = typeof body.username === 'string' ? body.username : '';
   const password = typeof body.password === 'string' ? body.password : '';
 
-  if (!callsign.trim()) {
-    return NextResponse.json({ message: 'Callsign is required.' }, { status: 400 });
+  if (!username.trim()) {
+    return NextResponse.json({ message: 'Username is required.' }, { status: 400 });
   }
-  if (!password.trim()) {
+  if (!password) {
     return NextResponse.json({ message: 'Password is required.' }, { status: 400 });
   }
 
   const cookie = request.headers.get('cookie') ?? undefined;
-  const { data, status } = await hermesPost('/auth/login', { callsign: callsign.trim(), password }, cookie);
+  const { data, status } = await hermesPost('/api/v2/session', { username: username.trim(), password }, cookie);
 
   if (status >= 400) return NextResponse.json(data, { status });
 
-  const response = NextResponse.json(data, { status });
-  const authData = data as {
-    access?: string;
-    refresh?: string;
-    accessToken?: string;
-    refreshToken?: string;
-    user?: unknown;
-  };
-  const access = authData.access ?? authData.accessToken;
-  const refresh = authData.refresh ?? authData.refreshToken;
-  if (access) {
-    // HttpOnly: the client must not read tokens from JavaScript (ADR-003).
+  const session = data as { user?: unknown; token?: string; expires_at?: string };
+
+  // Return the authenticated user; AuthProvider re-validates via /api/auth/me.
+  const response = NextResponse.json(session.user ?? {});
+
+  if (session.token) {
+    // HttpOnly: the client must not read the token from JavaScript (ADR-003).
     response.headers.set(
       'Set-Cookie',
-      `hermes_token=${access}; HttpOnly; SameSite=Lax; Path=/; Max-Age=604800`,
-    );
-  }
-  if (refresh) {
-    response.headers.append(
-      'Set-Cookie',
-      `hermes_refresh=${refresh}; HttpOnly; SameSite=Lax; Path=/; Max-Age=2592000`,
+      `hermes_session=${session.token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=604800`,
     );
   }
 
-  // Persist a DISPLAY-ONLY user projection (no role/status/authorization
+  // Persist a DISPLAY-ONLY user projection (no role/disabled authorization
   // claims) to a client-readable cookie for offline grace and cross-port
   // sharing in dev. Authoritative identity is always served by /api/auth/me.
-  const user = authData.user ?? (access ? await fetchUserFromBackend(access) : undefined);
-  const cached = user ? toCachedUser(user) : null;
+  const cached = session.user ? toCachedUser(session.user) : null;
   if (cached) {
     const userJson = encodeURIComponent(JSON.stringify(cached));
     response.headers.append('Set-Cookie', `hermes_user=${userJson}; SameSite=Lax; Path=/; Max-Age=604800`);
@@ -69,26 +58,17 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * Strip authorization claims (role, status) and unknown fields before writing
- * the user to the client-readable cookie (see F3).
+ * Strip authorization claims (role, disabled) and unknown fields before
+ * writing the user to the client-readable cookie (see F3).
  */
 function toCachedUser(user: unknown): Record<string, unknown> | null {
   if (!user || typeof user !== 'object') return null;
   const u = user as Record<string, unknown>;
   return {
     id: u.id ?? null,
-    callsign: u.callsign ?? null,
-    displayName: u.displayName ?? null,
-    email: u.email ?? null,
+    username: u.username ?? null,
+    display_name: u.display_name ?? null,
     locale: u.locale ?? null,
-    avatarPath: u.avatarPath ?? null,
+    avatar: u.avatar ?? null,
   };
-}
-
-/** Fetch the authenticated user profile from the backend using a bearer token. */
-async function fetchUserFromBackend(accessToken: string): Promise<unknown> {
-  const authorization = accessToken.startsWith('Bearer ') ? accessToken : `Bearer ${accessToken}`;
-  const { data, status } = await hermesGet('/users/me', undefined, authorization);
-  if (status >= 400) return undefined;
-  return data;
 }

@@ -1,11 +1,11 @@
 {
   "login": {
-    "callsignLabel": "Indicativo",
+    "usernameLabel": "Usuário",
     "passwordLabel": "Senha",
     "submit": "Entrar",
     "submitting": "Entrando…",
     "loading": "Carregando…",
-    "invalidCredentials": "E-mail ou senha inválidos.",
+    "invalidCredentials": "Usuário ou senha inválidos.",
     "networkError": "Não foi possível conectar ao servidor."
   },
   "home": {
@@ -22,11 +22,9 @@
   },
   "user": {
     "title": "Informações do Usuário",
-    "callsign": "Indicativo",
+    "username": "Usuário",
     "displayName": "Nome de Exibição",
-    "email": "E-mail",
     "role": "Função",
-    "status": "Status",
     "locale": "Idioma",
     "na": "N/D"
   },

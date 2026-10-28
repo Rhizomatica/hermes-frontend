@@ -53,7 +53,7 @@ export interface AuthContextValue {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
-  login: (callsign: string, password: string) => Promise<void>;
+  login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -128,17 +128,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [store]);
 
   const login = useCallback(
-    async (callsign: string, password: string) => {
+    async (username: string, password: string) => {
       dispatch({ type: 'LOADING' });
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ callsign, password }),
+        body: JSON.stringify({ username, password }),
       });
 
       if (!res.ok) {
-        const err = (await res.json().catch(() => ({}))) as { message?: string };
-        const message = err.message ?? 'Invalid credentials.';
+        const err = (await res.json().catch(() => ({}))) as {
+          message?: string;
+          detail?: string;
+          title?: string;
+        };
+        const message = err.detail ?? err.message ?? err.title ?? 'Invalid credentials.';
         dispatch({ type: 'UNAUTHENTICATED', error: message });
         throw new Error(message);
       }

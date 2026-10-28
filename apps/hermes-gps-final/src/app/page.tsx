@@ -163,14 +163,14 @@ export default function GpsPage() {
         {authUser && (
           <div className="flex items-center gap-2 border-b border-gray-200 pb-2 dark:border-gray-700">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-500 text-xs font-bold text-white">
-              {(authUser.displayName || authUser.callsign).slice(0, 2).toUpperCase()}
+              {(authUser.display_name || authUser.username).slice(0, 2).toUpperCase()}
             </div>
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold">
-                {authUser.displayName || authUser.callsign}
+                {authUser.display_name || authUser.username}
               </p>
               <p className="truncate text-xs text-foreground/60">
-                {t('callsign')}: {authUser.callsign}
+                {t('username')}: {authUser.username}
               </p>
             </div>
           </div>

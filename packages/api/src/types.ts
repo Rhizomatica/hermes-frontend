@@ -90,20 +90,25 @@ export interface Station {
 /**
  * The authenticated Hermes user.
  *
- * Matches the backend `GET /users/me` response (hermes-backend `users`
- * table with `passwordHash` stripped). This is the canonical shape.
+ * Matches the station API's `User` schema (hermes-radio-daemon
+ * `api-rest.yaml`): `GET /api/v2/session` returns a `Session` whose `user`
+ * field is this shape (a `passwordHash` is never present).
  */
 export interface HermesUser {
-  id: string; // UUID
-  callsign: string;
-  displayName: string;
-  email: string | null;
-  role: string; // 'admin' | 'operator' | 'user' | 'readonly'
-  status: string; // 'active' | 'suspended' | 'pending'
-  avatarPath: string | null;
-  metadata: string; // JSON-encoded string
-  locale: string; // 'en' | 'es' | 'pt-BR'
-  createdAt: string;
-  updatedAt: string;
-  lastSeenAt: string | null;
+  id: number;
+  username: string;
+  display_name: string | null;
+  avatar: string | null;
+  role: HermesRole;
+  locale: string; // 'en' | 'es' | 'pt-BR' | 'fr'
+  phone: string | null;
+  location: string | null;
+  disabled: boolean;
+  lxmf_address: unknown | null;
+  last_login_at: string | null;
+  created_at: string;
+  updated_at: string;
 }
+
+/** Station API roles, least to most privileged (api-rest.yaml `Role`). */
+export type HermesRole = 'readonly' | 'user' | 'operator' | 'admin';

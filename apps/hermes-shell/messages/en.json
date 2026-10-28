@@ -1,11 +1,11 @@
 {
   "login": {
-    "callsignLabel": "Callsign",
+    "usernameLabel": "Username",
     "passwordLabel": "Password",
     "submit": "Sign In",
     "submitting": "Signing in…",
     "loading": "Loading…",
-    "invalidCredentials": "Invalid email or password.",
+    "invalidCredentials": "Invalid username or password.",
     "networkError": "Could not reach the server."
   },
   "home": {
@@ -22,11 +22,9 @@
   },
   "user": {
     "title": "User Information",
-    "callsign": "Callsign",
+    "username": "Username",
     "displayName": "Display Name",
-    "email": "Email",
     "role": "Role",
-    "status": "Status",
     "locale": "Locale",
     "na": "N/A"
   },

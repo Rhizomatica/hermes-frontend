@@ -40,15 +40,13 @@ export default function AppSelector() {
   const nextLocale = locale === 'en' ? 'pt' : 'en';
 
   const userItems = [
-    { label: tu('callsign'), value: user.callsign },
-    { label: tu('displayName'), value: user.displayName },
-    { label: tu('email'), value: user.email ?? tu('na') },
+    { label: tu('username'), value: user.username },
+    { label: tu('displayName'), value: user.display_name ?? user.username },
     { label: tu('role'), value: user.role },
-    { label: tu('status'), value: user.status },
     { label: tu('locale'), value: user.locale },
   ];
 
-  const initials = user.displayName
+  const initials = (user.display_name ?? user.username)
     .split(' ')
     .map((n) => n[0])
     .filter(Boolean)
@@ -91,10 +89,10 @@ export default function AppSelector() {
             <div>
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('welcome')}</p>
               <h1 className="text-2xl font-black tracking-tight text-gray-900 dark:text-white">
-                {user.displayName}
+                {user.display_name ?? user.username}
               </h1>
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                {user.callsign}
+                {user.username}
               </p>
             </div>
           </div>

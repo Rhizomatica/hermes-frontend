@@ -1,7 +1,7 @@
 {
   "gps": {
     "title": "Visualizador GPS",
-    "callsign": "Indicativo",
+    "username": "Usuário",
     "operator": "Operador",
     "loading": "Carregando mapa…",
     "noPosition": "Aguardando posição GPS…",

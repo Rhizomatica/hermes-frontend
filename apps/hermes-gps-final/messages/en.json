@@ -1,7 +1,7 @@
 {
   "gps": {
     "title": "HERMES GPS Viewer",
-    "callsign": "Callsign",
+    "username": "Username",
     "operator": "Operator",
     "loading": "Loading map…",
     "noPosition": "Waiting for GPS position…",

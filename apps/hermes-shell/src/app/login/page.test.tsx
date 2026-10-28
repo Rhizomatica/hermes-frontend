@@ -44,7 +44,7 @@ describe('LoginPage', () => {
   it('renders the form and disables submit while the fields are empty', () => {
     render(<LoginPage />);
 
-    expect(screen.getByLabelText('callsignLabel')).toBeTruthy();
+    expect(screen.getByLabelText('usernameLabel')).toBeTruthy();
     expect(screen.getByLabelText('passwordLabel')).toBeTruthy();
 
     const submit = screen.getByRole('button', { name: 'submit' }) as HTMLButtonElement;
@@ -56,7 +56,7 @@ describe('LoginPage', () => {
 
     const submit = screen.getByRole('button', { name: 'submit' }) as HTMLButtonElement;
 
-    fireEvent.change(screen.getByLabelText('callsignLabel'), { target: { value: 'PU2UIT' } });
+    fireEvent.change(screen.getByLabelText('usernameLabel'), { target: { value: 'PU2UIT' } });
     expect(submit.disabled).toBe(true);
 
     fireEvent.change(screen.getByLabelText('passwordLabel'), { target: { value: 'secret' } });
@@ -82,7 +82,7 @@ describe('LoginPage', () => {
     authState.login.mockResolvedValue(undefined);
     const { container } = render(<LoginPage />);
 
-    fireEvent.change(screen.getByLabelText('callsignLabel'), { target: { value: 'PU2UIT' } });
+    fireEvent.change(screen.getByLabelText('usernameLabel'), { target: { value: 'PU2UIT' } });
     fireEvent.change(screen.getByLabelText('passwordLabel'), { target: { value: 'secret' } });
     fireEvent.submit(container.querySelector('form')!);
 
@@ -96,7 +96,7 @@ describe('LoginPage', () => {
     authState.login.mockRejectedValue(new Error('bad credentials'));
     const { container } = render(<LoginPage />);
 
-    fireEvent.change(screen.getByLabelText('callsignLabel'), { target: { value: 'PU2UIT' } });
+    fireEvent.change(screen.getByLabelText('usernameLabel'), { target: { value: 'PU2UIT' } });
     fireEvent.change(screen.getByLabelText('passwordLabel'), { target: { value: 'secret' } });
     fireEvent.submit(container.querySelector('form')!);
 

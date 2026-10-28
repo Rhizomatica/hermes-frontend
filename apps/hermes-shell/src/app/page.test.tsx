@@ -65,18 +65,19 @@ vi.mock('@/components/InfoList', () => ({
 
 function makeUser(overrides: Partial<HermesUser> = {}): HermesUser {
   return {
-    id: '00000000-0000-0000-0000-000000000001',
-    callsign: 'PU2UIT',
-    displayName: 'Matheus Oliveira',
-    email: 'matheus@example.com',
+    id: 1,
+    username: 'pu2uit',
+    display_name: 'Matheus Thibau',
+    avatar: null,
     role: 'operator',
-    status: 'active',
-    avatarPath: null,
-    metadata: '{}',
     locale: 'en',
-    createdAt: '2026-01-01T00:00:00.000Z',
-    updatedAt: '2026-01-01T00:00:00.000Z',
-    lastSeenAt: null,
+    phone: null,
+    location: null,
+    disabled: false,
+    lxmf_address: null,
+    last_login_at: null,
+    created_at: '2026-01-01T00:00:00.000Z',
+    updated_at: '2026-01-01T00:00:00.000Z',
     ...overrides,
   };
 }
@@ -103,7 +104,7 @@ describe('AppSelector', () => {
     render(<AppSelector />);
 
     expect(screen.getByText('Matheus Oliveira')).toBeTruthy();
-    expect(screen.getByText('PU2UIT')).toBeTruthy();
+    expect(screen.getByText('pu2uit')).toBeTruthy();
     expect(screen.getByText('MO')).toBeTruthy();
     expect(screen.getByText('gpsViewer')).toBeTruthy();
     expect(screen.getByText('chat')).toBeTruthy();

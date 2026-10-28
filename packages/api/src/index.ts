@@ -2,22 +2,28 @@ import http from 'node:http';
 import https from 'node:https';
 
 function getBase(): string {
-  const url = process.env.HERMES_API_URL ?? 'http://localhost:3000';
+  const url = process.env.HERMES_API_URL ?? 'http://localhost:8080';
   return url.endsWith('/') ? url.slice(0, -1) : url;
 }
 
-function getAccessTokenFromCookie(cookie?: string): string | null {
+function getSessionTokenFromCookie(cookie?: string): string | null {
   if (!cookie) return null;
-  const match = cookie.match(/(?:^|;\s*)hermes_token=([^;]*)/);
+  const match = cookie.match(/(?:^|;\s*)hermes_session=([^;]*)/);
   return match ? decodeURIComponent(match[1]) : null;
 }
 
 function buildAuthHeaders(cookie?: string, authorization?: string): Record<string, string> {
   const headers: Record<string, string> = {};
-  if (cookie) headers['Cookie'] = cookie;
-  // Prefer an explicit Authorization header (dev/localStorage path); otherwise
-  // derive it from the hermes_token cookie (production path).
-  const token = authorization ?? getAccessTokenFromCookie(cookie);
+  if (cookie) {
+    headers['Cookie'] = cookie;
+    // The station API enforces CSRF on state-changing requests authenticated
+    // with the session cookie. This proxy is not a browser, so it opts out
+    // with X-Hermes-CSRF: 1 (Bearer-authenticated requests are exempt anyway).
+    headers['X-Hermes-CSRF'] = '1';
+  }
+  // Prefer an explicit Authorization header; otherwise derive it from the
+  // hermes_session cookie (the session token is opaque).
+  const token = authorization ?? getSessionTokenFromCookie(cookie);
   if (token) headers['Authorization'] = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
   return headers;
 }
@@ -63,6 +69,9 @@ function hermesRequest(
       },
     );
 
+    req.setTimeout(10_000, () => {
+      req.destroy(new Error('Hermes API request timed out'));
+    });
     req.on('error', () => {
       resolve({ data: { message: 'Could not reach the Hermes API.' }, status: 503 });
     });
@@ -145,6 +154,9 @@ export function hermesPostMultipart(
         });
       },
     );
+    req.setTimeout(10_000, () => {
+      req.destroy(new Error('Hermes API request timed out'));
+    });
     req.on('error', () => resolve({ data: { message: 'Could not reach the Hermes API.' }, status: 503 }));
     req.write(body);
     req.end();
@@ -182,6 +194,9 @@ export function hermesGetBuffer(
         });
       },
     );
+    req.setTimeout(10_000, () => {
+      req.destroy(new Error('Hermes API request timed out'));
+    });
     req.on('error', () => resolve({ buffer: Buffer.alloc(0), status: 503, contentType: 'application/octet-stream' }));
     req.end();
   });
