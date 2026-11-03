@@ -1,6 +1,6 @@
 import { getRequestConfig } from 'next-intl/server';
 import { cookies } from 'next/headers';
-import { isLocale, type Locale } from '@hermes/shared-auth';
+import { DEFAULT_TIME_ZONE, isLocale, type Locale } from '@hermes/shared-auth';
 
 export default getRequestConfig(async () => {
   // Resolve the locale server-side from the shared host-scoped cookie so the
@@ -10,6 +10,8 @@ export default getRequestConfig(async () => {
 
   return {
     locale,
+    // Deterministic global default to avoid server/client markup mismatches.
+    timeZone: DEFAULT_TIME_ZONE,
     messages: (await import(`../../messages/${locale}.json`)).default,
   };
 });

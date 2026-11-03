@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { NextIntlClientProvider } from 'next-intl';
-import { useLocale } from '@hermes/shared-auth';
+import { DEFAULT_TIME_ZONE, useLocale } from '@hermes/shared-auth';
 import en from '../../messages/en.json';
 import pt from '../../messages/pt.json';
 
@@ -18,7 +18,7 @@ const messagesByLocale = { en, pt } as const;
 export default function IntlProvider({ children }: { children: ReactNode }) {
   const { locale } = useLocale();
   return (
-    <NextIntlClientProvider locale={locale} messages={messagesByLocale[locale]}>
+    <NextIntlClientProvider locale={locale} timeZone={DEFAULT_TIME_ZONE} messages={messagesByLocale[locale]}>
       {children}
     </NextIntlClientProvider>
   );

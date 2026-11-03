@@ -8,6 +8,7 @@ const localeState = vi.hoisted(() => ({ current: 'en' as 'en' | 'pt' }));
 
 vi.mock('@hermes/shared-auth', () => ({
   useLocale: () => ({ locale: localeState.current }),
+  DEFAULT_TIME_ZONE: 'UTC',
 }));
 
 vi.mock('next-intl', () => ({
