@@ -67,7 +67,7 @@ function makeUser(overrides: Partial<HermesUser> = {}): HermesUser {
   return {
     id: 1,
     username: 'pu2uit',
-    display_name: 'Matheus Thibau',
+    display_name: 'Matheus Oliveira',
     avatar: null,
     role: 'operator',
     locale: 'en',
