@@ -144,26 +144,25 @@ export function useChatData(
     refresh();
   }, [refresh]);
 
-  // Real-time: new message arrives
+  // Real-time: a message arrived or its state changed. The daemon's `messages`
+  // topic (hermes.v1) carries `{ change, message }`; `created`/`received`
+  // append a message. (This topic is not yet implemented by the daemon, so it
+  // stays silent until it lands; UUCP sync deltas keep coming from REST.)
   useEffect(() => {
-    const unsubNew = subscribe('message.new', (event) => {
-      const msg = event.payload as unknown as Message;
-      setAllMessages((prev) => {
-        if (prev.some((m) => m.id === msg.id)) return prev;
-        return [...prev, msg];
-      });
-    });
-
-    const unsubDelivered = subscribe('message.delivered', (event) => {
-      const id = (event.payload as { id?: number }).id;
-      if (typeof id === 'number') {
-        setSyncedIds((prev) => new Set(prev).add(id));
+    const unsubscribe = subscribe('messages', (event) => {
+      const data = event.data as { change?: string; message?: Message } | undefined;
+      const msg = data?.message;
+      if (!msg) return;
+      if (data?.change === 'created' || data?.change === 'received') {
+        setAllMessages((prev) => {
+          if (prev.some((m) => m.id === msg.id)) return prev;
+          return [...prev, msg];
+        });
       }
     });
 
     return () => {
-      unsubNew();
-      unsubDelivered();
+      unsubscribe();
     };
   }, [subscribe]);
 

@@ -8,7 +8,7 @@ import { Protocol } from 'pmtiles';
 import { buildStyle } from '@/lib/mapStyle';
 import { getMapTokens } from '@hermes/tailwind-config/map-tokens';
 import { Navigation2 } from 'lucide-react';
-import type { GpsPosition } from '@hermes/api';
+import type { GpsPoint } from '@hermes/api';
 
 export interface MapViewProps {
   /** Latitude in decimal degrees */
@@ -22,7 +22,7 @@ export interface MapViewProps {
   /** Whether to use dark theme */
   isDark: boolean;
   /** Breadcrumb trail positions (oldest → newest, up to 500) */
-  breadcrumb?: GpsPosition[];
+  breadcrumb?: GpsPoint[];
   /** Whether to show the breadcrumb trail */
   showBreadcrumb?: boolean;
   /** Callback when tile loading fails */
@@ -360,7 +360,7 @@ export default function MapView({
     const pointFeatures: GeoJSON.Feature<GeoJSON.Point>[] = breadcrumb.map(
       (p, index) => ({
         type: 'Feature',
-        properties: { index, timestamp: p.timestamp },
+        properties: { index, timestamp: p.at },
         geometry: {
           type: 'Point',
           coordinates: [p.longitude, p.latitude],
@@ -423,7 +423,7 @@ export default function MapView({
           hour: '2-digit',
           minute: '2-digit',
           second: '2-digit',
-        }).format(new Date(point.timestamp));
+        }).format(new Date(point.at));
 
         new maplibregl.Popup()
           .setLngLat([point.longitude, point.latitude])

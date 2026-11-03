@@ -1,22 +1,23 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import type { GpsPosition } from '@hermes/api';
+import type { GpsPoint } from '@hermes/api';
 
 /**
  * ServerState<T> for GPS position history.
  *
- * Fetches historical GPS positions from GET /api/gps/history and
- * appends new positions as they arrive via a callback.
+ * Fetches historical GPS positions from GET /api/gps/history (which proxies
+ * hermes-radio-daemon `GET /api/v2/gps/trip`) and appends new positions as
+ * they arrive via a callback.
  */
 export interface GpsHistoryState {
   /** Array of positions from oldest to newest (up to 500 points) */
-  history: GpsPosition[];
+  history: GpsPoint[];
   loading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
   /** Append a new position to the history trail */
-  appendPosition: (pos: GpsPosition) => void;
+  appendPosition: (pos: GpsPoint) => void;
 }
 
 const MAX_POINTS = 500;
@@ -36,7 +37,7 @@ const inFlightRequests = new Map<string, Promise<unknown>>();
  * appendPosition({ latitude: -23.45, longitude: -46.78, ... });
  */
 export function useGpsHistory(): GpsHistoryState {
-  const [history, setHistory] = useState<GpsPosition[]>([]);
+  const [history, setHistory] = useState<GpsPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,7 +50,7 @@ export function useGpsHistory(): GpsHistoryState {
     try {
       const existing = inFlightRequests.get(cacheKey);
       if (existing) {
-        const cached = (await existing) as GpsPosition[];
+        const cached = (await existing) as GpsPoint[];
         setHistory(cached);
         return;
       }
@@ -60,15 +61,15 @@ export function useGpsHistory(): GpsHistoryState {
             const err = await res.json().catch(() => ({ message: 'Unknown error' }));
             throw new Error(err.message ?? 'Failed to fetch history');
           }
-          const json = (await res.json()) as { data: GpsPosition[] };
+          const json = (await res.json()) as { data: GpsPoint[] };
           return json.data ?? [];
         });
 
       inFlightRequests.set(cacheKey, promise);
 
       const result = await promise;
-      // Reverse to get oldest-first ordering
-      setHistory([...result].reverse());
+      // The daemon returns the breadcrumb oldest-first, matching the trail order.
+      setHistory(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch history');
     } finally {
@@ -84,7 +85,7 @@ export function useGpsHistory(): GpsHistoryState {
     return () => clearTimeout(id);
   }, [fetchHistory]);
 
-  const appendPosition = useCallback((pos: GpsPosition) => {
+  const appendPosition = useCallback((pos: GpsPoint) => {
     setHistory((prev) => {
       const next = [...prev, pos];
       if (next.length > MAX_POINTS) {

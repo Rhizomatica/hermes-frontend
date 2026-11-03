@@ -1,22 +1,22 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import type { GpsFix, RadioStatus } from '@hermes/api';
-import { SatelliteDish, RadioTower, Clock } from 'lucide-react';
+import type { GpsFixQuality, RadioStatus } from '@hermes/api';
+import { RadioTower, Clock } from 'lucide-react';
 
 export interface GpsStatusBadgeProps {
-  /** GPS fix quality data from useGpsCoords (null = no data) */
-  fix: GpsFix | null;
+  /** GPS fix quality from useGpsCoords (null = no fix). */
+  fix: GpsFixQuality | null;
   /** Whether position data is stale (>60s without update) */
   isStale: boolean;
-  /** Optional radio/transceiver status (power, frequency, last HAM sync) */
+  /** Optional radio/transceiver status (operating frequency) */
   radio?: RadioStatus | null;
 }
 
 /**
- * Renders GPS fix quality, satellite count, HDOP, and — when provided —
- * radio telemetry (power, operating frequency, last HAM sync) as compact
- * badges. All indicators use accessible tooltips/aria labels.
+ * Renders GPS fix quality and — when provided — radio telemetry (operating
+ * frequency) as compact badges. All indicators use accessible tooltips/aria
+ * labels.
  *
  * Fix quality: No Fix = red, 2D = yellow, 3D = green.
  * Radio fields render "—" when unknown.
@@ -27,53 +27,21 @@ export interface GpsStatusBadgeProps {
 export default function GpsStatusBadge({ fix, isStale, radio }: GpsStatusBadgeProps) {
   const t = useTranslations('gps');
 
-  if (!fix) {
-    return (
-      <div className="flex flex-wrap items-center gap-2 text-xs">
-        <span
-          className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-red-700 dark:bg-red-900 dark:text-red-200"
-          role="status"
-        >
-          <span className="inline-block h-2 w-2 rounded-full bg-red-500" aria-hidden="true" />
-          {t('fixNoFix')}
-        </span>
-        <RadioBadges radio={radio} t={t} />
-      </div>
-    );
-  }
-
-  const fixQuality = getFixQuality(fix.quality);
-  const fixLabel = getFixLabel(fix.quality);
+  const quality = fix ?? 'none';
+  const style = getFixStyle(quality);
+  const label = getFixLabel(quality);
 
   return (
     <div className="flex flex-wrap items-center gap-1.5 text-xs" role="status" aria-label={t('gpsStatus')}>
       {/* Fix quality badge */}
       <span
-        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 ${fixQuality.bg}`}
+        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 ${style.bg}`}
       >
         <span
-          className={`inline-block h-2 w-2 rounded-full ${fixQuality.dot}`}
+          className={`inline-block h-2 w-2 rounded-full ${style.dot}`}
           aria-hidden="true"
         />
-        {t(fixLabel)}
-      </span>
-
-      {/* Satellites */}
-      <span
-        className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
-        title={t('satellitesTooltip', { count: fix.satellites })}
-        aria-label={t('satellitesAria', { count: fix.satellites })}
-      >
-        <SatelliteDish className="h-4 w-4" aria-hidden="true" /> {fix.satellites}
-      </span>
-
-      {/* HDOP */}
-      <span
-        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 ${getHdopStyle(fix.hdop)}`}
-        title={t('hdopTooltip', { value: fix.hdop.toFixed(1) })}
-        aria-label={t('hdopAria', { value: fix.hdop.toFixed(1) })}
-      >
-        HDOP {fix.hdop.toFixed(1)}
+        {t(label)}
       </span>
 
       {/* Radio telemetry */}
@@ -154,14 +122,14 @@ interface FixStyle {
   dot: string;
 }
 
-function getFixQuality(quality: number): FixStyle {
-  if (quality <= 0) {
+function getFixStyle(quality: GpsFixQuality): FixStyle {
+  if (quality === 'none') {
     return {
       bg: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200',
       dot: 'bg-red-500',
     };
   }
-  if (quality === 1) {
+  if (quality === '2d') {
     return {
       bg: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-200',
       dot: 'bg-yellow-500',
@@ -173,18 +141,8 @@ function getFixQuality(quality: number): FixStyle {
   };
 }
 
-function getFixLabel(quality: number): string {
-  if (quality <= 0) return 'fixNoFix';
-  if (quality === 1) return 'fix2D';
+function getFixLabel(quality: GpsFixQuality): string {
+  if (quality === 'none') return 'fixNoFix';
+  if (quality === '2d') return 'fix2D';
   return 'fix3D';
-}
-
-function getHdopStyle(hdop: number): string {
-  if (hdop <= 1.0) {
-    return 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200';
-  }
-  if (hdop <= 2.0) {
-    return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-200';
-  }
-  return 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200';
 }

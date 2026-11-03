@@ -2,20 +2,20 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useWebSocket } from '@hermes/shared-auth';
-import type { GpsPosition, GpsFix } from '@hermes/api';
+import type { Gps, GpsFixQuality, GpsEvent } from '@hermes/api';
 import { saveGpsCache, loadGpsCache, getCacheAgeMs } from '@/lib/gpsCache';
 
 /**
  * ServerState<T> for GPS coordinate data with real-time updates.
  *
- * Consumes gps.position + gps.fix WebSocket events.
+ * Consumes the hermes-radio-daemon `gps` WebSocket topic (`change: self`).
  * Falls back to GET /api/gps polling when WS is disconnected.
  * Loads cached position on startup and saves every new position
  * for offline-capable "last known" display.
  */
 export interface GpsState {
-  position: GpsPosition | null;
-  fix: GpsFix | null;
+  position: Gps | null;
+  fix: GpsFixQuality | null;
   loading: boolean;
   error: string | null;
   lastUpdated: Date | null;
@@ -32,8 +32,8 @@ const STALE_THRESHOLD_MS = 60_000;
 
 export function useGpsCoords(): GpsState {
   const { connected, subscribe } = useWebSocket();
-  const [position, setPosition] = useState<GpsPosition | null>(null);
-  const [fix, setFix] = useState<GpsFix | null>(null);
+  const [position, setPosition] = useState<Gps | null>(null);
+  const [fix, setFix] = useState<GpsFixQuality | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -53,15 +53,16 @@ export function useGpsCoords(): GpsState {
         if (mountedRef.current) setError(err.message ?? 'Failed to fetch GPS data');
         return;
       }
-      const json = (await res.json()) as { data: GpsPosition };
+      const json = (await res.json()) as Gps;
       if (mountedRef.current) {
-        setPosition(json.data);
+        setPosition(json);
+        setFix(json.fix);
         setLastUpdated(new Date());
         setStale(false);
         setError(null);
         setIsCached(false);
         setCacheAgeMs(null);
-        saveGpsCache(json.data);
+        saveGpsCache(json);
       }
     } catch (err) {
       // If live fetch fails, try loading from cache
@@ -87,10 +88,13 @@ export function useGpsCoords(): GpsState {
   useEffect(() => {
     if (!connected) return;
 
-    const unsubPosition = subscribe('gps.position', (event) => {
+    const unsubscribe = subscribe('gps', (event) => {
       if (!mountedRef.current) return;
-      const pos = event.payload as unknown as GpsPosition;
+      const payload = event.data as GpsEvent | undefined;
+      if (payload?.change !== 'self' || !payload.gps) return;
+      const pos = payload.gps;
       setPosition(pos);
+      setFix(pos.fix);
       setLastUpdated(new Date());
       setStale(false);
       setLoading(false);
@@ -100,15 +104,8 @@ export function useGpsCoords(): GpsState {
       saveGpsCache(pos);
     });
 
-    const unsubFix = subscribe('gps.fix', (event) => {
-      if (!mountedRef.current) return;
-      const f = event.payload as unknown as GpsFix;
-      setFix(f);
-    });
-
     return () => {
-      unsubPosition();
-      unsubFix();
+      unsubscribe();
     };
   }, [connected, subscribe]);
 

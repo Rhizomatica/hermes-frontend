@@ -81,7 +81,20 @@ function hermesRequest(
   });
 }
 
-export type { GpsPosition, GpsFix, RadioStatus, Message, Conversation, Station, HermesUser } from './types';
+export type {
+  Gps,
+  GpsPoint,
+  GpsSettings,
+  GpsFixQuality,
+  GpsStationPosition,
+  GpsEvent,
+  Trip,
+  RadioStatus,
+  Message,
+  Conversation,
+  Station,
+  HermesUser,
+} from './types';
 export { destArray, stationId, canonicalize } from './normalize';
 export { buildConversations, filterConversation } from './conversation';
 
@@ -90,6 +103,9 @@ export const hermesGet = (path: string, cookie?: string, authorization?: string)
 
 export const hermesPost = (path: string, body: unknown, cookie?: string, authorization?: string) =>
   hermesRequest(path, 'POST', JSON.stringify(body), cookie, authorization);
+
+export const hermesPatch = (path: string, body: unknown, cookie?: string, authorization?: string) =>
+  hermesRequest(path, 'PATCH', JSON.stringify(body), cookie, authorization);
 
 export const hermesDelete = (path: string, cookie?: string, authorization?: string) =>
   hermesRequest(path, 'DELETE', undefined, cookie, authorization);

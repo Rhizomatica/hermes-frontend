@@ -69,9 +69,20 @@ export default function GpsPage() {
   const SHELL_URL = process.env.NEXT_PUBLIC_SHELL_URL ?? 'localhost:4000';
 
   useEffect(() => {
-    if (position && position.timestamp !== prevTimestampRef.current) {
-      prevTimestampRef.current = position.timestamp;
-      appendPosition(position);
+    if (
+      position &&
+      position.at &&
+      position.latitude != null &&
+      position.longitude != null &&
+      position.at !== prevTimestampRef.current
+    ) {
+      prevTimestampRef.current = position.at;
+      appendPosition({
+        at: position.at,
+        latitude: position.latitude,
+        longitude: position.longitude,
+        altitude_m: position.altitude_m,
+      });
     }
   }, [position, appendPosition]);
 
@@ -119,8 +130,8 @@ export default function GpsPage() {
           <MapView
             latitude={position?.latitude ?? null}
             longitude={position?.longitude ?? null}
-            heading={position?.heading ?? null}
-            hdop={fix?.hdop ?? null}
+            heading={null}
+            hdop={null}
             isDark={theme === 'dark'}
             breadcrumb={history}
             showBreadcrumb={showTrail}
@@ -181,7 +192,9 @@ export default function GpsPage() {
           <div className="flex flex-wrap items-start gap-2">
             <button
               onClick={() =>
-                position && handleCopy(position.latitude.toFixed(6), 'lat')
+                position &&
+                position.latitude != null &&
+                handleCopy(position.latitude.toFixed(6), 'lat')
               }
               aria-label={t('copyLatitude')}
               className="flex items-center gap-1 rounded-md px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -194,7 +207,9 @@ export default function GpsPage() {
             </button>
             <button
               onClick={() =>
-                position && handleCopy(position.longitude.toFixed(6), 'lon')
+                position &&
+                position.longitude != null &&
+                handleCopy(position.longitude.toFixed(6), 'lon')
               }
               aria-label={t('copyLongitude')}
               className="flex items-center gap-1 rounded-md px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -241,15 +256,8 @@ export default function GpsPage() {
           <div className="flex items-center gap-2">
             <span>
               {t('altitude')}:{' '}
-              {position?.altitude != null
-                ? `${position.altitude.toFixed(0)}m`
-                : '—'}
-            </span>
-            <span>·</span>
-            <span>
-              {t('speed')}:{' '}
-              {position?.speed != null
-                ? `${position.speed.toFixed(1)}km/h`
+              {position?.altitude_m != null
+                ? `${position.altitude_m.toFixed(0)}m`
                 : '—'}
             </span>
             <span>·</span>

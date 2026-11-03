@@ -17,6 +17,15 @@ vi.mock('@hermes/shared-auth', () => ({
   }),
 }));
 
+const gpsFixture = {
+  fix: '3d',
+  latitude: -23.45,
+  longitude: -46.78,
+  altitude_m: 800,
+  at: '2026-08-12T12:00:00Z',
+  settings: { logging: true },
+};
+
 describe('useGpsCoords', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -30,95 +39,58 @@ describe('useGpsCoords', () => {
   });
 
   describe('when WebSocket is connected', () => {
-    it('subscribes to gps.position and gps.fix events', () => {
+    it('subscribes to the gps topic', () => {
       renderHook(() => useGpsCoords());
-
-      expect(mockSubscribe).toHaveBeenCalledWith(
-        'gps.position',
-        expect.any(Function),
-      );
-      expect(mockSubscribe).toHaveBeenCalledWith(
-        'gps.fix',
-        expect.any(Function),
-      );
+      expect(mockSubscribe).toHaveBeenCalledWith('gps', expect.any(Function));
     });
 
-    it('updates position on gps.position event', async () => {
+    it('updates position and fix on a self event', async () => {
       const { result } = renderHook(() => useGpsCoords());
 
-      const calls = mockSubscribe.mock.calls as Array<[string, (event: { payload: unknown }) => void]>;
-      const positionCall = calls.find(([type]) => type === 'gps.position');
-      expect(positionCall).toBeDefined();
-      const positionCallback = positionCall![1];
+      const calls = mockSubscribe.mock.calls as Array<[string, (event: { data: unknown }) => void]>;
+      const gpsCall = calls.find(([topic]) => topic === 'gps');
+      expect(gpsCall).toBeDefined();
+      const callback = gpsCall![1];
 
       act(() => {
-        positionCallback({
-          payload: {
-            latitude: -23.45,
-            longitude: -46.78,
-            altitude: 800,
-            speed: 0,
-            heading: 0,
-            timestamp: '2026-08-12T12:00:00Z',
-          },
-        });
+        callback({ data: { change: 'self', gps: gpsFixture } });
       });
 
       await waitFor(() => {
-        expect(result.current.position).toEqual({
-          latitude: -23.45,
-          longitude: -46.78,
-          altitude: 800,
-          speed: 0,
-          heading: 0,
-          timestamp: '2026-08-12T12:00:00Z',
-        });
+        expect(result.current.position).toEqual(gpsFixture);
+        expect(result.current.fix).toBe('3d');
       });
 
       expect(result.current.loading).toBe(false);
       expect(result.current.lastUpdated).not.toBeNull();
     });
 
-    it('updates fix on gps.fix event', async () => {
+    it('ignores peers events', async () => {
       const { result } = renderHook(() => useGpsCoords());
 
-      const calls = mockSubscribe.mock.calls as Array<[string, (event: { payload: unknown }) => void]>;
-      const fixCall = calls.find(([type]) => type === 'gps.fix');
-      expect(fixCall).toBeDefined();
-      const fixCallback = fixCall![1];
+      const calls = mockSubscribe.mock.calls as Array<[string, (event: { data: unknown }) => void]>;
+      const gpsCall = calls.find(([topic]) => topic === 'gps')!;
+      const callback = gpsCall[1];
 
       act(() => {
-        fixCallback({
-          payload: { quality: 2, satellites: 8, hdop: 1.5 },
-        });
+        callback({ data: { change: 'peers', stations: [] } });
       });
 
-      await waitFor(() => {
-        expect(result.current.fix).toEqual({
-          quality: 2,
-          satellites: 8,
-          hdop: 1.5,
-        });
-      });
+      expect(result.current.position).toBeNull();
     });
 
     it('clears loading state after first position update', async () => {
       const { result } = renderHook(() => useGpsCoords());
 
-      const calls = mockSubscribe.mock.calls as Array<[string, (event: { payload: unknown }) => void]>;
-      const positionCall = calls.find(([type]) => type === 'gps.position');
-      expect(positionCall).toBeDefined();
-      const positionCallback = positionCall![1];
+      const calls = mockSubscribe.mock.calls as Array<[string, (event: { data: unknown }) => void]>;
+      const gpsCall = calls.find(([topic]) => topic === 'gps')!;
+      const callback = gpsCall[1];
 
       act(() => {
-        positionCallback({
-          payload: {
-            latitude: 0,
-            longitude: 0,
-            altitude: null,
-            speed: null,
-            heading: null,
-            timestamp: '2026-08-12T12:00:00Z',
+        callback({
+          data: {
+            change: 'self',
+            gps: { ...gpsFixture, latitude: null, longitude: null },
           },
         });
       });
@@ -135,17 +107,7 @@ describe('useGpsCoords', () => {
 
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
-        json: () =>
-          Promise.resolve({
-            data: {
-              latitude: 10,
-              longitude: 20,
-              altitude: null,
-              speed: null,
-              heading: null,
-              timestamp: '2026-08-12T12:00:00Z',
-            },
-          }),
+        json: () => Promise.resolve(gpsFixture),
       });
       globalThis.fetch = mockFetch;
 
@@ -161,7 +123,7 @@ describe('useGpsCoords', () => {
     it('unsubscribes from WebSocket on unmount', () => {
       const { unmount } = renderHook(() => useGpsCoords());
       unmount();
-      expect(mockUnsub).toHaveBeenCalledTimes(2);
+      expect(mockUnsub).toHaveBeenCalledTimes(1);
     });
   });
 });

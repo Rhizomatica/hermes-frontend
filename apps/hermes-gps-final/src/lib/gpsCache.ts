@@ -1,10 +1,10 @@
-import type { GpsPosition } from '@hermes/api';
+import type { Gps } from '@hermes/api';
 
 const CACHE_KEY = 'hermes_gps_cache';
 const CACHE_AGE_MINUTES_KEY = 'hermes_gps_cache_age';
 
 export interface CachedGpsData {
-  position: GpsPosition;
+  position: Gps;
   cachedAt: string;
 }
 
@@ -13,7 +13,7 @@ export interface CachedGpsData {
  * Overwrites existing cache entry with a single position
  * plus the current ISO timestamp.
  */
-export function saveGpsCache(position: GpsPosition): void {
+export function saveGpsCache(position: Gps): void {
   if (typeof localStorage === 'undefined') return;
   try {
     const entry: CachedGpsData = {
