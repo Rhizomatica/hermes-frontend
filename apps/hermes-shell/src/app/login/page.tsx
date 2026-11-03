@@ -42,13 +42,13 @@ export default function LoginPage() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-4">
       <div className="w-full max-w-sm">
-        <div className="content-center mb-8 text-center bg-background p-6 shadow-md dark:bg-gray-800">
+        <div className="mb-8 text-center bg-background p-6 shadow-md dark:bg-gray-800">
           <div className="mb-8 text-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/logo-hermes-500.png"
               alt="HERMES"
-              className="mx-auto h-42 w-42 object-contain"
+              className="mx-auto h-40 w-40 object-contain"
             />
             <p className="mt-1 text-base text-foreground/60">High-frequency Emergency and Rural Multimedia Exchange System</p>
           </div>
