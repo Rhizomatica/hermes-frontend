@@ -42,58 +42,60 @@ export default function LoginPage() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-4">
       <div className="w-full max-w-sm">
-        <div className="mb-8 text-center">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/logo-hermes-500.png"
-            alt="HERMES"
-            className="mx-auto h-42 w-42 object-contain"
-          />
-          <p className="mt-1 text-base text-foreground/60">High-frequency Emergency and Rural Multimedia Exchange System</p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-          <div>
-            <label htmlFor="username" className="block text-sm font-medium">{t('usernameLabel')}</label>
-            <input
-              id="username"
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              autoComplete="username"
-              required
-              aria-describedby={displayError ? 'login-error' : undefined}
-              className="mt-1 block w-full rounded-lg border border-gray-300 bg-background px-3 py-2 text-base text-foreground placeholder:text-foreground/40 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500 dark:border-gray-600"
+        <div className="content-center mb-8 text-center bg-background p-6 shadow-md dark:bg-gray-800">
+          <div className="mb-8 text-center">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logo-hermes-500.png"
+              alt="HERMES"
+              className="mx-auto h-42 w-42 object-contain"
             />
-          </div>
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium">{t('passwordLabel')}</label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-              required
-              className="mt-1 block w-full rounded-lg border border-gray-300 bg-background px-3 py-2 text-base text-foreground placeholder:text-foreground/40 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500 dark:border-gray-600"
-            />
+            <p className="mt-1 text-base text-foreground/60">High-frequency Emergency and Rural Multimedia Exchange System</p>
           </div>
 
-          {displayError && (
-            <div id="login-error">
-              <ErrorBanner message={displayError} />
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+            <div>
+              <label htmlFor="username" className="block text-sm font-medium">{t('usernameLabel')}</label>
+              <input
+                id="username"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                autoComplete="username"
+                required
+                aria-describedby={displayError ? 'login-error' : undefined}
+                className="mt-1 block w-full rounded-lg border border-gray-300 bg-background px-3 py-2 text-base text-foreground placeholder:text-foreground/40 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500 dark:border-gray-600"
+              />
             </div>
-          )}
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium">{t('passwordLabel')}</label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                required
+                className="mt-1 block w-full rounded-lg border border-gray-300 bg-background px-3 py-2 text-base text-foreground placeholder:text-foreground/40 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500 dark:border-gray-600"
+              />
+            </div>
 
-          <button
-            type="submit"
-            disabled={submitting || !username.trim() || !password}
-            className="w-full rounded-lg bg-orange-500 px-4 py-3 text-base font-semibold text-white hover:bg-orange-600 active:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50"
-            style={{ minHeight: '44px' }}
-          >
-            {submitting ? t('submitting') : t('submit')}
-          </button>
-        </form>
+            {displayError && (
+              <div id="login-error">
+                <ErrorBanner message={displayError} />
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={submitting || !username.trim() || !password}
+              className="w-full rounded-lg bg-orange-500 px-4 py-3 text-base font-semibold text-white hover:bg-orange-600 active:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50"
+              style={{ minHeight: '44px' }}
+            >
+              {submitting ? t('submitting') : t('submit')}
+            </button>
+          </form>
+        </div>
       </div>
     </main>
   );
