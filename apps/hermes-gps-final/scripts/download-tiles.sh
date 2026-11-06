@@ -60,7 +60,7 @@ if [[ -n "${PMTILES_URL:-}" ]]; then
     echo "Checksum verified."
   fi
 
-  sha256sum "$DEST" | awk '{print $1}' > "$CHECKSUM_FILE"
+  sha256sum "$DEST" > "$CHECKSUM_FILE"
   echo "Done. Tiles downloaded from PMTILES_URL."
   exit 0
 fi
@@ -148,7 +148,7 @@ echo ""
 if [[ -f "$DEST" ]]; then
   echo ""
   echo "Generating SHA256 checksum..."
-  sha256sum "$DEST" | awk '{print $1}' > "$CHECKSUM_FILE"
+  sha256sum "$DEST" > "$CHECKSUM_FILE"
   echo "Checksum saved to: $CHECKSUM_FILE"
 
   SIZE="$(du -sh "$DEST" | cut -f1)"
