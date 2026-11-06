@@ -37,12 +37,23 @@
     "sosButtonAria": "Enviar mensagem SOS com localização atual",
     "radioPower": "Energia do rádio",
     "frequency": "Frequência de operação",
-    "lastHamSync": "Última sincronização HAM"
+    "lastHamSync": "Última sincronização HAM",
+    "sosConfirmTitle": "Enviar emergência SOS?",
+    "sosConfirmMessage": "Transmitir um beacon de socorro com sua posição atual a cada 30 segundos até ser cancelado. Continuar?",
+    "sosSending": "Enviando…",
+    "sosActive": "SOS ATIVO",
+    "sosActiveTooltip": "Beacon de emergência ativo — toque para cancelar",
+    "sosClear": "Cancelar SOS",
+    "sosClearConfirmTitle": "Cancelar emergência SOS?",
+    "sosClearConfirmMessage": "Enviar um beacon de 'fim de emergência' e interromper o beacon de socorro.",
+    "sosError": "Falha no SOS: {message}"
   },
   "common": {
     "backToHermes": "Voltar",
     "themeToggle": "Alternar tema",
     "themeLabel": "Tema",
-    "localeToggle": "Mudar idioma"
+    "localeToggle": "Mudar idioma",
+    "cancel": "Cancelar",
+    "send": "Enviar"
   }
 }

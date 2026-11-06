@@ -5,10 +5,11 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useAuth, useAuthGuard } from '@hermes/shared-auth';
 import { ChevronLeft, Crosshair, Loader2, LucideFileWarning, Moon, RefreshCw, Siren, Sun } from 'lucide-react';
-import { useTheme, ErrorBanner, LoadingSpinner } from '@hermes/ui';
+import { useTheme, ErrorBanner, LoadingSpinner, ConfirmDialog } from '@hermes/ui';
 import { useGpsCoords } from '@/hooks/useGpsCoords';
 import { useGpsHistory } from '@/hooks/useGpsHistory';
 import { useRadioStatus } from '@/hooks/useRadioStatus';
+import { useSosEmergency } from '@/hooks/useSosEmergency';
 import { clearGpsCache } from '@/lib/gpsCache';
 import GpsStatusBadge from '@/components/GpsStatusBadge';
 import dynamic from 'next/dynamic';
@@ -62,6 +63,8 @@ export default function GpsPage() {
   const [showTrail, setShowTrail] = useState(false);
   const [copiedLabel, setCopiedLabel] = useState<string | null>(null);
   const [recenterToken, setRecenterToken] = useState(0);
+  const sos = useSosEmergency();
+  const [sosDialog, setSosDialog] = useState<'send' | 'clear' | null>(null);
 
   // Append new live positions to the breadcrumb history
   const prevTimestampRef = useRef<string | null>(null);
@@ -156,16 +159,56 @@ export default function GpsPage() {
 
         {/* SOS — prominent emergency action, separated from the panel */}
         <button
-          onClick={() => alert('SOS button pressed! Implement emergency action here.')}
-          disabled={!position}
-          aria-label={t('sosButton')}
-          title={t('sosButton')}
-          className="absolute bottom-4 right-4 z-20 flex items-center gap-2 rounded-full bg-red-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-red-600/30 hover:bg-red-700 active:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed"
+          onClick={() => setSosDialog(sos.emergency > 0 ? 'clear' : 'send')}
+          disabled={sos.sending || sos.clearing || (sos.emergency === 0 && !position)}
+          aria-label={sos.emergency > 0 ? t('sosActive') : t('sosButton')}
+          title={sos.emergency > 0 ? t('sosActiveTooltip') : t('sosButtonTooltip')}
+          className={
+            sos.emergency > 0
+              ? 'absolute bottom-4 right-4 z-20 flex items-center gap-2 rounded-full bg-red-700 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-red-700/40 animate-pulse disabled:opacity-50 disabled:cursor-not-allowed'
+              : 'absolute bottom-4 right-4 z-20 flex items-center gap-2 rounded-full bg-red-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-red-600/30 hover:bg-red-700 active:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed'
+          }
           style={{ minHeight: '44px', minWidth: '44px' }}
         >
-          <Siren className="h-5 w-5" />
-          <span className="hidden sm:inline">{t('sosButton')}</span>
+          {sos.sending || sos.clearing ? (
+            <Loader2 className="h-5 w-5 animate-spin" />
+          ) : (
+            <Siren className="h-5 w-5" />
+          )}
+          <span className="hidden sm:inline">
+            {sos.sending
+              ? t('sosSending')
+              : sos.emergency > 0
+                ? t('sosActive')
+                : t('sosButton')}
+          </span>
         </button>
+
+        {/* SOS error feedback */}
+        {sos.error && (
+          <div
+            role="alert"
+            className="absolute bottom-20 right-4 z-20 max-w-xs rounded-lg bg-red-100 px-3 py-2 text-xs text-red-700 dark:bg-red-900 dark:text-red-200"
+          >
+            {t('sosError', { message: sos.error })}
+          </div>
+        )}
+
+        {/* SOS confirm dialog (send or clear) */}
+        <ConfirmDialog
+          open={sosDialog !== null}
+          title={sosDialog === 'clear' ? t('sosClearConfirmTitle') : t('sosConfirmTitle')}
+          message={sosDialog === 'clear' ? t('sosClearConfirmMessage') : t('sosConfirmMessage')}
+          confirmLabel={sosDialog === 'clear' ? t('sosClear') : tc('send')}
+          cancelLabel={tc('cancel')}
+          onConfirm={() => {
+            const action = sosDialog;
+            setSosDialog(null);
+            if (action === 'clear') void sos.clearSos();
+            else void sos.sendSos(1);
+          }}
+          onCancel={() => setSosDialog(null)}
+        />
       </div>
 
       {/* Side panel — left on landscape, bottom on portrait */}

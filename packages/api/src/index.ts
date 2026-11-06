@@ -82,6 +82,7 @@ function hermesRequest(
 }
 
 export type {
+  Beacon,
   Gps,
   GpsPoint,
   GpsSettings,

@@ -30,6 +30,25 @@ export interface GpsSettings {
 }
 
 /**
+ * The station's position-beacon state, returned by `GET /api/v2/gps/beacon`
+ * and by `POST /api/v2/gps/sos` / `DELETE /api/v2/gps/sos` (hermes-radio-daemon
+ * `Beacon` schema in api-rest.yaml).
+ *
+ * `emergency` is `0` when no SOS is active, or the distress code set by SOS
+ * (1 distress, 2 medical, 3 fire, … per docs/BEACON-FORMAT.md §7).
+ */
+export interface Beacon {
+  enabled: boolean;
+  interval_s: number;
+  callsign: string;
+  station_latitude: number | null;
+  station_longitude: number | null;
+  emergency_interval_s: number;
+  emergency: number;
+  running: boolean;
+}
+
+/**
  * The station's current position, fix and logging settings, as returned by
  * `GET /api/v2/gps` and carried by the `gps` WebSocket topic (`change: self`).
  */
