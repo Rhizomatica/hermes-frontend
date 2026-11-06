@@ -22,6 +22,9 @@ export function useRadioStatus(): RadioStatus | null {
   const [status, setStatus] = useState<RadioStatus | null>(null);
 
   useEffect(() => {
+    // In mock mode there is no live radio state to subscribe to.
+    if (process.env.NEXT_PUBLIC_MOCK_GPS === 'true') return;
+
     const unsubscribe = subscribe('radio.state', (event) => {
       const payload = (event.data ?? {}) as Record<string, unknown>;
       setStatus({

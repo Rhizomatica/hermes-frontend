@@ -29,6 +29,7 @@ export interface GpsState {
 
 const POLL_INTERVAL_MS = 30_000;
 const STALE_THRESHOLD_MS = 60_000;
+const MOCK_GPS = process.env.NEXT_PUBLIC_MOCK_GPS === 'true';
 
 export function useGpsCoords(): GpsState {
   const { connected, subscribe } = useWebSocket();
@@ -84,9 +85,10 @@ export function useGpsCoords(): GpsState {
     }
   }, []);
 
-  // WebSocket subscriptions
+  // WebSocket subscriptions (disabled in mock mode — the daemon's real data
+  // must not fight the mocked fixtures).
   useEffect(() => {
-    if (!connected) return;
+    if (MOCK_GPS || !connected) return;
 
     const unsubscribe = subscribe('gps', (event) => {
       if (!mountedRef.current) return;
@@ -109,10 +111,10 @@ export function useGpsCoords(): GpsState {
     };
   }, [connected, subscribe]);
 
-  // REST polling fallback when WS disconnected
+  // REST polling: always in mock mode, otherwise only while the WS is down.
   useEffect(() => {
-    if (connected) {
-      // Clear polling when WS is connected
+    if (!MOCK_GPS && connected) {
+      // Clear polling when the live WebSocket is connected
       if (pollInterval.current) {
         clearInterval(pollInterval.current);
         pollInterval.current = null;
@@ -120,7 +122,7 @@ export function useGpsCoords(): GpsState {
       return;
     }
 
-    // Start polling when WS disconnected (deferred to avoid sync setState)
+    // Start polling (deferred to avoid sync setState)
     const id = setTimeout(() => {
       fetchPosition();
       pollInterval.current = setInterval(fetchPosition, POLL_INTERVAL_MS);

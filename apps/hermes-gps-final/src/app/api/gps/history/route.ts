@@ -18,7 +18,7 @@ import { mockHistory } from '@/lib/mockGps';
  */
 export async function GET(request: NextRequest) {
   try {
-    if (process.env.MOCK_GPS === 'true') {
+    if (process.env.NEXT_PUBLIC_MOCK_GPS === 'true') {
       return NextResponse.json({ data: mockHistory() }, { status: 200 });
     }
 

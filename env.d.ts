@@ -10,6 +10,7 @@ declare namespace NodeJS {
     NEXT_PUBLIC_SHELL_URL?: string;
     NEXT_PUBLIC_GPS_URL?: string;
     NEXT_PUBLIC_CHAT_URL?: string;
+    NEXT_PUBLIC_MOCK_GPS?: string;
     HERMES_API_URL?: string;
     GIT_COMMIT_HASH?: string;
   }

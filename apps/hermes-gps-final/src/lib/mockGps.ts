@@ -7,7 +7,7 @@ import type { Gps, GpsPoint } from '@hermes/api';
  * GPS page (position panel, breadcrumb trail, status badge, map fly-to)
  * without a live data source.
  *
- * Enable by setting `MOCK_GPS=true` in `apps/hermes-gps-final/.env.local`.
+ * Enable by setting `NEXT_PUBLIC_MOCK_GPS=true` in `apps/hermes-gps-final/.env.local`.
  * The `/api/gps` and `/api/gps/history` routes return these fixtures instead
  * of proxying to the daemon.
  */
