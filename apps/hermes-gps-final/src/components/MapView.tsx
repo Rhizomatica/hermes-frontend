@@ -157,9 +157,15 @@ export default function MapView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recenterToken]);
 
-  // Update map style when theme changes
+  // Update map style when the theme actually changes. The map is already
+  // created with the correct initial style, so skip the first run: calling
+  // setStyle() on the `mapReady` flip reloads the whole style, which makes the
+  // tiles blink out and wipes any custom layers (e.g. the breadcrumb trail).
+  const appliedThemeRef = useRef(isDark);
   useEffect(() => {
     if (!mapRef.current || !mapReady) return;
+    if (appliedThemeRef.current === isDark) return;
+    appliedThemeRef.current = isDark;
     mapRef.current.setStyle(buildStyle(isDark));
   }, [isDark, mapReady]);
 
