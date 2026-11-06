@@ -19,6 +19,8 @@
     "dev:shell": "turbo run dev --filter=hermes-shell",
     "dev:gps": "turbo run dev --filter=hermes-gps-final",
     "dev:chat": "turbo run dev --filter=hermes-chat-final",
+    "ws:proxy": "node scripts/ws-proxy.mjs",
+    "dev:all": "node scripts/dev-with-proxy.mjs",
     "dev": "turbo run dev",
     "build": "turbo run build",
     "lint": "turbo run lint",
