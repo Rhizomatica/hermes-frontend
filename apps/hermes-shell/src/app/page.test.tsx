@@ -81,6 +81,7 @@ vi.mock('lucide-react', () => ({
   Sun: () => <span data-testid="icon-sun" />,
   MapPin: () => <span data-testid="icon-map" />,
   MessagesSquare: () => <span data-testid="icon-chat" />,
+  ArrowRight: () => <span data-testid="icon-arrow-right" />,
 }));
 
 vi.mock('@/hooks/useRadioStatus', () => ({

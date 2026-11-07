@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useAuth, useAuthGuard, useLocale } from '@hermes/shared-auth';
-import { LogOut, Moon, Sun, MapPin, MessagesSquare } from 'lucide-react';
+import { LogOut, Moon, Sun, MapPin, MessagesSquare, ArrowRight } from 'lucide-react';
 import { useTheme, LoadingSpinner } from '@hermes/ui';
 import InfoList from '@/components/InfoList';
 import { useRadioStatus } from '@/hooks/useRadioStatus';
@@ -113,32 +113,23 @@ export default function AppSelector() {
       {/* Top bar */}
       <header className="sticky top-0 z-10 border-b border-gray-200/70 dark:border-gray-800 bg-background/70 backdrop-blur-md">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-3">
-            <span className="flex h-20 w-20 items-center justify-center overflow-hidden">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/logo-hermes-500-wings.png" alt={t('title')} className="h-20 w-20 object-contain" />
-            </span>
-            <div className="flex flex-col leading-tight">
-              <span className="text-lg font-black tracking-tight text-gray-900 dark:text-white">
+          <div className="flex min-w-0 items-center gap-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo-hermes-500-wings.png" alt={t('title')} className="h-12 w-12 shrink-0 object-contain" />
+            <div className="flex min-w-0 flex-col leading-tight">
+              <span className="truncate text-lg font-black tracking-tight text-gray-900 dark:text-white">
                 {t('title')}
               </span>
-              {stationLabel && (
-                <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                  {stationLabel}
-                </span>
-              )}
-              {!stationLabel && (
-                <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                  {t('noStation')}
-                </span>
-              )}
+              <span className="truncate text-xs font-medium text-gray-500 dark:text-gray-400">
+                {stationLabel || t('noStation')}
+              </span>
             </div>
           </div>
-          <div className="flex items-center gap-1.5">
-            <button onClick={toggleTheme} aria-label={tc('themeToggle')} className="flex h-10 w-10 items-center justify-center rounded-full text-gray-600 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800" style={{ minHeight: '44px', minWidth: '44px' }}>
+          <div className="flex shrink-0 items-center gap-1.5">
+            <button onClick={toggleTheme} aria-label={tc('themeToggle')} className="flex h-10 w-10 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100" style={{ minHeight: '44px', minWidth: '44px' }}>
               {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </button>
-            <button onClick={() => setLocale(nextLocale)} aria-label={tc('localeToggle')} className="flex h-10 items-center justify-center rounded-full px-3 text-sm font-semibold text-gray-600 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800" style={{ minHeight: '44px' }}>
+            <button onClick={() => setLocale(nextLocale)} aria-label={tc('localeToggle')} className="flex h-10 items-center justify-center rounded-full px-3 text-sm font-semibold text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100" style={{ minHeight: '44px' }}>
               {nextLocale.toUpperCase()}
             </button>
           </div>
@@ -146,52 +137,55 @@ export default function AppSelector() {
       </header>
 
       <div className="mx-auto max-w-5xl px-4 py-8">
-        <p className="text-sm font-medium text-gray-500 dark:text-gray-400 my-4">{t('welcome')}</p>
         {/* Greeting hero */}
-        <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 text-xl font-black text-white shadow-xl shadow-orange-500/20">
+        <section className="flex flex-col gap-4 rounded-2xl border border-gray-200/70 bg-white/70 p-5 shadow-sm shadow-gray-900/5 backdrop-blur dark:border-gray-800 dark:bg-gray-800/60 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-center gap-4">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 text-lg font-black text-white shadow-lg shadow-orange-500/20">
               {initials}
             </div>
-            <div>
-
-              <h1 className="text-2xl font-black tracking-tight text-gray-900 dark:text-white">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                {t('welcome')}
+              </p>
+              <h1 className="truncate text-xl font-bold text-gray-900 dark:text-white">
                 {user.display_name ?? user.username}
               </h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <p className="truncate text-sm text-gray-500 dark:text-gray-400">
                 {user.username}
               </p>
             </div>
           </div>
-          <button onClick={handleLogout} className="inline-flex items-center gap-2 rounded-full border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600 dark:border-gray-700 dark:text-gray-300 dark:hover:border-red-900 dark:hover:bg-red-900/20 dark:hover:text-red-400" style={{ minHeight: '44px' }}>
+          <button onClick={handleLogout} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-600 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600 dark:border-gray-700 dark:text-gray-300 dark:hover:border-red-900 dark:hover:bg-red-900/20 dark:hover:text-red-400" style={{ minHeight: '44px' }}>
             <LogOut className="h-4 w-4" />
             {t('logout')}
           </button>
-        </div>
+        </section>
 
         {/* App cards */}
         <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Link href={GPS_URL} className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white/70 p-6 transition-all hover:-translate-y-1 hover:border-orange-300 hover:bg-white/90 hover:shadow-xl hover:shadow-orange-500/10 dark:border-gray-800 dark:bg-gray-800/60 dark:hover:bg-gray-800/80">
-            <div className="absolute right-0 top-0 h-24 w-24 translate-x-8 -translate-y-8 rounded-full bg-orange-100/70 blur-2xl transition-all group-hover:bg-orange-200/70 dark:bg-orange-500/10" />
-            <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500/10 to-orange-500/20 text-3xl">
-              <MapPin />
+          <Link href={GPS_URL} className="group relative overflow-hidden rounded-2xl border border-gray-200/70 bg-white/70 p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:border-orange-300/70 hover:bg-white/90 hover:shadow-lg hover:shadow-orange-500/10 dark:border-gray-800 dark:bg-gray-800/60 dark:hover:border-orange-500/30 dark:hover:bg-gray-800/80">
+            <div className="pointer-events-none absolute right-0 top-0 h-28 w-28 translate-x-10 -translate-y-10 rounded-full bg-orange-100/70 blur-2xl transition-all group-hover:bg-orange-200/70 dark:bg-orange-500/10" />
+            <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500/10 to-orange-500/20 text-orange-600 ring-1 ring-orange-500/10 dark:text-orange-400 dark:ring-orange-500/20">
+              <MapPin className="h-7 w-7" />
             </span>
             <h2 className="mt-4 text-xl font-bold text-gray-900 dark:text-white">{t('gpsViewer')}</h2>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t('gpsDescription')}</p>
-            <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-orange-600 dark:text-orange-400">
-              {t('open')} <span className="transition-transform group-hover:translate-x-1">→</span>
+            <p className="mt-1 text-sm leading-relaxed text-gray-500 dark:text-gray-400">{t('gpsDescription')}</p>
+            <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-orange-600 dark:text-orange-400">
+              {t('open')}
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </span>
           </Link>
 
-          <Link href={CHAT_URL} className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white/70 p-6 transition-all hover:-translate-y-1 hover:border-orange-300 hover:bg-white/90 hover:shadow-xl hover:shadow-orange-500/10 dark:border-gray-800 dark:bg-gray-800/60 dark:hover:bg-gray-800/80">
-            <div className="absolute right-0 top-0 h-24 w-24 translate-x-8 -translate-y-8 rounded-full bg-orange-100/70 blur-2xl transition-all group-hover:bg-orange-200/70 dark:bg-orange-500/10" />
-            <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500/10 to-orange-500/20 text-3xl">
-              <MessagesSquare />
+          <Link href={CHAT_URL} className="group relative overflow-hidden rounded-2xl border border-gray-200/70 bg-white/70 p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:border-orange-300/70 hover:bg-white/90 hover:shadow-lg hover:shadow-orange-500/10 dark:border-gray-800 dark:bg-gray-800/60 dark:hover:border-orange-500/30 dark:hover:bg-gray-800/80">
+            <div className="pointer-events-none absolute right-0 top-0 h-28 w-28 translate-x-10 -translate-y-10 rounded-full bg-orange-100/70 blur-2xl transition-all group-hover:bg-orange-200/70 dark:bg-orange-500/10" />
+            <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500/10 to-orange-500/20 text-orange-600 ring-1 ring-orange-500/10 dark:text-orange-400 dark:ring-orange-500/20">
+              <MessagesSquare className="h-7 w-7" />
             </span>
             <h2 className="mt-4 text-xl font-bold text-gray-900 dark:text-white">{t('chat')}</h2>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t('chatDescription')}</p>
-            <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-orange-600 dark:text-orange-400">
-              {t('open')} <span className="transition-transform group-hover:translate-x-1">→</span>
+            <p className="mt-1 text-sm leading-relaxed text-gray-500 dark:text-gray-400">{t('chatDescription')}</p>
+            <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-orange-600 dark:text-orange-400">
+              {t('open')}
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </span>
           </Link>
         </div>
