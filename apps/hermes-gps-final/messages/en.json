@@ -79,7 +79,12 @@
     "gpsFilesDeleteAllTitle": "Delete all GPS files?",
     "gpsFilesDeleteAllMessage": "This deletes every recorded position file and cancels their queued transfers.",
     "gpsFilesDeleteAllAction": "Delete all",
-    "gpsFilesCancel": "Cancel"
+    "gpsFilesCancel": "Cancel",
+    "shareLocation": "Share location",
+    "shareLabel": "Share",
+    "shareTitle": "My location",
+    "shareText": "My location: {lat}, {lon}",
+    "shareCopied": "Location copied!"
   },
   "common": {
     "backToHermes": "Back",

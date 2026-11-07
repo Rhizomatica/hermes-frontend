@@ -16,6 +16,7 @@ import { clearGpsCache } from '@/lib/gpsCache';
 import GpsStatusBadge from '@/components/GpsStatusBadge';
 import TripsPanel from '@/components/TripsPanel';
 import GpsFilesPanel from '@/components/GpsFilesPanel';
+import ShareLocationButton from '@/components/ShareLocationButton';
 import dynamic from 'next/dynamic';
 
 const MapView = dynamic(() => import('@/components/MapView'), { ssr: false });
@@ -390,6 +391,11 @@ export default function GpsPage() {
             <Crosshair className="h-5 w-5" />
             <span className="hidden landscape:inline text-sm">{t('recenterLabel')}</span>
           </button>
+
+          <ShareLocationButton
+            latitude={position?.latitude ?? null}
+            longitude={position?.longitude ?? null}
+          />
 
           <button
             onClick={toggleTheme}

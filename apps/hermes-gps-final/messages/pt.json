@@ -79,7 +79,12 @@
     "gpsFilesDeleteAllTitle": "Excluir todos os arquivos GPS?",
     "gpsFilesDeleteAllMessage": "Isso exclui todos os arquivos de posição gravados e cancela as transferências em fila.",
     "gpsFilesDeleteAllAction": "Excluir todos",
-    "gpsFilesCancel": "Cancelar"
+    "gpsFilesCancel": "Cancelar",
+    "shareLocation": "Compartilhar localização",
+    "shareLabel": "Compartilhar",
+    "shareTitle": "Minha localização",
+    "shareText": "Minha localização: {lat}, {lon}",
+    "shareCopied": "Localização copiada!"
   },
   "common": {
     "backToHermes": "Voltar",
