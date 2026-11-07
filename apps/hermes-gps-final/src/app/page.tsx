@@ -249,7 +249,7 @@ export default function GpsPage() {
       </div>
 
       {/* Side panel — left on landscape, bottom on portrait */}
-      <div className="relative z-10 flex flex-col gap-3 rounded-t-2xl border-gray-200 bg-background px-4 py-3 shadow-md dark:border-gray-700 landscape:w-72 landscape:shrink-0 landscape:rounded-t-none landscape:border-r landscape:justify-center landscape:order-first">
+      <div className="relative z-10 flex flex-col gap-3 rounded-t-2xl border-gray-200 bg-background px-4 py-3 shadow-md dark:border-gray-700 landscape:w-72 landscape:shrink-0 landscape:rounded-t-none landscape:border-r landscape:justify-start landscape:order-first">
         {/* Minimal user info */}
         {authUser && (
           <div className="flex items-center gap-2 border-b border-gray-200 pb-2 dark:border-gray-700">
