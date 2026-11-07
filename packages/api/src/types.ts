@@ -85,6 +85,25 @@ export interface Trip {
 }
 
 /**
+ * A trip together with its recorded positions (breadcrumb), as returned by
+ * `GET /api/v2/gps/trip` (current trip) and `GET /api/v2/gps/trips/{trip_id}`.
+ */
+export interface TripPoints {
+  trip: Trip;
+  /** Breadcrumb points, oldest first. */
+  data: GpsPoint[];
+  next_cursor?: string | null;
+}
+
+/**
+ * The list response of `GET /api/v2/gps/trips` (recorded trips, newest first).
+ */
+export interface TripsResponse {
+  data: Trip[];
+  next_cursor?: string | null;
+}
+
+/**
  * Another station's last-known position, as listed by `GET /api/v2/gps/stations`
  * and carried by the `gps` WebSocket topic (`change: peers`).
  */

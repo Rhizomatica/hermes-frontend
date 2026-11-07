@@ -90,11 +90,14 @@ export type {
   GpsStationPosition,
   GpsEvent,
   Trip,
+  TripPoints,
+  TripsResponse,
   RadioStatus,
   Message,
   Conversation,
   Station,
   HermesUser,
+  HermesRole,
 } from './types';
 export { destArray, stationId, canonicalize } from './normalize';
 export { buildConversations, filterConversation } from './conversation';

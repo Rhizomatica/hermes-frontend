@@ -4,14 +4,16 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useAuth, useAuthGuard } from '@hermes/shared-auth';
-import { ChevronLeft, Crosshair, Loader2, LucideFileWarning, Moon, RefreshCw, Siren, Sun } from 'lucide-react';
+import { ChevronLeft, Crosshair, History, Loader2, LucideFileWarning, Moon, RefreshCw, Siren, Sun } from 'lucide-react';
 import { useTheme, ErrorBanner, LoadingSpinner, ConfirmDialog } from '@hermes/ui';
+import type { GpsPoint } from '@hermes/api';
 import { useGpsCoords } from '@/hooks/useGpsCoords';
 import { useGpsHistory } from '@/hooks/useGpsHistory';
 import { useRadioStatus } from '@/hooks/useRadioStatus';
 import { useSosEmergency } from '@/hooks/useSosEmergency';
 import { clearGpsCache } from '@/lib/gpsCache';
 import GpsStatusBadge from '@/components/GpsStatusBadge';
+import TripsPanel from '@/components/TripsPanel';
 import dynamic from 'next/dynamic';
 
 const MapView = dynamic(() => import('@/components/MapView'), { ssr: false });
@@ -57,14 +59,19 @@ export default function GpsPage() {
   const { theme, toggle: toggleTheme } = useTheme();
   const { position, fix, loading, error, lastUpdated, stale, isCached, cacheAgeMs, refresh } =
     useGpsCoords();
-  const { history, appendPosition } = useGpsHistory();
+  const { history, appendPosition, refresh: refreshHistory } = useGpsHistory();
   const radio = useRadioStatus();
 
   const [showTrail, setShowTrail] = useState(false);
   const [copiedLabel, setCopiedLabel] = useState<string | null>(null);
   const [recenterToken, setRecenterToken] = useState(0);
+  const [tripsOpen, setTripsOpen] = useState(false);
+  // A selected trip's breadcrumb overrides the live trail until the panel closes.
+  const [tripTrail, setTripTrail] = useState<GpsPoint[] | null>(null);
   const sos = useSosEmergency();
   const [sosDialog, setSosDialog] = useState<'send' | 'clear' | null>(null);
+
+  const breadcrumb = tripTrail ?? history;
 
   // Append new live positions to the breadcrumb history
   const prevTimestampRef = useRef<string | null>(null);
@@ -136,7 +143,7 @@ export default function GpsPage() {
             heading={null}
             hdop={null}
             isDark={theme === 'dark'}
-            breadcrumb={history}
+            breadcrumb={breadcrumb}
             showBreadcrumb={showTrail}
             recenterToken={recenterToken}
           />
@@ -358,13 +365,41 @@ export default function GpsPage() {
             <span className="hidden landscape:inline text-sm">{tc('themeLabel')}</span>
           </button>
 
+          <button
+            onClick={() => setTripsOpen(true)}
+            aria-label={t('tripsOpen')}
+            title={t('tripsOpen')}
+            className="flex items-center gap-2 rounded-lg p-2 text-gray-600 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-700"
+          >
+            <History className="h-5 w-5" />
+            <span className="hidden landscape:inline text-sm">{t('tripsLabel')}</span>
+          </button>
+
           <BreadcrumbToggle
             visible={showTrail}
-            pointCount={history.length}
+            pointCount={breadcrumb.length}
             onToggle={() => setShowTrail((v) => !v)}
           />
         </div>
       </div>
+
+      {/* Trips history drawer */}
+      {tripsOpen && (
+        <TripsPanel
+          onClose={() => {
+            setTripsOpen(false);
+            setTripTrail(null);
+          }}
+          onViewTrip={(points) => {
+            setTripTrail(points);
+            setShowTrail(true);
+          }}
+          onTripClosed={() => {
+            void refreshHistory();
+          }}
+          role={authUser?.role}
+        />
+      )}
     </main>
   );
 }
