@@ -1,4 +1,4 @@
-import type { Gps, GpsFile, GpsPoint, Trip, TripPoints } from '@hermes/api';
+import type { Gps, GpsFile, GpsPoint, GpsStation, Trip, TripPoints } from '@hermes/api';
 
 /**
  * Mock GPS fixtures for local development and UI testing.
@@ -183,4 +183,51 @@ export function mockGpsFileBuffer(name: string): Buffer | null {
     `<?xml version="1.0" encoding="UTF-8"?>\n<gpx><name>${file.name}</name></gpx>\n`,
     'utf8',
   );
+}
+
+/**
+ * A few known stations for `GET /api/v2/gps/stations`, with last-known
+ * positions near the base position. One station has no known position, to
+ * exercise the null case the map skips.
+ */
+export function mockGpsStations(): GpsStation[] {
+  const now = Date.now();
+  return [
+    {
+      uucp_name: 'PY2ABC',
+      enabled: true,
+      latitude: -23.51,
+      longitude: -46.6,
+      altitude_m: 780,
+      position_at: new Date(now - 60_000).toISOString(),
+      position_source: 'gps',
+    },
+    {
+      uucp_name: 'PY2DEF',
+      enabled: true,
+      latitude: -23.6,
+      longitude: -46.7,
+      altitude_m: 720,
+      position_at: new Date(now - 300_000).toISOString(),
+      position_source: 'gps',
+    },
+    {
+      uucp_name: 'PY2GHI',
+      enabled: true,
+      latitude: -23.45,
+      longitude: -46.55,
+      altitude_m: 800,
+      position_at: new Date(now - 900_000).toISOString(),
+      position_source: 'manual',
+    },
+    {
+      uucp_name: 'PY2JKL',
+      enabled: true,
+      latitude: null,
+      longitude: null,
+      altitude_m: null,
+      position_at: null,
+      position_source: null,
+    },
+  ];
 }

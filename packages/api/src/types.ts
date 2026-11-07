@@ -126,6 +126,33 @@ export interface GpsStationPosition {
 }
 
 /**
+ * A station this one can reach, with its last-known position, as listed by
+ * `GET /api/v2/gps/stations` (hermes-radio-daemon `Station`). Stations with no
+ * known position are still listed, with null position fields.
+ */
+export interface GpsStation {
+  /** UUCP system name (the station's callsign). */
+  uucp_name: string;
+  /** Whether the station is enabled in the UUCP configuration. */
+  enabled: boolean;
+  /** Last-known latitude, or null when unknown. */
+  latitude: number | null;
+  /** Last-known longitude, or null when unknown. */
+  longitude: number | null;
+  /** Last-known altitude in metres, or null. */
+  altitude_m?: number | null;
+  /** When the last-known position was reported. */
+  position_at?: string | null;
+  /** Where the last-known position came from, or null when unknown. */
+  position_source?: 'gps' | 'manual' | 'estimated' | null;
+}
+
+/** The list response of `GET /api/v2/gps/stations`. */
+export interface GpsStationsResponse {
+  data: GpsStation[];
+}
+
+/**
  * Data payload of the `gps` WebSocket topic. The snapshot is the station's own
  * position (`change: self`); `change: peers` carries other stations' positions.
  */

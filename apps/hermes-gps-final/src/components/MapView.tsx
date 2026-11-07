@@ -8,7 +8,7 @@ import { Protocol } from 'pmtiles';
 import { buildStyle } from '@/lib/mapStyle';
 import { getMapTokens } from '@hermes/tailwind-config/map-tokens';
 import { Navigation2 } from 'lucide-react';
-import type { GpsPoint } from '@hermes/api';
+import type { GpsPoint, GpsStation } from '@hermes/api';
 
 export interface MapViewProps {
   /** Latitude in decimal degrees */
@@ -25,6 +25,8 @@ export interface MapViewProps {
   breadcrumb?: GpsPoint[];
   /** Whether to show the breadcrumb trail */
   showBreadcrumb?: boolean;
+  /** Other stations' last-known positions to plot as dots. */
+  stations?: GpsStation[];
   /** Callback when tile loading fails */
   onTileError?: () => void;
   /**
@@ -37,6 +39,10 @@ export interface MapViewProps {
 /** Source ID for the breadcrumb line layer */
 const BREADCRUMB_SOURCE = 'hermes-breadcrumb';
 const BREADCRUMB_LAYER = 'hermes-breadcrumb-line';
+
+/** Source/layer IDs for the other-stations dot layer */
+const STATIONS_SOURCE = 'hermes-stations';
+const STATIONS_LAYER = 'hermes-stations-dots';
 
 // Register the pmtiles:// protocol handler with MapLibre (once per page load)
 let protocolRegistered = false;
@@ -91,6 +97,7 @@ export default function MapView({
   isDark,
   breadcrumb = [],
   showBreadcrumb = false,
+  stations = [],
   onTileError,
   recenterToken = 0,
 }: MapViewProps) {
@@ -98,6 +105,7 @@ export default function MapView({
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markerRef = useRef<maplibregl.Marker | null>(null);
   const markerElRef = useRef<HTMLDivElement | null>(null);
+  const stationsClickBound = useRef(false);
   const [tileError, setTileError] = useState(false);
   const [mapReady, setMapReady] = useState(false);
   const [indicator, setIndicator] = useState<{ angle: number; distanceKm: number } | null>(null);
@@ -443,6 +451,133 @@ export default function MapView({
       });
     }
   }, [breadcrumb, showBreadcrumb, mapReady, isDark, t]);
+
+  // Other stations' last-known positions — add/update/remove GeoJSON dot layer.
+  useEffect(() => {
+    if (!mapRef.current || !mapReady) return;
+
+    const map = mapRef.current;
+    const positioned = stations.filter(
+      (s): s is GpsStation & { latitude: number; longitude: number } =>
+        s.latitude != null && s.longitude != null,
+    );
+
+    if (positioned.length === 0) {
+      if (map.getLayer(STATIONS_LAYER)) map.removeLayer(STATIONS_LAYER);
+      if (map.getSource(STATIONS_SOURCE)) map.removeSource(STATIONS_SOURCE);
+      return;
+    }
+
+    const features: GeoJSON.Feature<GeoJSON.Point>[] = positioned.map((s) => ({
+      type: 'Feature',
+      properties: {
+        name: s.uucp_name,
+        latitude: s.latitude,
+        longitude: s.longitude,
+        position_at: s.position_at ?? null,
+      },
+      geometry: {
+        type: 'Point',
+        coordinates: [s.longitude, s.latitude],
+      },
+    }));
+
+    const geojson: GeoJSON.FeatureCollection = {
+      type: 'FeatureCollection',
+      features,
+    };
+
+    const source = map.getSource(STATIONS_SOURCE) as
+      | maplibregl.GeoJSONSource
+      | undefined;
+
+    if (source) {
+      source.setData(geojson);
+      return;
+    }
+
+    map.addSource(STATIONS_SOURCE, { type: 'geojson', data: geojson });
+
+    map.addLayer({
+      id: STATIONS_LAYER,
+      type: 'circle',
+      source: STATIONS_SOURCE,
+      paint: {
+        'circle-radius': 6,
+        'circle-color': '#0ea5e9',
+        'circle-opacity': 0.9,
+        'circle-stroke-color': isDark ? '#ffffff' : '#0f172a',
+        'circle-stroke-width': 2,
+      },
+    });
+
+    // Click on a station → tooltip with callsign, coordinates and time.
+    // Registered once; layer-bound listeners survive style reloads, so guard
+    // against double-registration when the theme toggles and the layer is
+    // rebuilt.
+    if (!stationsClickBound.current) {
+      stationsClickBound.current = true;
+
+      map.on('click', STATIONS_LAYER, (e) => {
+        const feature = e.features?.[0];
+        const props = feature?.properties as
+          | {
+              name?: string;
+              latitude?: number;
+              longitude?: number;
+              position_at?: string | null;
+            }
+          | undefined;
+        if (!props || props.latitude == null || props.longitude == null) return;
+
+        const container = document.createElement('div');
+        container.className = 'hermes-station-card';
+
+        const header = document.createElement('div');
+        header.className = 'hermes-station-header';
+
+        const dot = document.createElement('span');
+        dot.className = 'hermes-station-dot';
+        dot.setAttribute('aria-hidden', 'true');
+
+        const name = document.createElement('span');
+        name.className = 'hermes-station-name';
+        name.textContent = props.name ?? '—';
+
+        header.append(dot, name);
+
+        const coords = document.createElement('div');
+        coords.className = 'hermes-station-coords';
+        coords.textContent = `${props.latitude.toFixed(5)}, ${props.longitude.toFixed(5)}`;
+
+        container.append(header, coords);
+
+        if (props.position_at) {
+          const date = new Date(props.position_at);
+          if (!Number.isNaN(date.getTime())) {
+            const time = new Intl.DateTimeFormat(undefined, {
+              month: 'short',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+            }).format(date);
+            const when = document.createElement('div');
+            when.className = 'hermes-station-time';
+            when.textContent = t('breadcrumbPoint', { time });
+            container.appendChild(when);
+          }
+        }
+
+        new maplibregl.Popup({
+          className: 'hermes-station-popup',
+          maxWidth: '260px',
+        })
+          .setLngLat([props.longitude, props.latitude])
+          .setDOMContent(container)
+          .addTo(map);
+      });
+    }
+  }, [stations, mapReady, isDark, t]);
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>

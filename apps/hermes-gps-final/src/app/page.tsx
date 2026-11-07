@@ -12,6 +12,7 @@ import { useGpsHistory } from '@/hooks/useGpsHistory';
 import { useRadioStatus } from '@/hooks/useRadioStatus';
 import { useSosEmergency } from '@/hooks/useSosEmergency';
 import { useStationName } from '@/hooks/useStationName';
+import { useGpsStations } from '@/hooks/useGpsStations';
 import { clearGpsCache } from '@/lib/gpsCache';
 import GpsStatusBadge from '@/components/GpsStatusBadge';
 import TripsPanel from '@/components/TripsPanel';
@@ -76,6 +77,7 @@ export default function GpsPage() {
     useGpsCoords();
   const { history, appendPosition, refresh: refreshHistory } = useGpsHistory();
   const radio = useRadioStatus();
+  const stations = useGpsStations();
 
   const [showTrail, setShowTrail] = useState(false);
   const [copiedLabel, setCopiedLabel] = useState<string | null>(null);
@@ -178,6 +180,7 @@ export default function GpsPage() {
             isDark={theme === 'dark'}
             breadcrumb={breadcrumb}
             showBreadcrumb={showBreadcrumb}
+            stations={stations.stations}
             recenterToken={recenterToken}
           />
         </div>
