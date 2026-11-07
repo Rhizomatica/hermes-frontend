@@ -18,7 +18,8 @@
     "chatDescription": "Messages and radio information",
     "logout": "Sign Out",
     "open": "Open",
-    "loading": "Loading…"
+    "loading": "Loading…",
+    "noStation": "Unavailable station"
   },
   "user": {
     "title": "User Information",

@@ -221,4 +221,20 @@ describe('AppSelector', () => {
     expect(items.get('version')).toBe('1.2.3');
     expect(items.get('uptime')).toBe('1h 2m');
   });
+
+  it('shows the station name and callsign in the navbar', () => {
+    guardState.user = makeUser();
+    stationState.info = {
+      stationName: 'pu2uit-3',
+      domain: null,
+      version: null,
+      uptime: null,
+      callsign: 'PU2UIT',
+      loading: false,
+    };
+
+    render(<AppSelector />);
+
+    expect(screen.getByText('pu2uit-3 · PU2UIT')).toBeTruthy();
+  });
 });

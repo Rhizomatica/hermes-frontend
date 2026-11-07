@@ -18,7 +18,8 @@
     "chatDescription": "Mensagens e informações de rádio",
     "logout": "Sair",
     "open": "Abrir",
-    "loading": "Carregando…"
+    "loading": "Carregando…",
+    "noStation": "Estação indisponível"
   },
   "user": {
     "title": "Informações do Usuário",

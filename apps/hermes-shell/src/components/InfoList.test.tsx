@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import InfoList from './InfoList';
 
 describe('InfoList', () => {
@@ -38,5 +38,16 @@ describe('InfoList', () => {
   it('renders an empty container when there are no items and no title', () => {
     const { container } = render(<InfoList items={[]} />);
     expect(container.textContent).toBe('');
+  });
+
+  it('collapses titled groups by default and expands on title click', () => {
+    render(
+      <InfoList title="User Information" items={[{ label: 'Callsign', value: 'PU2UIT' }]} />,
+    );
+
+    expect(screen.queryByText('Callsign')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'User Information' }));
+    expect(screen.getByText('Callsign')).toBeTruthy();
   });
 });

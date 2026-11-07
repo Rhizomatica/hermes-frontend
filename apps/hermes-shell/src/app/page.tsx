@@ -68,6 +68,10 @@ export default function AppSelector() {
 
   const na = tr('na');
 
+  const stationLabel = [stationInfo.stationName, stationInfo.callsign]
+    .filter(Boolean)
+    .join(' · ');
+
   const radioItems = [
     { label: tr('stationName'), value: stationInfo.stationName ?? na },
     { label: tr('callsign'), value: stationInfo.callsign ?? na },
@@ -114,9 +118,21 @@ export default function AppSelector() {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/logo-hermes-500-wings.png" alt={t('title')} className="h-20 w-20 object-contain" />
             </span>
-            <span className="text-lg font-black tracking-tight text-gray-900 dark:text-white">
-              {t('title')}
-            </span>
+            <div className="flex flex-col leading-tight">
+              <span className="text-lg font-black tracking-tight text-gray-900 dark:text-white">
+                {t('title')}
+              </span>
+              {stationLabel && (
+                <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                  {stationLabel}
+                </span>
+              )}
+              {!stationLabel && (
+                <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                  {t('noStation')}
+                </span>
+              )}
+            </div>
           </div>
           <div className="flex items-center gap-1.5">
             <button onClick={toggleTheme} aria-label={tc('themeToggle')} className="flex h-10 w-10 items-center justify-center rounded-full text-gray-600 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800" style={{ minHeight: '44px', minWidth: '44px' }}>
@@ -130,6 +146,7 @@ export default function AppSelector() {
       </header>
 
       <div className="mx-auto max-w-5xl px-4 py-8">
+        <p className="text-sm font-medium text-gray-500 dark:text-gray-400 my-4">{t('welcome')}</p>
         {/* Greeting hero */}
         <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
@@ -137,7 +154,7 @@ export default function AppSelector() {
               {initials}
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('welcome')}</p>
+
               <h1 className="text-2xl font-black tracking-tight text-gray-900 dark:text-white">
                 {user.display_name ?? user.username}
               </h1>
@@ -180,12 +197,12 @@ export default function AppSelector() {
         </div>
 
         {/* User info */}
-        <div className="mt-8">
+        <div className="mt-4">
           <InfoList title={tu('title')} items={userItems} />
         </div>
 
         {/* Radio info */}
-        <div className="mt-8">
+        <div className="mt-4">
           <InfoList title={tr('title')} items={radioItems} />
         </div>
       </div>
