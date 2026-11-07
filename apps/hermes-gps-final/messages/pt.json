@@ -1,6 +1,7 @@
 {
   "gps": {
     "username": "Usuário",
+    "station": "Estação",
     "loading": "Carregando mapa…",
     "staleData": "Desatualizado",
     "refresh": "Atualizar posição",

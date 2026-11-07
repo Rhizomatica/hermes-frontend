@@ -11,6 +11,7 @@ import { useGpsCoords } from '@/hooks/useGpsCoords';
 import { useGpsHistory } from '@/hooks/useGpsHistory';
 import { useRadioStatus } from '@/hooks/useRadioStatus';
 import { useSosEmergency } from '@/hooks/useSosEmergency';
+import { useStationName } from '@/hooks/useStationName';
 import { clearGpsCache } from '@/lib/gpsCache';
 import GpsStatusBadge from '@/components/GpsStatusBadge';
 import TripsPanel from '@/components/TripsPanel';
@@ -81,6 +82,7 @@ export default function GpsPage() {
   // A selected trip's breadcrumb overrides the live trail until cleared.
   const [tripTrail, setTripTrail] = useState<GpsPoint[] | null>(null);
   const sos = useSosEmergency();
+  const station = useStationName();
   const [sosDialog, setSosDialog] = useState<'send' | 'clear' | null>(null);
 
   const breadcrumb = tripTrail ?? history;
@@ -261,6 +263,9 @@ export default function GpsPage() {
               <p className="truncate text-xs text-foreground/60">
                 {t('username')}: {authUser.username}
               </p>
+              <p className="truncate text-xs text-foreground/60">
+                {t('station')}: <span className="font-semibold uppercase">{station.callsign ?? '—'}</span>
+              </p>
             </div>
           </div>
         )}
@@ -342,18 +347,12 @@ export default function GpsPage() {
             <span>
               {t('fixTime')}: {formatFixTime(fixTime)}
             </span>
-            {(
+            {radioSummary && (
               <>
                 <span>·</span>
                 <span className="inline-flex items-center gap-1" title={t('radioStatus')}>
                   <span
-                    className={`inline-block h-2 w-2 rounded-full ${
-                      radio?.tx === true
-                        ? 'bg-red-500'
-                        : radio?.tx === false
-                          ? 'bg-green-500'
-                          : 'bg-gray-400'
-                    }`}
+                    className={`inline-block h-2 w-2 rounded-full ${radio?.tx ? 'bg-red-500' : 'bg-green-500'}`}
                     aria-hidden="true"
                   />
                   {radioSummary}
