@@ -63,7 +63,7 @@ export default function AppSelector() {
     { label: tu('username'), value: user.username },
     { label: tu('displayName'), value: user.display_name ?? user.username },
     { label: tu('role'), value: user.role },
-    { label: tu('locale'), value: user.locale },
+    { label: tu('locale'), value: user.locale || locale },
   ];
 
   const na = tr('na');
