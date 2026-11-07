@@ -1,5 +1,6 @@
 {
   "login": {
+    "tagline": "Sistema de intercâmbio multimídia rural e de emergência em alta frequência",
     "usernameLabel": "Usuário",
     "passwordLabel": "Senha",
     "submit": "Entrar",
