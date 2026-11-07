@@ -28,6 +28,21 @@
     "locale": "Locale",
     "na": "N/A"
   },
+  "radio": {
+    "title": "Radio Information",
+    "stationName": "Station Name",
+    "callsign": "Callsign",
+    "frequency": "Frequency",
+    "mode": "Mode",
+    "status": "Status",
+    "tx": "Transmitting",
+    "rx": "Receiving",
+    "power": "Power",
+    "domain": "Domain",
+    "version": "Version",
+    "uptime": "Uptime",
+    "na": "N/A"
+  },
   "common": {
     "backToHermes": "Back",
     "themeToggle": "Toggle theme",

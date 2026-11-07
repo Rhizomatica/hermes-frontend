@@ -7,9 +7,26 @@ import { useAuth, useAuthGuard, useLocale } from '@hermes/shared-auth';
 import { LogOut, Moon, Sun, MapPin, MessagesSquare } from 'lucide-react';
 import { useTheme, LoadingSpinner } from '@hermes/ui';
 import InfoList from '@/components/InfoList';
+import { useRadioStatus } from '@/hooks/useRadioStatus';
+import { useStationInfo } from '@/hooks/useStationInfo';
 
 const GPS_URL = process.env.NEXT_PUBLIC_GPS_URL ?? '/gps';
 const CHAT_URL = process.env.NEXT_PUBLIC_CHAT_URL ?? '/chat';
+
+/** Format a raw uptime value (seconds when numeric) into a compact string. */
+function formatUptime(value: number | string | null): string {
+  if (value == null) return '—';
+  if (typeof value === 'number') {
+    const totalSeconds = Math.max(0, Math.floor(value));
+    const days = Math.floor(totalSeconds / 86_400);
+    const hours = Math.floor((totalSeconds % 86_400) / 3_600);
+    const minutes = Math.floor((totalSeconds % 3_600) / 60);
+    if (days > 0) return `${days}d ${hours}h`;
+    if (hours > 0) return `${hours}h ${minutes}m`;
+    return `${minutes}m`;
+  }
+  return value;
+}
 
 /**
  * App selector page — authenticated home screen for hermes-shell.
@@ -18,11 +35,14 @@ export default function AppSelector() {
   const t = useTranslations('home');
   const tc = useTranslations('common');
   const tu = useTranslations('user');
+  const tr = useTranslations('radio');
   const user = useAuthGuard();
   const { logout } = useAuth();
   const { theme, toggle: toggleTheme } = useTheme();
   const { locale, setLocale } = useLocale();
   const router = useRouter();
+  const radio = useRadioStatus();
+  const stationInfo = useStationInfo();
 
   if (!user) {
     return (
@@ -44,6 +64,36 @@ export default function AppSelector() {
     { label: tu('displayName'), value: user.display_name ?? user.username },
     { label: tu('role'), value: user.role },
     { label: tu('locale'), value: user.locale },
+  ];
+
+  const na = tr('na');
+
+  const radioItems = [
+    { label: tr('stationName'), value: stationInfo.stationName ?? na },
+    { label: tr('callsign'), value: stationInfo.callsign ?? na },
+    {
+      label: tr('frequency'),
+      value:
+        radio?.frequency != null ? `${(radio.frequency / 1e6).toFixed(3)} MHz` : na,
+    },
+    { label: tr('mode'), value: radio?.mode ?? na },
+    {
+      label: tr('status'),
+      value:
+        radio?.tx == null ? na : (
+          <span className="inline-flex items-center gap-2">
+            <span
+              className={`inline-block h-2 w-2 rounded-full ${radio.tx ? 'bg-red-500' : 'bg-green-500'}`}
+              aria-hidden="true"
+            />
+            {radio.tx ? tr('tx') : tr('rx')}
+          </span>
+        ),
+    },
+    { label: tr('power'), value: radio?.power != null ? `${radio.power}%` : na },
+    { label: tr('domain'), value: stationInfo.domain ?? na },
+    { label: tr('version'), value: stationInfo.version ?? na },
+    { label: tr('uptime'), value: formatUptime(stationInfo.uptime) },
   ];
 
   const initials = (user.display_name ?? user.username)
@@ -132,6 +182,11 @@ export default function AppSelector() {
         {/* User info */}
         <div className="mt-8">
           <InfoList title={tu('title')} items={userItems} />
+        </div>
+
+        {/* Radio info */}
+        <div className="mt-8">
+          <InfoList title={tr('title')} items={radioItems} />
         </div>
       </div>
     </main>

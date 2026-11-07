@@ -26,6 +26,30 @@ const routerState = vi.hoisted(() => ({
   replace: vi.fn(),
 }));
 
+const radioState = vi.hoisted(() => ({
+  status: null as {
+    frequency: number | null;
+    mode: string | null;
+    tx: boolean | null;
+    power: number | null;
+  } | null,
+}));
+
+const stationState = vi.hoisted(() => ({
+  info: {
+    stationName: null as string | null,
+    domain: null as string | null,
+    version: null as string | null,
+    uptime: null as number | string | null,
+    callsign: null as string | null,
+    loading: false,
+  },
+}));
+
+const infoListProps = vi.hoisted(() => ({
+  calls: [] as Array<{ title?: string; items: { label: string; value: unknown }[] }>,
+}));
+
 vi.mock('@hermes/shared-auth', () => ({
   useAuth: () => ({ logout: authState.logout }),
   useAuthGuard: () => guardState.user,
@@ -59,8 +83,19 @@ vi.mock('lucide-react', () => ({
   MessagesSquare: () => <span data-testid="icon-chat" />,
 }));
 
+vi.mock('@/hooks/useRadioStatus', () => ({
+  useRadioStatus: () => radioState.status,
+}));
+
+vi.mock('@/hooks/useStationInfo', () => ({
+  useStationInfo: () => stationState.info,
+}));
+
 vi.mock('@/components/InfoList', () => ({
-  default: () => <div data-testid="info-list" />,
+  default: (props: { title?: string; items: { label: string; value: unknown }[] }) => {
+    infoListProps.calls.push(props);
+    return <div data-testid="info-list" />;
+  },
 }));
 
 function makeUser(overrides: Partial<HermesUser> = {}): HermesUser {
@@ -91,6 +126,16 @@ describe('AppSelector', () => {
     localeState.locale = 'en';
     localeState.setLocale.mockReset();
     routerState.replace.mockReset();
+    radioState.status = null;
+    stationState.info = {
+      stationName: null,
+      domain: null,
+      version: null,
+      uptime: null,
+      callsign: null,
+      loading: false,
+    };
+    infoListProps.calls = [];
   });
 
   it('shows a loading spinner while the auth guard resolves', () => {
@@ -108,7 +153,7 @@ describe('AppSelector', () => {
     expect(screen.getByText('MO')).toBeTruthy();
     expect(screen.getByText('gpsViewer')).toBeTruthy();
     expect(screen.getByText('chat')).toBeTruthy();
-    expect(screen.getByTestId('info-list')).toBeTruthy();
+    expect(screen.getAllByTestId('info-list')).toHaveLength(2);
   });
 
   it('links the app cards to the GPS and chat URLs', () => {
@@ -145,5 +190,35 @@ describe('AppSelector', () => {
     fireEvent.click(screen.getByRole('button', { name: 'logout' }));
     expect(authState.logout).toHaveBeenCalledTimes(1);
     expect(routerState.replace).toHaveBeenCalledWith('/login');
+  });
+
+  it('renders a radio information group wired to the daemon data', () => {
+    guardState.user = makeUser();
+    stationState.info = {
+      stationName: 'pu2uit-3',
+      domain: 'hermes.local',
+      version: '1.2.3',
+      uptime: 3725,
+      callsign: 'PU2UIT',
+      loading: false,
+    };
+    radioState.status = { frequency: 7100000, mode: 'USB', tx: false, power: 50 };
+
+    render(<AppSelector />);
+
+    const radioGroup = infoListProps.calls.find((call) =>
+      call.items.some((item) => item.label === 'stationName'),
+    );
+    expect(radioGroup).toBeTruthy();
+
+    const items = new Map(radioGroup!.items.map((item) => [item.label, item.value]));
+    expect(items.get('stationName')).toBe('pu2uit-3');
+    expect(items.get('callsign')).toBe('PU2UIT');
+    expect(items.get('frequency')).toBe('7.100 MHz');
+    expect(items.get('mode')).toBe('USB');
+    expect(items.get('power')).toBe('50%');
+    expect(items.get('domain')).toBe('hermes.local');
+    expect(items.get('version')).toBe('1.2.3');
+    expect(items.get('uptime')).toBe('1h 2m');
   });
 });
