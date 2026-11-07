@@ -1,4 +1,4 @@
-import type { Gps, GpsPoint, Trip, TripPoints } from '@hermes/api';
+import type { Gps, GpsFile, GpsPoint, Trip, TripPoints } from '@hermes/api';
 
 /**
  * Mock GPS fixtures for local development and UI testing.
@@ -144,4 +144,43 @@ export function mockTripPoints(tripId: number): TripPoints {
 export function mockClosedTrip(): Trip {
   const open = TRIPS.find((t) => t.ended_at == null) ?? TRIPS[0];
   return { ...open, ended_at: new Date().toISOString() };
+}
+
+/** Number of mock recorded position files. */
+const FILE_COUNT = 4;
+
+/**
+ * Static mock file list, built once so `mockGpsFiles` and `mockGpsFileBuffer`
+ * share the same identities.
+ */
+const FILES: GpsFile[] = (() => {
+  const now = Date.now();
+  return Array.from({ length: FILE_COUNT }, (_, i) => {
+    const stamp = new Date(now - i * 3600_000).toISOString().slice(0, 13).replace(/[-:]/g, '');
+    return {
+      name: `positions-${stamp}.gpx`,
+      size_bytes: 12_400 + i * 3_210,
+      created_at: new Date(now - i * 3600_000).toISOString(),
+    };
+  });
+})();
+
+/**
+ * A list of recorded position files for `GET /api/v2/gps/files`, newest first.
+ */
+export function mockGpsFiles(): GpsFile[] {
+  return FILES.map((file) => ({ ...file }));
+}
+
+/**
+ * The octet-stream body of a recorded position file for
+ * `GET /api/v2/gps/files/{name}`, or null when the name is unknown.
+ */
+export function mockGpsFileBuffer(name: string): Buffer | null {
+  const file = FILES.find((f) => f.name === name);
+  if (!file) return null;
+  return Buffer.from(
+    `<?xml version="1.0" encoding="UTF-8"?>\n<gpx><name>${file.name}</name></gpx>\n`,
+    'utf8',
+  );
 }

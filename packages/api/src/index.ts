@@ -86,6 +86,7 @@ export type {
   Gps,
   GpsPoint,
   GpsSettings,
+  GpsFile,
   GpsFixQuality,
   GpsStationPosition,
   GpsEvent,

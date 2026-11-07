@@ -24,6 +24,20 @@ export interface GpsSettings {
 }
 
 /**
+ * A recorded GPS position file (hermes-radio-daemon `GpsFile`), as listed by
+ * `GET /api/v2/gps/files`. Files are produced every `file_period_s` while
+ * logging is enabled and are emailed to `GpsSettings.email` once finished.
+ */
+export interface GpsFile {
+  /** File name (e.g. `positions-20260812.gpx`). */
+  name: string;
+  /** Size in bytes. */
+  size_bytes: number;
+  /** When the file was finished (ISO 8601 UTC). */
+  created_at: string;
+}
+
+/**
  * The station's position-beacon state, returned by `GET /api/v2/gps/beacon`
  * and by `POST /api/v2/gps/sos` / `DELETE /api/v2/gps/sos` (hermes-radio-daemon
  * `Beacon` schema in api-rest.yaml).

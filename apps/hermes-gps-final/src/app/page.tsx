@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useAuth, useAuthGuard } from '@hermes/shared-auth';
-import { ChevronLeft, Crosshair, History, Loader2, LucideFileWarning, Moon, RefreshCw, Siren, Sun } from 'lucide-react';
+import { ChevronLeft, Crosshair, FolderOpen, History, Loader2, LucideFileWarning, Moon, RefreshCw, Siren, Sun } from 'lucide-react';
 import { useTheme, ErrorBanner, LoadingSpinner, ConfirmDialog } from '@hermes/ui';
 import type { GpsPoint } from '@hermes/api';
 import { useGpsCoords } from '@/hooks/useGpsCoords';
@@ -15,6 +15,7 @@ import { useStationName } from '@/hooks/useStationName';
 import { clearGpsCache } from '@/lib/gpsCache';
 import GpsStatusBadge from '@/components/GpsStatusBadge';
 import TripsPanel from '@/components/TripsPanel';
+import GpsFilesPanel from '@/components/GpsFilesPanel';
 import dynamic from 'next/dynamic';
 
 const MapView = dynamic(() => import('@/components/MapView'), { ssr: false });
@@ -79,6 +80,7 @@ export default function GpsPage() {
   const [copiedLabel, setCopiedLabel] = useState<string | null>(null);
   const [recenterToken, setRecenterToken] = useState(0);
   const [tripsOpen, setTripsOpen] = useState(false);
+  const [filesOpen, setFilesOpen] = useState(false);
   // A selected trip's breadcrumb overrides the live trail until cleared.
   const [tripTrail, setTripTrail] = useState<GpsPoint[] | null>(null);
   const sos = useSosEmergency();
@@ -413,6 +415,16 @@ export default function GpsPage() {
             <span className="hidden landscape:inline text-sm">{t('tripsLabel')}</span>
           </button>
 
+          <button
+            onClick={() => setFilesOpen(true)}
+            aria-label={t('gpsFilesOpen')}
+            title={t('gpsFilesOpen')}
+            className="flex items-center gap-2 rounded-lg p-2 text-gray-600 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-700"
+          >
+            <FolderOpen className="h-5 w-5" />
+            <span className="hidden landscape:inline text-sm">{t('gpsFilesLabel')}</span>
+          </button>
+
           {viewingTrip ? (
             <button
               onClick={() => setTripTrail(null)}
@@ -443,6 +455,15 @@ export default function GpsPage() {
           onTripClosed={() => {
             void refreshHistory();
           }}
+          role={authUser?.role}
+        />
+      )}
+
+      {/* GPS files drawer */}
+      {filesOpen && (
+        <GpsFilesPanel
+          onClose={() => setFilesOpen(false)}
+          settings={position?.settings}
           role={authUser?.role}
         />
       )}
