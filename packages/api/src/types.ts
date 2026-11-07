@@ -21,12 +21,6 @@ export interface GpsSettings {
   sample_interval_s?: number;
   file_period_s?: number;
   email?: string | null;
-  report?: {
-    /** Broadcast this station's position. Default off. */
-    enabled?: boolean;
-    /** How often to report, in seconds (default 900). */
-    interval_s?: number;
-  };
 }
 
 /**
@@ -129,20 +123,19 @@ export interface GpsEvent {
 
 /**
  * Radio/transceiver status derived from the hermes-radio-daemon `radio.state`
- * WebSocket topic.
- *
- * This is a forward-looking shape: `frequency` maps from the daemon's
- * `frequency_hz`; `power` and `lastHamSync` have no daemon equivalent yet, so
- * they stay `null` and consumers render a neutral "—" display. All fields are
- * optional/nullable for resilience.
+ * WebSocket topic (`RadioState` in api-rest.yaml). Only the fields the GPS
+ * panel surfaces are carried; all are nullable for resilience while the
+ * subscription is connecting or a field is absent.
  */
 export interface RadioStatus {
-  /** Radio power state (e.g. 'on' | 'off' | 'standby'); null from the daemon. */
-  power: string | null;
-  /** Current operating frequency in Hz (e.g. 7100000 for 7.100 MHz) */
+  /** Whether the station is transmitting (`tx`). */
+  tx: boolean | null;
+  /** Current operating frequency in Hz (e.g. 7100000 for 7.100 MHz). */
   frequency: number | null;
-  /** Last successful sync with the HAM messaging relay (ISO timestamp); null from the daemon. */
-  lastHamSync: string | null;
+  /** Operating mode (e.g. USB, LSB, FM). */
+  mode: string | null;
+  /** TX power as a percentage (0-100). */
+  power: number | null;
 }
 
 /**

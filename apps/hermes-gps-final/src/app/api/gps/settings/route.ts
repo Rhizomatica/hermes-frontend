@@ -11,7 +11,7 @@ import { hermesPatch } from '@hermes/api';
  * @example
  * PATCH /api/gps/settings
  * body: { logging: false }
- * → 200 { logging, sample_interval_s, file_period_s, email, report }
+ * → 200 { logging, sample_interval_s, file_period_s, email }
  */
 export async function PATCH(request: NextRequest) {
   try {

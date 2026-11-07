@@ -6,12 +6,9 @@ import type { RadioStatus } from '@hermes/api';
 
 /**
  * useRadioStatus — subscribes to the hermes-radio-daemon `radio.state`
- * WebSocket topic to surface transceiver telemetry (operating frequency).
- *
- * This is forward-looking: the daemon's `RadioState` has no on/off power or
- * HAM-sync fields, so those stay `null` and consumers render a neutral "—"
- * fallback. The hook is intentionally defensive (optional fields, unknown
- * payload shapes).
+ * WebSocket topic to surface the transceiver fields the GPS panel shows:
+ * TX/RX, operating frequency, mode and power. Unknown/missing fields map to
+ * null so the UI renders a neutral fallback.
  *
  * @example
  * const radio = useRadioStatus();
@@ -28,9 +25,10 @@ export function useRadioStatus(): RadioStatus | null {
     const unsubscribe = subscribe('radio.state', (event) => {
       const payload = (event.data ?? {}) as Record<string, unknown>;
       setStatus({
-        power: null,
+        tx: typeof payload.tx === 'boolean' ? payload.tx : null,
         frequency: typeof payload.frequency_hz === 'number' ? payload.frequency_hz : null,
-        lastHamSync: null,
+        mode: typeof payload.mode === 'string' ? payload.mode : null,
+        power: typeof payload.power === 'number' ? payload.power : null,
       });
     });
     return unsubscribe;

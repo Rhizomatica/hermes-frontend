@@ -37,15 +37,27 @@ function formatCacheAge(ms: number): string {
   return `${days}d`;
 }
 
+/** Format a GPS fix timestamp to a compact HH:MM:SS string, or "—". */
+function formatFixTime(iso: string | null): string {
+  if (!iso) return '—';
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '—';
+  return new Intl.DateTimeFormat('en', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).format(date);
+}
+
 /**
  * GPS main page — full-screen map with a compact bottom panel.
  *
  * Layout goals:
  * - Lat/Lon rendered as compact, left-aligned copy buttons.
- * - Action buttons (refresh, recenter, trail, SOS) consolidated into a
+ * - Action buttons (refresh, recenter, trips, trail, SOS) consolidated into a
  *   single clearly-organized control row.
- * - Status badges include GPS fix plus radio telemetry (power, frequency,
- *   last HAM sync).
+ * - Status badges show GPS fix quality and logging state; a separate strip
+ *   shows the fix time and radio telemetry (TX/RX, frequency, mode, power).
  *
  * @example
  * // Rendered at /gps in co-deployed mode
@@ -57,7 +69,7 @@ export default function GpsPage() {
   const user = useAuthGuard();
   const { isAuthenticated, user: authUser } = useAuth();
   const { theme, toggle: toggleTheme } = useTheme();
-  const { position, fix, loading, error, lastUpdated, stale, isCached, cacheAgeMs, refresh } =
+  const { position, fix, loading, error, stale, isCached, cacheAgeMs, refresh } =
     useGpsCoords();
   const { history, appendPosition, refresh: refreshHistory } = useGpsHistory();
   const radio = useRadioStatus();
@@ -66,12 +78,28 @@ export default function GpsPage() {
   const [copiedLabel, setCopiedLabel] = useState<string | null>(null);
   const [recenterToken, setRecenterToken] = useState(0);
   const [tripsOpen, setTripsOpen] = useState(false);
-  // A selected trip's breadcrumb overrides the live trail until the panel closes.
+  // A selected trip's breadcrumb overrides the live trail until cleared.
   const [tripTrail, setTripTrail] = useState<GpsPoint[] | null>(null);
   const sos = useSosEmergency();
   const [sosDialog, setSosDialog] = useState<'send' | 'clear' | null>(null);
 
   const breadcrumb = tripTrail ?? history;
+  // A selected trip's trail is always shown; the toggle only governs the live trail.
+  const showBreadcrumb = tripTrail !== null || showTrail;
+  const viewingTrip = tripTrail !== null;
+
+  const fixTime = position?.at ?? null;
+  const radioSummary =
+    radio && (radio.frequency != null || radio.mode != null || radio.tx != null || radio.power != null)
+      ? [
+          radio.tx != null ? (radio.tx ? t('radioTx') : t('radioRx')) : null,
+          radio.frequency != null ? `${(radio.frequency / 1e6).toFixed(3)} MHz` : null,
+          radio.mode != null ? radio.mode : null,
+          radio.power != null ? `${radio.power}%` : null,
+        ]
+          .filter(Boolean)
+          .join(' · ')
+      : null;
 
   // Append new live positions to the breadcrumb history
   const prevTimestampRef = useRef<string | null>(null);
@@ -144,7 +172,7 @@ export default function GpsPage() {
             hdop={null}
             isDark={theme === 'dark'}
             breadcrumb={breadcrumb}
-            showBreadcrumb={showTrail}
+            showBreadcrumb={showBreadcrumb}
             recenterToken={recenterToken}
           />
         </div>
@@ -286,9 +314,9 @@ export default function GpsPage() {
 
         </div>
 
-        {/* GPS + radio status badges */}
+        {/* GPS status badges */}
         <div className="flex flex-col items-start gap-1">
-          <GpsStatusBadge fix={fix} isStale={stale} radio={radio} />
+          <GpsStatusBadge fix={fix} isStale={stale} logging={position?.settings?.logging} />
           {isCached && (
             <span
               className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700 dark:bg-amber-900 dark:text-amber-200"
@@ -301,9 +329,9 @@ export default function GpsPage() {
           )}
         </div>
 
-        {/* Upper info strip: altitude, speed, last updated */}
+        {/* Info strip: altitude, fix time, radio telemetry */}
         <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm text-foreground/50 landscape:flex-col landscape:items-start landscape:gap-1">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <span>
               {t('altitude')}:{' '}
               {position?.altitude_m != null
@@ -312,19 +340,30 @@ export default function GpsPage() {
             </span>
             <span>·</span>
             <span>
-              {t('lastUpdated')}:{' '}
-              {lastUpdated
-                ? new Intl.DateTimeFormat('en', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  second: '2-digit',
-                }).format(lastUpdated)
-                : '—'}
+              {t('fixTime')}: {formatFixTime(fixTime)}
             </span>
+            {(
+              <>
+                <span>·</span>
+                <span className="inline-flex items-center gap-1" title={t('radioStatus')}>
+                  <span
+                    className={`inline-block h-2 w-2 rounded-full ${
+                      radio?.tx === true
+                        ? 'bg-red-500'
+                        : radio?.tx === false
+                          ? 'bg-green-500'
+                          : 'bg-gray-400'
+                    }`}
+                    aria-hidden="true"
+                  />
+                  {radioSummary}
+                </span>
+              </>
+            )}
           </div>
         </div>
 
-        {/* Control row: refresh, recenter, trail */}
+        {/* Control row: refresh, recenter, theme, trips, trail */}
         <div className="flex items-center justify-end gap-2 border-t border-gray-200 pt-2 dark:border-gray-700 landscape:flex-col landscape:items-stretch">
           <button
             onClick={refresh}
@@ -375,25 +414,33 @@ export default function GpsPage() {
             <span className="hidden landscape:inline text-sm">{t('tripsLabel')}</span>
           </button>
 
-          <BreadcrumbToggle
-            visible={showTrail}
-            pointCount={breadcrumb.length}
-            onToggle={() => setShowTrail((v) => !v)}
-          />
+          {viewingTrip ? (
+            <button
+              onClick={() => setTripTrail(null)}
+              aria-label={t('clearTripView')}
+              title={t('clearTripView')}
+              className="flex items-center gap-2 rounded-lg bg-orange-500 px-3 py-2 text-sm text-white hover:bg-orange-600"
+              style={{ minHeight: '44px', minWidth: '44px' }}
+            >
+              <History className="h-5 w-5" />
+              <span className="hidden landscape:inline text-sm">{t('viewingTrip')}</span>
+              <span className="text-xs opacity-70">({breadcrumb.length})</span>
+            </button>
+          ) : (
+            <BreadcrumbToggle
+              visible={showTrail}
+              pointCount={history.length}
+              onToggle={() => setShowTrail((v) => !v)}
+            />
+          )}
         </div>
       </div>
 
       {/* Trips history drawer */}
       {tripsOpen && (
         <TripsPanel
-          onClose={() => {
-            setTripsOpen(false);
-            setTripTrail(null);
-          }}
-          onViewTrip={(points) => {
-            setTripTrail(points);
-            setShowTrail(true);
-          }}
+          onClose={() => setTripsOpen(false)}
+          onViewTrip={(points) => setTripTrail(points)}
           onTripClosed={() => {
             void refreshHistory();
           }}

@@ -37,7 +37,6 @@ export function mockGps(): Gps {
       sample_interval_s: 30,
       file_period_s: 3600,
       email: null,
-      report: { enabled: false, interval_s: 900 },
     },
   };
 }
