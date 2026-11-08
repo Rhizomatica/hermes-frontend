@@ -4,15 +4,15 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useAuth, useAuthGuard } from '@hermes/shared-auth';
-import { ChevronLeft, Loader2, Siren } from 'lucide-react';
-import { useTheme, ErrorBanner, LoadingSpinner, ConfirmDialog } from '@hermes/ui';
+import { ChevronLeft } from 'lucide-react';
+import { useTheme, ErrorBanner, LoadingSpinner } from '@hermes/ui';
 import type { GpsPoint } from '@hermes/api';
 import { useGpsCoords } from '@/hooks/useGpsCoords';
 import { useGpsHistory } from '@/hooks/useGpsHistory';
-import { useSosEmergency } from '@/hooks/useSosEmergency';
 import { useGpsStations } from '@/hooks/useGpsStations';
 import { clearGpsCache } from '@/lib/gpsCache';
 import GpsSidePanel from '@/components/GpsSidePanel';
+import SosButton from '@/components/SosButton';
 import TripsPanel from '@/components/TripsPanel';
 import GpsFilesPanel from '@/components/GpsFilesPanel';
 import dynamic from 'next/dynamic';
@@ -50,8 +50,6 @@ export default function GpsPage() {
   const [filesOpen, setFilesOpen] = useState(false);
   // A selected trip's breadcrumb overrides the live trail until cleared.
   const [tripTrail, setTripTrail] = useState<GpsPoint[] | null>(null);
-  const sos = useSosEmergency();
-  const [sosDialog, setSosDialog] = useState<'send' | 'clear' | null>(null);
 
   const breadcrumb = tripTrail ?? history;
   // A selected trip's trail is always shown; the toggle only governs the live trail.
@@ -130,58 +128,7 @@ export default function GpsPage() {
           </div>
         )}
 
-        {/* SOS — prominent emergency action, separated from the panel */}
-        <button
-          onClick={() => setSosDialog(sos.emergency > 0 ? 'clear' : 'send')}
-          disabled={sos.sending || sos.clearing || (sos.emergency === 0 && !position)}
-          aria-label={sos.emergency > 0 ? t('sosActive') : t('sosButton')}
-          title={sos.emergency > 0 ? t('sosActiveTooltip') : t('sosButtonTooltip')}
-          className={
-            sos.emergency > 0
-              ? 'absolute bottom-4 right-4 z-20 flex items-center gap-2 rounded-full bg-red-700 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-red-700/40 animate-pulse disabled:opacity-50 disabled:cursor-not-allowed'
-              : 'absolute bottom-4 right-4 z-20 flex items-center gap-2 rounded-full bg-red-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-red-600/30 hover:bg-red-700 active:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed'
-          }
-          style={{ minHeight: '44px', minWidth: '44px' }}
-        >
-          {sos.sending || sos.clearing ? (
-            <Loader2 className="h-5 w-5 animate-spin" />
-          ) : (
-            <Siren className="h-5 w-5" />
-          )}
-          <span className="hidden sm:inline">
-            {sos.sending
-              ? t('sosSending')
-              : sos.emergency > 0
-                ? t('sosActive')
-                : t('sosButton')}
-          </span>
-        </button>
-
-        {/* SOS error feedback */}
-        {sos.error && (
-          <div
-            role="alert"
-            className="absolute bottom-20 right-4 z-20 max-w-xs rounded-lg bg-red-100 px-3 py-2 text-xs text-red-700 dark:bg-red-900 dark:text-red-200"
-          >
-            {t('sosError', { message: sos.error })}
-          </div>
-        )}
-
-        {/* SOS confirm dialog (send or clear) */}
-        <ConfirmDialog
-          open={sosDialog !== null}
-          title={sosDialog === 'clear' ? t('sosClearConfirmTitle') : t('sosConfirmTitle')}
-          message={sosDialog === 'clear' ? t('sosClearConfirmMessage') : t('sosConfirmMessage')}
-          confirmLabel={sosDialog === 'clear' ? t('sosClear') : tc('send')}
-          cancelLabel={tc('cancel')}
-          onConfirm={() => {
-            const action = sosDialog;
-            setSosDialog(null);
-            if (action === 'clear') void sos.clearSos();
-            else void sos.sendSos(1);
-          }}
-          onCancel={() => setSosDialog(null)}
-        />
+        <SosButton hasPosition={position != null} />
       </div>
 
       <GpsSidePanel
