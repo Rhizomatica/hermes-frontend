@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
 /**
- * Playwright configuration for hermes-gps-final E2E tests.
+ * Playwright configuration for hermes-gps E2E tests.
  *
  * Runs against the GPS dev server on port 4001. Reuses an already-running
  * server locally; in CI it starts the server automatically.

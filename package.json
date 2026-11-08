@@ -11,13 +11,13 @@
   },
   "workspaces": [
     "apps/hermes-shell",
-    "apps/hermes-gps-final",
+    "apps/hermes-gps",
     "apps/hermes-chat-final",
     "packages/*"
   ],
   "scripts": {
     "dev:shell": "turbo run dev --filter=hermes-shell",
-    "dev:gps": "turbo run dev --filter=hermes-gps-final",
+    "dev:gps": "turbo run dev --filter=hermes-gps",
     "dev:chat": "turbo run dev --filter=hermes-chat-final",
     "ws:proxy": "node scripts/ws-proxy.mjs",
     "dev:all": "node scripts/dev-with-proxy.mjs",

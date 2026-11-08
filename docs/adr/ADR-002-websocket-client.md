@@ -8,7 +8,7 @@
 
 ## Context
 
-Both `hermes-gps-final` and `hermes-chat-final` need real-time data from the [hermes-radio-daemon](https://github.com/Rhizomatica/hermes-radio-daemon) WebSocket server. The daemon emits events for GPS position updates, message delivery notifications, station last-heard timestamps, HF link status, and caller logs.
+Both `hermes-gps` and `hermes-chat-final` need real-time data from the [hermes-radio-daemon](https://github.com/Rhizomatica/hermes-radio-daemon) WebSocket server. The daemon emits events for GPS position updates, message delivery notifications, station last-heard timestamps, HF link status, and caller logs.
 
 Two apps consume the same WebSocket but subscribe to different event types. A shared WebSocket connection (one per browser tab) reduces server load and simplifies connection management.
 
@@ -66,8 +66,8 @@ Events consumed from `hermes-radio-daemon`:
 
 | Event Type | Consumed By | Payload |
 |---|---|---|
-| `gps.position` | `hermes-gps-final` | `{ latitude, longitude, altitude, speed, heading, timestamp }` |
-| `gps.fix` | `hermes-gps-final` | `{ quality, satellites, hdop }` |
+| `gps.position` | `hermes-gps` | `{ latitude, longitude, altitude, speed, heading, timestamp }` |
+| `gps.fix` | `hermes-gps` | `{ quality, satellites, hdop }` |
 | `message.new` | `hermes-chat-final` | `Message` object |
 | `message.delivered` | `hermes-chat-final` | `{ messageId, timestamp, station }` |
 | `message.synced` | `hermes-chat-final` | `{ messageId, station }` |

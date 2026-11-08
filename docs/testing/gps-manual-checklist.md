@@ -1,6 +1,6 @@
 # GPS Application — Manual Testing Checklist
 
-**App**: hermes-gps-final  
+**App**: hermes-gps  
 **URL**: `http://localhost:4001`  
 **Target Device**: sBitx (800×480) and Desktop (≥1024px)
 
@@ -11,7 +11,7 @@
 - [ ] `npm run build` passes with zero errors
 - [ ] `npm run typecheck` passes
 - [ ] Backend services running (hermes-backend on :8080, hermes-radio-daemon WebSocket on :8081)
-- [ ] PMTiles file exists at `apps/hermes-gps-final/public/brazil.pmtiles` (or run `npm run download-tiles`)
+- [ ] PMTiles file exists at `apps/hermes-gps/public/brazil.pmtiles` (or run `npm run download-tiles`)
 
 ---
 

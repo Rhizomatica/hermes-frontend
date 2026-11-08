@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 };
 
 /**
- * Root layout for hermes-gps-final.
+ * Root layout for hermes-gps.
  *
  * Provider hierarchy (ADR-006 §3.1):
  *   NextIntlClientProvider → AuthProvider → ThemeProvider →

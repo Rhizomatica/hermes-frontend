@@ -171,11 +171,11 @@ it to an actual nginx config that reverse-proxies `HERMES_API_URL`.
 The Dockerfile builds `${APP}` (default via compose: `hermes-chat` / `hermes-gps`)
 with `npx turbo build --filter=${APP}` and runs `node apps/$APP/server.js`. The
 actual Next.js workspaces in this branch are `hermes-chat-final` and
-`hermes-gps-final`. `turbo build --filter=hermes-chat` will fail because that
+`hermes-gps`. `turbo build --filter=hermes-chat` will fail because that
 workspace member has no `build` in the current turbo graph (or resolves to the
 wrong package). Result: `docker compose up --build` fails for both services.
 
-**Fix**: Point compose `APP` args at `hermes-chat-final` / `hermes-gps-final` and
+**Fix**: Point compose `APP` args at `hermes-chat-final` / `hermes-gps` and
 confirm the standalone output path (`apps/${APP}/.next/standalone`) matches.
 
 ---
@@ -341,7 +341,7 @@ F1 is reclassified as: *bearer tokens shipped in non-HttpOnly, non-Secure cookie
 | F4 | ✅ Fixed | removed `rejectUnauthorized: false` from `packages/api/src/index.ts` |
 | F5 | ✅ Governed | ADR-004 demoted to `Proposed` with an explicit "not implemented" note |
 | F6 | ✅ Fixed | `docker-compose.yml` rewritten: integer ports, valid YAML, corrected workspace args |
-| F7 | ✅ Fixed | compose `APP` args → `hermes-chat-final` / `hermes-gps-final` |
+| F7 | ✅ Fixed | compose `APP` args → `hermes-chat-final` / `hermes-gps` |
 | F8 | ✅ Fixed | `WebSocketProvider` adds `hermes-v1` subprotocol, 30s `ping`/10s `pong` heartbeat, jittered backoff, 4-state machine |
 | F9 | ✅ Fixed | client refresh loop removed (server-side proxy owns refresh); no concurrent refresh path remains |
 | F10 | ✅ Deferred | `Message.id: number` retained; UUID optimistic model deferred with the queue (ADR-004 now Proposed) |
@@ -352,8 +352,8 @@ F1 is reclassified as: *bearer tokens shipped in non-HttpOnly, non-Secure cookie
 ### Verification
 
 - `tsc --noEmit` clean for `packages/shared-auth`, `apps/hermes-shell`,
-  `apps/hermes-gps-final`, `apps/hermes-chat-final`.
+  `apps/hermes-gps`, `apps/hermes-chat-final`.
 - `vitest` green for `packages/api` (22 tests: conversation + normalize).
 - Remaining test-suite failures are pre-existing and unrelated: Playwright e2e
-  is incorrectly collected by vitest, and `apps/hermes-gps-final` `vitest`
+  is incorrectly collected by vitest, and `apps/hermes-gps` `vitest`
   lacks the `@/` alias for `gpsCache` (config issue, not code).

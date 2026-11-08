@@ -16,7 +16,7 @@
 | 1.1.0 | sBitx design tokens | ✅ | `82b40d0` | Touch targets, fonts, breakpoints, z-index in @hermes/tailwind-config |
 | 1.1.1 | packages/shared-auth scaffold | ✅ | `82b40d0` | Empty barrel, TS config, peer deps |
 | 1.1.2 | apps/hermes-shell scaffold | ✅ | `82b40d0` | Next.js 16, port 4000, tailwind, i18n |
-| 1.1.3 | apps/hermes-gps-final scaffold | ✅ | `82b40d0` | Port 4001, maplibre-gl + pmtiles deps |
+| 1.1.3 | apps/hermes-gps scaffold | ✅ | `82b40d0` | Port 4001, maplibre-gl + pmtiles deps |
 | 1.1.4 | apps/hermes-chat-final scaffold | ✅ | `82b40d0` | Port 4002 |
 | 1.1.5 | PoC exclusion from Turborepo | ✅ | `82b40d0` | PoC apps not in workspace array |
 | **Week 2** | **Auth & Login** | ✅ | | |
@@ -75,8 +75,8 @@
 | 🔴 Critical | R-3 | ESLint config import `@hermes/config/eslint` → actual package is `@platform/config/eslint/next.mjs` | Fixed import path to `@platform/config/eslint/next.mjs` in all 3 apps |
 | 🔴 Critical | R-4 | `@eslint/eslintrc` FlatCompat circular structure error with ESLint v9/v10 | Rewrote `packages/config/eslint/next.mjs` using native flat config from `eslint-config-next` |
 | 🔴 Critical | R-5 | `typescript-eslint`/`@typescript-eslint` plugin version mismatch across ESLint v9/10 | Removed explicit plugin — eslint-config-next provides it |
-| 🟡 Medium | R-6 | Duplicate `@hermes/ui` imports in `hermes-shell/page.tsx` and `hermes-gps-final/page.tsx` | Merged into single import statements |
-| 🟡 Medium | R-7 | `<a>` element used instead of `<Link>` in `hermes-chat-final/page.tsx` and `hermes-gps-final/page.tsx` | Replaced with Next.js `<Link>` |
+| 🟡 Medium | R-6 | Duplicate `@hermes/ui` imports in `hermes-shell/page.tsx` and `hermes-gps/page.tsx` | Merged into single import statements |
+| 🟡 Medium | R-7 | `<a>` element used instead of `<Link>` in `hermes-chat-final/page.tsx` and `hermes-gps/page.tsx` | Replaced with Next.js `<Link>` |
 | 🟡 Medium | R-8 | `react-hooks/set-state-in-effect` violation in `useGpsCoords` and `useGpsHistory` | Deferred effect-internal setState via `setTimeout(..., 0)` |
 | 🟢 Low | R-9 | Unused `eslint-disable react-hooks/exhaustive-deps` in `MapView.tsx` line 218 | Removed the disable comment |
 
@@ -111,7 +111,7 @@ apps/hermes-shell/            → Next.js 16, port 4000
   /login                       → Login form
   /api/auth/{login,me,refresh} → Auth proxy routes
 
-apps/hermes-gps-final/        → Next.js 16, port 4001
+apps/hermes-gps/        → Next.js 16, port 4001
   /                            → Full-screen map + coordinate overlay
   /api/gps                     → GPS position proxy
 

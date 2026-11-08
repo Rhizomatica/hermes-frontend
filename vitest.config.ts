@@ -20,7 +20,7 @@ export default defineConfig({
       // `@/*` is app-specific: each app's tsconfig maps it to its own `src/`,
       // so a single global `@/` alias cannot point at more than one app. Map the
       // specific `@/*` imports exercised by unit tests to their real locations.
-      '@/lib/gpsCache': resolve(__dirname, 'apps/hermes-gps-final/src/lib/gpsCache'),
+      '@/lib/gpsCache': resolve(__dirname, 'apps/hermes-gps/src/lib/gpsCache'),
       '@/components/InfoList': resolve(__dirname, 'apps/hermes-shell/src/components/InfoList'),
       '@/hooks/useRadioStatus': resolve(__dirname, 'apps/hermes-shell/src/hooks/useRadioStatus'),
       '@/hooks/useStationInfo': resolve(__dirname, 'apps/hermes-shell/src/hooks/useStationInfo'),

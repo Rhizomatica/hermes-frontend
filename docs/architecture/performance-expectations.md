@@ -30,7 +30,7 @@ The canonical deployment target is the **sBitx** — a Raspberry Pi 4 (or equiva
 | Process | Target (idle) | Peak (under load) | Notes |
 |---|---|---|---|
 | **hermes-shell** (static export) | 0 MB (served by nginx) | 0 MB | Static export eliminates Node.js process entirely |
-| **hermes-gps-final** (standalone) | 60–80 MB | 120 MB | MapLibre tiles in GPU memory; PMTiles reads via `fetch` |
+| **hermes-gps** (standalone) | 60–80 MB | 120 MB | MapLibre tiles in GPU memory; PMTiles reads via `fetch` |
 | **hermes-chat-final** (standalone) | 60–80 MB | 150 MB | IndexedDB + message list DOM; file uploads buffered in memory |
 | **nginx** | 5–10 MB | 20 MB | Static file serving + reverse proxy |
 | **Chromium** (kiosk) | 150–200 MB | 300–400 MB | Single tab, 800×480 viewport. GPU acceleration for WebGL |
@@ -112,7 +112,7 @@ The canonical deployment target is the **sBitx** — a Raspberry Pi 4 (or equiva
 | App | JS (gzipped) | CSS (gzipped) | Fonts | Images | Total (uncompressed) |
 |---|---|---|---|---|---|
 | **hermes-shell** (static) | < 100 KB | < 30 KB | 50 KB | 20 KB | < 5 MB |
-| **hermes-gps-final** | < 200 KB | < 30 KB | 50 KB | 20 KB | < 10 MB |
+| **hermes-gps** | < 200 KB | < 30 KB | 50 KB | 20 KB | < 10 MB |
 | **hermes-chat-final** | < 250 KB | < 30 KB | 50 KB | 20 KB | < 12 MB |
 
 **Excluded from bundle (loaded separately)**:
@@ -200,14 +200,14 @@ T+17s   User sees login form
 T+20s   User logs in → POST /api/auth/login (localhost)
 T+21s   App selector page renders (static from nginx)
 T+22s   User taps "GPS" → Chromium navigates to /gps
-T+23s   hermes-gps-final standalone server responds
+T+23s   hermes-gps standalone server responds
 T+25s   MapLibre initializes WebGL, loads PMTiles metadata
 T+26s   Map renders, GPS marker appears
 ```
 
 **Total time: power-on to GPS map visible = ~26 seconds.**
 
-This assumes `hermes-gps-final` and `hermes-chat-final` are already running as systemd services (started at boot). If they need to cold-start on first request, add 2–3 seconds per app.
+This assumes `hermes-gps` and `hermes-chat-final` are already running as systemd services (started at boot). If they need to cold-start on first request, add 2–3 seconds per app.
 
 ---
 

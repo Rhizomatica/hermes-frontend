@@ -46,7 +46,7 @@ All commits must follow the [Conventional Commits](https://www.conventionalcommi
 | Scope | Applies To |
 |---|---|
 | `shell` | `apps/hermes-shell` |
-| `gps` | `apps/hermes-gps-final` |
+| `gps` | `apps/hermes-gps` |
 | `chat` | `apps/hermes-chat-final` |
 | `api` | `packages/api` |
 | `ui` | `packages/ui` |
@@ -733,7 +733,7 @@ Each shared package (`@hermes/api`, `@hermes/ui`, `@hermes/shared-auth`, `@herme
 
 ### 10.3 App Versioning
 
-Apps (`hermes-shell`, `hermes-gps-final`, `hermes-chat-final`) use the git commit hash as their version identifier, embedded at build time:
+Apps (`hermes-shell`, `hermes-gps`, `hermes-chat-final`) use the git commit hash as their version identifier, embedded at build time:
 
 ```typescript
 // next.config.ts

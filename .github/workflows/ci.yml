@@ -55,7 +55,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        app: [hermes-shell, hermes-gps-final, hermes-chat-final]
+        app: [hermes-shell, hermes-gps, hermes-chat-final]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -113,7 +113,7 @@ jobs:
       - run: npx turbo build
       - name: Check bundle sizes
         run: |
-          for app in hermes-shell hermes-gps-final hermes-chat-final; do
+          for app in hermes-shell hermes-gps hermes-chat-final; do
             SIZE=$(du -sk apps/$app/.next/standalone | cut -f1)
             echo "$app standalone: ${SIZE}KB"
             if [ "$SIZE" -gt 150000 ]; then

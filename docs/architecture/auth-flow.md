@@ -171,7 +171,7 @@ All three apps served from same origin via nginx reverse proxy:
 
 1. User logs in at `station.local/login` (served by `hermes-shell`)
 2. Login response sets `hermes_token` cookie with `Path=/`
-3. User navigates to `station.local/gps` (served by `hermes-gps-final`)
+3. User navigates to `station.local/gps` (served by `hermes-gps`)
 4. Browser sends `hermes_token` cookie automatically (same origin)
 5. GPS app's `AuthProvider` validates token: `GET /api/auth/me` via cookie
 6. GPS app renders — no login prompt
@@ -185,7 +185,7 @@ A single app deployed at root:
                            │
                       / (root)
                            │
-                    hermes-gps-final :4001
+                    hermes-gps :4001
 ```
 
 1. User visits `station.local/`

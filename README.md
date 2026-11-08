@@ -8,7 +8,7 @@ Monorepo for the HERMES  High-frequency Emergency and Rural Multimedia Exchange 
 ```
 nginx: / → shell  /gps → gps  /chat → chat
 ├── apps/hermes-shell       (port 4000) Auth + App Selector
-├── apps/hermes-gps-final   (port 4001) Offline GPS Maps
+├── apps/hermes-gps   (port 4001) Offline GPS Maps
 ├── apps/hermes-chat-final  (port 4002) Messaging
 ├── packages/shared-auth    Auth, WebSocket, i18n
 ├── packages/api            Dual-mode API client

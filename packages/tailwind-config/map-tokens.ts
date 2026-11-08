@@ -3,7 +3,7 @@
  *
  * These tokens keep offline map rendering consistent with the
  * HERMES design system (orange-500 accent) across light and dark
- * themes. Consumed by `buildStyle()` in `apps/hermes-gps-final/src/lib/mapStyle.ts`.
+ * themes. Consumed by `buildStyle()` in `apps/hermes-gps/src/lib/mapStyle.ts`.
  *
  * Values reference Tailwind's orange palette (ADR-005 §Map Aesthetics).
  */
