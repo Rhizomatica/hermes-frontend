@@ -95,7 +95,7 @@ main
 | 1.1.0 | sBitx viewport + design tokens | Infrastructure |
 | 1.1.1 | `packages/shared-auth` scaffold | Package |
 | 1.1.2 | `apps/hermes-shell` scaffold | App |
-| 1.1.3 | `apps/hermes-gps-final` scaffold | App |
+| 1.1.3 | `apps/hermes-gps` scaffold | App |
 | 1.1.4 | `apps/hermes-chat-final` scaffold | App |
 | 1.1.5 | PoC exclusion from Turborepo | Infrastructure |
 | 1.2.1 | `TokenStore` abstraction | Auth |

@@ -1,11 +1,12 @@
-import type { Config } from "tailwindcss";
-import baseConfig from "@hermes/tailwind-config";
+import type { Config } from 'tailwindcss';
+import baseConfig from '@hermes/tailwind-config/base';
 
-export default {
-  ...baseConfig,
+const config: Pick<Config, 'content' | 'presets'> = {
   content: [
-    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+    './src/**/*.{ts,tsx}',
+    '../../packages/ui/src/**/*.{ts,tsx}',
   ],
-} satisfies Config;
+  presets: [baseConfig],
+};
+
+export default config;

@@ -8,7 +8,7 @@
 
 ## Context
 
-Three independently deployable apps (`hermes-shell`, `hermes-gps-final`, `hermes-chat-final`) share a single authentication domain. Users log in once via `hermes-shell` and should be automatically authenticated when navigating to `/gps` or `/chat` without re-entering credentials.
+Three independently deployable apps (`hermes-shell`, `hermes-gps`, `hermes-chat-final`) share a single authentication domain. Users log in once via `hermes-shell` and should be automatically authenticated when navigating to `/gps` or `/chat` without re-entering credentials.
 
 The [hermes-backend](https://github.com/Rhizomatica/hermes-backend) issues JWT RS256 token pairs (access token 15min, refresh token 7 days). The frontend must store these securely and share them across all three apps on the same origin.
 
@@ -85,7 +85,7 @@ All three apps are served from the same origin in production (`hermes.station.lo
 
 ```
 hermes.station.local/        → hermes-shell (port 4000)
-hermes.station.local/gps/    → hermes-gps-final (port 4001)
+hermes.station.local/gps/    → hermes-gps (port 4001)
 hermes.station.local/chat/   → hermes-chat-final (port 4002)
 ```
 

@@ -7,7 +7,7 @@
 
 ## Phase Objectives
 
-Deliver a unified login experience and the shared infrastructure that all three apps (`hermes-shell`, `hermes-gps-final`, `hermes-chat-final`) depend on. At phase end, a user can log in via `hermes-shell`, see an app selector, and navigate to placeholder pages for GPS and Chat. Both sub-apps recognize the auth token and do not re-prompt for credentials.
+Deliver a unified login experience and the shared infrastructure that all three apps (`hermes-shell`, `hermes-gps`, `hermes-chat-final`) depend on. At phase end, a user can log in via `hermes-shell`, see an app selector, and navigate to placeholder pages for GPS and Chat. Both sub-apps recognize the auth token and do not re-prompt for credentials.
 
 ---
 
@@ -83,23 +83,23 @@ Deliver a unified login experience and the shared infrastructure that all three 
 
 ---
 
-### [ ] Task 1.1.3: Scaffold `apps/hermes-gps-final`
+### [ ] Task 1.1.3: Scaffold `apps/hermes-gps`
 
 **Description**: Same scaffold process as 1.1.2, but for the GPS app. Port 4001. Wire into Turborepo.
 
 **Acceptance Criteria**:
-- [ ] `apps/hermes-gps-final/` scaffolded and running on port 4001
+- [ ] `apps/hermes-gps/` scaffolded and running on port 4001
 - [ ] `npm run dev:gps` starts the app
 - [ ] Shares `@hermes/tailwind-config`, `@hermes/ui`, `@hermes/shared-auth`, `@hermes/api` as dependencies
 
 **Files to Create/Edit**:
-- `apps/hermes-gps-final/package.json`
-- `apps/hermes-gps-final/next.config.ts`
-- `apps/hermes-gps-final/tsconfig.json`
-- `apps/hermes-gps-final/tailwind.config.ts`
-- `apps/hermes-gps-final/postcss.config.mjs`
-- `turbo.json` — add `hermes-gps-final`
-- `package.json` — add `"dev:gps": "turbo run dev --filter=hermes-gps-final"`
+- `apps/hermes-gps/package.json`
+- `apps/hermes-gps/next.config.ts`
+- `apps/hermes-gps/tsconfig.json`
+- `apps/hermes-gps/tailwind.config.ts`
+- `apps/hermes-gps/postcss.config.mjs`
+- `turbo.json` — add `hermes-gps`
+- `package.json` — add `"dev:gps": "turbo run dev --filter=hermes-gps"`
 
 **Stack Notes**: Port 4001 via `next dev --port 4001`. Dependencies: `maplibre-gl` and `pmtiles` for Phase 2.
 
@@ -291,7 +291,7 @@ Deliver a unified login experience and the shared infrastructure that all three 
 
 ### [ ] Task 1.2.7: Auth-aware layouts for GPS and Chat apps
 
-**Description**: Add `AuthProvider`, `ThemeProvider`, `LocaleProvider` to both `hermes-gps-final` and `hermes-chat-final` root layouts. Add a placeholder "Back to Hermes" link and auth check.
+**Description**: Add `AuthProvider`, `ThemeProvider`, `LocaleProvider` to both `hermes-gps` and `hermes-chat-final` root layouts. Add a placeholder "Back to Hermes" link and auth check.
 
 **Acceptance Criteria**:
 - [ ] Both apps' `layout.tsx` wraps children with provider hierarchy: `AuthProvider` → `ThemeProvider` → `LocaleProvider`
@@ -301,8 +301,8 @@ Deliver a unified login experience and the shared infrastructure that all three 
 - [ ] Apps render a placeholder page confirming they're wired up and auth-aware
 
 **Files to Create/Edit**:
-- `apps/hermes-gps-final/src/app/layout.tsx` — providers + theme flash prevention script
-- `apps/hermes-gps-final/src/app/page.tsx` — placeholder GPS page with auth guard
+- `apps/hermes-gps/src/app/layout.tsx` — providers + theme flash prevention script
+- `apps/hermes-gps/src/app/page.tsx` — placeholder GPS page with auth guard
 - `apps/hermes-chat-final/src/app/layout.tsx` — providers + theme flash prevention script
 - `apps/hermes-chat-final/src/app/page.tsx` — placeholder Chat page with auth guard
 
@@ -331,8 +331,8 @@ Deliver a unified login experience and the shared infrastructure that all three 
 - `apps/hermes-shell/public/sw.js` — Service Worker
 - `apps/hermes-shell/public/icon-192.png` — app icon
 - `apps/hermes-shell/public/icon-512.png` — app icon
-- `apps/hermes-gps-final/public/manifest.json`
-- `apps/hermes-gps-final/public/sw.js`
+- `apps/hermes-gps/public/manifest.json`
+- `apps/hermes-gps/public/sw.js`
 - `apps/hermes-chat-final/public/manifest.json`
 - `apps/hermes-chat-final/public/sw.js`
 - Each app's `src/app/layout.tsx` — add manifest link + SW registration
@@ -388,7 +388,7 @@ Deliver a unified login experience and the shared infrastructure that all three 
 
 **Files to Create/Edit**:
 - `apps/hermes-shell/next.config.ts` — add CSP headers
-- `apps/hermes-gps-final/next.config.ts` — add CSP headers
+- `apps/hermes-gps/next.config.ts` — add CSP headers
 - `apps/hermes-chat-final/next.config.ts` — add CSP headers
 
 **Stack Notes**: Next.js `headers()` in `next.config.ts` for CSP. `'unsafe-inline'` for styles is required by Tailwind's JIT compiler.

@@ -308,7 +308,7 @@ const csp = [
 
 ### Alternative 1: Single Turborepo App with Build-Time Feature Flags
 
-Instead of three separate Next.js apps (`hermes-shell`, `hermes-gps-final`, `hermes-chat-final`), consider a **single Next.js app** with route groups and build-time feature flags that produce separate builds:
+Instead of three separate Next.js apps (`hermes-shell`, `hermes-gps`, `hermes-chat-final`), consider a **single Next.js app** with route groups and build-time feature flags that produce separate builds:
 
 ```
 apps/hermes-app/

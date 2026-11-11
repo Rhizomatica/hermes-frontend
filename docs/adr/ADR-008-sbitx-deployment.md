@@ -13,7 +13,7 @@ The Hermes frontend apps run on the **sBitx** — a Raspberry Pi-based HF radio 
 - A Raspberry Pi (ARMv7 or ARM64, typically Pi 4 with 2–4 GB RAM)
 - A 7-inch touchscreen (800×480 resolution, capacitive touch)
 - Fully air-gapped — no internet connectivity whatsoever
-- All services run locally on the same device: `hermes-backend`, `hermes-radio-daemon`, `hermes-shell`, `hermes-gps-final`, `hermes-chat-final`
+- All services run locally on the same device: `hermes-backend`, `hermes-radio-daemon`, `hermes-shell`, `hermes-gps`, `hermes-chat-final`
 
 The existing documents (ADRs, task lists, architecture overview) address "offline" in abstract terms — offline message queues, offline map tiles — but never mention the **sBitx hardware constraints** that fundamentally shape the frontend architecture.
 
@@ -58,7 +58,7 @@ services:
       HERMES_API_URL: http://hermes-backend:8080
     restart: unless-stopped
 
-  hermes-gps-final:
+  hermes-gps:
     platform: linux/arm64
     # ...
 
@@ -127,7 +127,7 @@ export const metadata: Metadata = {
 │  ┌───────┴────────────┴───────────────┴──────────┐   │
 │  │              nginx (localhost)                  │   │
 │  │  /      → hermes-shell:4000                    │   │
-│  │  /gps   → hermes-gps-final:4001                │   │
+│  │  /gps   → hermes-gps:4001                │   │
 │  │  /chat  → hermes-chat-final:4002               │   │
 │  │  /api/* → hermes-backend:8080                  │   │
 │  └─────────────────────────────────────────────────┘   │

@@ -1,0 +1,68 @@
+import { config as loadEnv } from 'dotenv';
+import path from 'path';
+import type { NextConfig } from 'next';
+import createNextIntlPlugin from 'next-intl/plugin';
+
+// Load monorepo root .env/.env.local as base (cwd is the app dir under turbo/npm).
+// dotenv defaults to override:false, so app-level env still wins.
+loadEnv({ path: path.resolve(process.cwd(), '../../.env') });
+loadEnv({ path: path.resolve(process.cwd(), '../../.env.local') });
+
+const withNextIntl = createNextIntlPlugin();
+
+// Build the connect-src list for the CSP. The radio daemon's WebSocket runs on
+// a configurable host (NEXT_PUBLIC_WS_URL); allow its origin so the browser can
+// connect to it. Dev keeps ws://localhost:* for the default localhost setup.
+function connectSrc(): string {
+  const sources = ["'self'", 'ws://localhost:*', 'http://localhost:*'];
+  const wsUrl = process.env.NEXT_PUBLIC_WS_URL;
+  if (wsUrl) {
+    try {
+      const url = new URL(wsUrl);
+      if (url.protocol === 'ws:' || url.protocol === 'wss:') {
+        sources.push(`${url.protocol}//${url.host}`);
+      }
+    } catch {
+      // Unparseable URL — keep the dev defaults.
+    }
+  }
+  return sources.join(' ');
+}
+
+const nextConfig: NextConfig = {
+  basePath: process.env.NEXT_PUBLIC_BASE_PATH ?? '',
+  transpilePackages: [
+    '@hermes/api',
+    '@hermes/shared-auth',
+    '@hermes/ui',
+    '@hermes/tailwind-config',
+  ],
+  env: {
+    NEXT_PUBLIC_APP_VERSION: process.env.GIT_COMMIT_HASH ?? 'dev',
+    NEXT_PUBLIC_BUILD_TIME: new Date().toISOString(),
+  },
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value:
+              "default-src 'self'; " +
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
+              "style-src 'self' 'unsafe-inline'; " +
+              "img-src 'self' data: blob:; " +
+              `connect-src ${connectSrc()}; ` +
+              "font-src 'self'; " +
+              "manifest-src 'self'; " +
+              "form-action 'self'; " +
+              "frame-ancestors 'none';",
+          },
+        ],
+      },
+    ];
+  },
+};
+
+export default withNextIntl(nextConfig);

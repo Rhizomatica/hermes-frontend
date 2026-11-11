@@ -1,10 +1,31 @@
+import http from 'node:http';
 import https from 'node:https';
 
-const insecureAgent = new https.Agent({ rejectUnauthorized: false });
-
 function getBase(): string {
-  const url = process.env.HERMES_API_URL ?? 'https://10.70.96.5';
-  return url.endsWith('/') ? url : url + '/api/';
+  const url = process.env.HERMES_API_URL ?? 'http://localhost:8080';
+  return url.endsWith('/') ? url.slice(0, -1) : url;
+}
+
+function getSessionTokenFromCookie(cookie?: string): string | null {
+  if (!cookie) return null;
+  const match = cookie.match(/(?:^|;\s*)hermes_session=([^;]*)/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+function buildAuthHeaders(cookie?: string, authorization?: string): Record<string, string> {
+  const headers: Record<string, string> = {};
+  if (cookie) {
+    headers['Cookie'] = cookie;
+    // The station API enforces CSRF on state-changing requests authenticated
+    // with the session cookie. This proxy is not a browser, so it opts out
+    // with X-Hermes-CSRF: 1 (Bearer-authenticated requests are exempt anyway).
+    headers['X-Hermes-CSRF'] = '1';
+  }
+  // Prefer an explicit Authorization header; otherwise derive it from the
+  // hermes_session cookie (the session token is opaque).
+  const token = authorization ?? getSessionTokenFromCookie(cookie);
+  if (token) headers['Authorization'] = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
+  return headers;
 }
 
 function hermesRequest(
@@ -12,23 +33,28 @@ function hermesRequest(
   method: string,
   body?: string,
   cookie?: string,
+  authorization?: string,
 ): Promise<{ data: unknown; status: number }> {
-  const url = new URL(path, getBase());
+  const base = getBase();
+  const url = new URL(path.startsWith('/') ? path : '/' + path, base);
+  const isHttps = url.protocol === 'https:';
+
   return new Promise((resolve) => {
     const headers: Record<string, string | number> = {
       'Content-Type': 'application/json',
+      ...buildAuthHeaders(cookie, authorization),
     };
     if (body) headers['Content-Length'] = Buffer.byteLength(body);
-    if (cookie) headers['Cookie'] = cookie;
 
-    const req = https.request(
+    const transport = isHttps ? https : http;
+
+    const req = transport.request(
       {
         hostname: url.hostname,
-        port: url.port || 443,
+        port: url.port || (isHttps ? 443 : 80),
         path: url.pathname + url.search,
         method,
         headers,
-        agent: insecureAgent,
       },
       (res) => {
         let raw = '';
@@ -43,6 +69,9 @@ function hermesRequest(
       },
     );
 
+    req.setTimeout(10_000, () => {
+      req.destroy(new Error('Hermes API request timed out'));
+    });
     req.on('error', () => {
       resolve({ data: { message: 'Could not reach the Hermes API.' }, status: 503 });
     });
@@ -52,14 +81,41 @@ function hermesRequest(
   });
 }
 
-export const hermesGet = (path: string, cookie?: string) =>
-  hermesRequest(path, 'GET', undefined, cookie);
+export type {
+  Beacon,
+  Gps,
+  GpsPoint,
+  GpsSettings,
+  GpsFile,
+  GpsFixQuality,
+  GpsStationPosition,
+  GpsStation,
+  GpsStationsResponse,
+  GpsEvent,
+  Trip,
+  TripPoints,
+  TripsResponse,
+  RadioStatus,
+  Message,
+  Conversation,
+  Station,
+  HermesUser,
+  HermesRole,
+} from './types';
+export { destArray, stationId, canonicalize } from './normalize';
+export { buildConversations, filterConversation } from './conversation';
 
-export const hermesPost = (path: string, body: unknown, cookie?: string) =>
-  hermesRequest(path, 'POST', JSON.stringify(body), cookie);
+export const hermesGet = (path: string, cookie?: string, authorization?: string) =>
+  hermesRequest(path, 'GET', undefined, cookie, authorization);
 
-export const hermesDelete = (path: string, cookie?: string) =>
-  hermesRequest(path, 'DELETE', undefined, cookie);
+export const hermesPost = (path: string, body: unknown, cookie?: string, authorization?: string) =>
+  hermesRequest(path, 'POST', JSON.stringify(body), cookie, authorization);
+
+export const hermesPatch = (path: string, body: unknown, cookie?: string, authorization?: string) =>
+  hermesRequest(path, 'PATCH', JSON.stringify(body), cookie, authorization);
+
+export const hermesDelete = (path: string, cookie?: string, authorization?: string) =>
+  hermesRequest(path, 'DELETE', undefined, cookie, authorization);
 
 interface MultipartFile {
   fieldName: string;
@@ -74,8 +130,10 @@ export function hermesPostMultipart(
   file: MultipartFile,
   cookie?: string,
 ): Promise<{ data: unknown; status: number }> {
-  const url = new URL(path, getBase());
+  const base = getBase();
+  const url = new URL(path.startsWith('/') ? path : '/' + path, base);
   const boundary = `----HermesBoundary${Date.now().toString(16)}`;
+  const isHttps = url.protocol === 'https:';
 
   const parts: Buffer[] = [];
   for (const [name, value] of fields) {
@@ -90,22 +148,22 @@ export function hermesPostMultipart(
   parts.push(Buffer.from(`\r\n--${boundary}--\r\n`));
 
   const body = Buffer.concat(parts);
+  const transport = isHttps ? https : http;
 
   return new Promise((resolve) => {
     const headers: Record<string, string | number> = {
       'Content-Type': `multipart/form-data; boundary=${boundary}`,
       'Content-Length': body.byteLength,
+      ...buildAuthHeaders(cookie),
     };
-    if (cookie) headers['Cookie'] = cookie;
 
-    const req = https.request(
+    const req = transport.request(
       {
         hostname: url.hostname,
-        port: url.port || 443,
+        port: url.port || (isHttps ? 443 : 80),
         path: url.pathname + url.search,
         method: 'POST',
         headers,
-        agent: insecureAgent,
       },
       (res) => {
         let raw = '';
@@ -119,6 +177,9 @@ export function hermesPostMultipart(
         });
       },
     );
+    req.setTimeout(10_000, () => {
+      req.destroy(new Error('Hermes API request timed out'));
+    });
     req.on('error', () => resolve({ data: { message: 'Could not reach the Hermes API.' }, status: 503 }));
     req.write(body);
     req.end();
@@ -129,18 +190,20 @@ export function hermesGetBuffer(
   path: string,
   cookie?: string,
 ): Promise<{ buffer: Buffer; status: number; contentType: string }> {
-  const url = new URL(path, getBase());
+  const base = getBase();
+  const url = new URL(path.startsWith('/') ? path : '/' + path, base);
+  const isHttps = url.protocol === 'https:';
+  const transport = isHttps ? https : http;
 
   return new Promise((resolve) => {
-    const extraHeaders: Record<string, string> = cookie ? { Cookie: cookie } : {};
-    const req = https.request(
+    const extraHeaders: Record<string, string> = buildAuthHeaders(cookie);
+    const req = transport.request(
       {
         hostname: url.hostname,
-        port: url.port || 443,
+        port: url.port || (isHttps ? 443 : 80),
         path: url.pathname + url.search,
         method: 'GET',
         headers: { ...extraHeaders },
-        agent: insecureAgent,
       },
       (res) => {
         const chunks: Buffer[] = [];
@@ -154,6 +217,9 @@ export function hermesGetBuffer(
         });
       },
     );
+    req.setTimeout(10_000, () => {
+      req.destroy(new Error('Hermes API request timed out'));
+    });
     req.on('error', () => resolve({ buffer: Buffer.alloc(0), status: 503, contentType: 'application/octet-stream' }));
     req.end();
   });

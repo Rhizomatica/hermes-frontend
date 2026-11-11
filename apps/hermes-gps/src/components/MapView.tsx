@@ -1,285 +1,662 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
-import maplibregl, { type StyleSpecification } from "maplibre-gl";
-import { Protocol } from "pmtiles";
-import "maplibre-gl/dist/maplibre-gl.css";
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
+import maplibregl from 'maplibre-gl';
+import 'maplibre-gl/dist/maplibre-gl.css';
+import { Protocol } from 'pmtiles';
+import { buildStyle } from '@/lib/mapStyle';
+import { getMapTokens } from '@hermes/tailwind-config/map-tokens';
+import { Navigation2 } from 'lucide-react';
+import type { GpsPoint, GpsStation } from '@hermes/api';
 
-// Geographic center of Brazil — MapLibre uses [longitude, latitude]
-const BRAZIL_CENTER: [number, number] = [-56.623855, -14.518694];
-const BRAZIL_ZOOM = 4;
-
-// PMTiles file must be placed at /public/brazil.pmtiles
-// Override with NEXT_PUBLIC_PMTILES_URL env variable (relative path or absolute URL)
-const PMTILES_RAW = process.env.NEXT_PUBLIC_PMTILES_URL ?? "/brazil.pmtiles";
-
-// Register pmtiles:// protocol handler with MapLibre (once per page load)
-let _protocolRegistered = false;
-function ensureProtocol(): void {
-  if (_protocolRegistered) return;
-  const proto = new Protocol();
-  maplibregl.addProtocol("pmtiles", proto.tile.bind(proto));
-  _protocolRegistered = true;
+export interface MapViewProps {
+  /** Latitude in decimal degrees */
+  latitude: number | null;
+  /** Longitude in decimal degrees */
+  longitude: number | null;
+  /** Heading in degrees (0-360, 0=north, clockwise) */
+  heading: number | null;
+  /** HDOP value for accuracy circle sizing */
+  hdop: number | null;
+  /** Whether to use dark theme */
+  isDark: boolean;
+  /** Breadcrumb trail positions (oldest → newest, up to 500) */
+  breadcrumb?: GpsPoint[];
+  /** Whether to show the breadcrumb trail */
+  showBreadcrumb?: boolean;
+  /** Other stations' last-known positions to plot as dots. */
+  stations?: GpsStation[];
+  /** Callback when tile loading fails */
+  onTileError?: () => void;
+  /**
+   * Increment this counter to re-center the map on the current position.
+   * Changes from 0 → 1 → 2… trigger a fly-to animation.
+   */
+  recenterToken?: number;
 }
 
-// Read the stored theme without a React context (used during initial map creation)
-function readStoredDark(): boolean {
-  try {
-    return localStorage.getItem("hermes_theme") === "dark";
-  } catch {
-    return false;
-  }
+/** Source ID for the breadcrumb line layer */
+const BREADCRUMB_SOURCE = 'hermes-breadcrumb';
+const BREADCRUMB_LAYER = 'hermes-breadcrumb-line';
+
+/** Source/layer IDs for the other-stations dot layer */
+const STATIONS_SOURCE = 'hermes-stations';
+const STATIONS_LAYER = 'hermes-stations-dots';
+
+// Register the pmtiles:// protocol handler with MapLibre (once per page load)
+let protocolRegistered = false;
+function ensureProtocol(): void {
+  if (protocolRegistered) return;
+  const protocol = new Protocol();
+  maplibregl.addProtocol('pmtiles', protocol.tile.bind(protocol));
+  protocolRegistered = true;
+}
+
+// Initial bearing (degrees, 0 = north) from one coordinate to another.
+// Coordinates are [longitude, latitude] to match MapLibre conventions.
+function bearing(from: [number, number], to: [number, number]): number {
+  const toRad = Math.PI / 180;
+  const toDeg = 180 / Math.PI;
+  const [lon1, lat1] = from;
+  const [lon2, lat2] = to;
+  const phi1 = lat1 * toRad;
+  const phi2 = lat2 * toRad;
+  const dLon = (lon2 - lon1) * toRad;
+
+  const y = Math.sin(dLon) * Math.cos(phi2);
+  const x =
+    Math.cos(phi1) * Math.sin(phi2) -
+    Math.sin(phi1) * Math.cos(phi2) * Math.cos(dLon);
+
+  return (Math.atan2(y, x) * toDeg + 360) % 360;
 }
 
 /**
- * Build a fully offline MapLibre style using a local PMTiles source.
- * No glyphs, sprites, or external URLs — all resources served from the app.
- * Layer schema: Protomaps OSM tiles (https://protomaps.com)
+ * Offline-capable map component using Maplibre GL JS + PMTiles.
+ *
+ * Renders a full-screen map with the station position marker and
+ * optional breadcrumb trail. Theme-aware (light/dark styles).
+ * Error overlay when tiles cannot be loaded.
+ *
+ * @example
+ * <MapView
+ *   latitude={-23.45}
+ *   longitude={-46.78}
+ *   isDark={theme === 'dark'}
+ *   breadcrumb={history}
+ *   showBreadcrumb={true}
+ *   onTileError={() => setTileError(true)}
+ * />
  */
-function buildStyle(dark: boolean): StyleSpecification {
-  // pmtiles:// + relative path → pmtiles:///brazil.pmtiles → protocol strips
-  // "pmtiles://" and browser resolves "/brazil.pmtiles" against the page origin.
-  // For an absolute URL like https://host/file.pmtiles the same logic applies.
-  const tilesUrl = `pmtiles://${PMTILES_RAW}`;
-
-  const c = dark
-    ? {
-        bg:         "#0d1b2a",
-        earth:      "#1a2535",
-        water:      "#0f2a42",
-        natural:    "#1a2e1a",
-        landuse:    "#1e2e1e",
-        roadMinor:  "#2a3a4a",
-        roadMajor:  "#3a4e5a",
-        boundary:   "#4a6878",
-        boundaryRg: "#3a5870",
-      }
-    : {
-        bg:         "#e8f0ea",
-        earth:      "#f5f0ea",
-        water:      "#aad3df",
-        natural:    "#c8dfbc",
-        landuse:    "#d8eecc",
-        roadMinor:  "#e0d8cc",
-        roadMajor:  "#cfc0a8",
-        boundary:   "#8899aa",
-        boundaryRg: "#aabbcc",
-      };
-
-  return {
-    version: 8,
-    // No "glyphs" or "sprite" keys → fully offline, no text labels needed
-    sources: {
-      protomaps: {
-        type: "vector",
-        url: tilesUrl,
-        attribution:
-          '© <a href="https://openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      },
-    },
-    layers: [
-      {
-        id: "background",
-        type: "background",
-        paint: { "background-color": c.bg },
-      },
-      {
-        id: "earth",
-        type: "fill",
-        source: "protomaps",
-        "source-layer": "earth",
-        paint: { "fill-color": c.earth },
-      },
-      {
-        id: "natural",
-        type: "fill",
-        source: "protomaps",
-        "source-layer": "natural",
-        paint: { "fill-color": c.natural, "fill-opacity": 0.7 },
-      },
-      {
-        id: "landuse",
-        type: "fill",
-        source: "protomaps",
-        "source-layer": "landuse",
-        filter: ["==", "pmap:kind", "park"],
-        paint: { "fill-color": c.landuse, "fill-opacity": 0.5 },
-      },
-      {
-        id: "water",
-        type: "fill",
-        source: "protomaps",
-        "source-layer": "water",
-        paint: { "fill-color": c.water },
-      },
-      {
-        id: "waterway",
-        type: "line",
-        source: "protomaps",
-        "source-layer": "waterway",
-        minzoom: 8,
-        paint: { "line-color": c.water, "line-width": 0.8 },
-      },
-      {
-        id: "roads-minor",
-        type: "line",
-        source: "protomaps",
-        "source-layer": "roads",
-        minzoom: 10,
-        filter: [
-          "none",
-          ["==", "pmap:kind", "highway"],
-          ["==", "pmap:kind", "major_road"],
-        ],
-        paint: {
-          "line-color": c.roadMinor,
-          "line-width": ["interpolate", ["linear"], ["zoom"], 10, 0.4, 15, 2],
-        },
-      },
-      {
-        id: "roads-major",
-        type: "line",
-        source: "protomaps",
-        "source-layer": "roads",
-        filter: [
-          "any",
-          ["==", "pmap:kind", "highway"],
-          ["==", "pmap:kind", "major_road"],
-        ],
-        paint: {
-          "line-color": c.roadMajor,
-          "line-width": ["interpolate", ["linear"], ["zoom"], 5, 0.6, 12, 4],
-        },
-      },
-      {
-        id: "boundaries-region",
-        type: "line",
-        source: "protomaps",
-        "source-layer": "boundaries",
-        minzoom: 4,
-        filter: ["==", "pmap:kind", "region"],
-        paint: {
-          "line-color": c.boundaryRg,
-          "line-width": 0.7,
-          "line-opacity": 0.6,
-        },
-      },
-      {
-        id: "boundaries-country",
-        type: "line",
-        source: "protomaps",
-        "source-layer": "boundaries",
-        filter: ["==", "pmap:kind", "country"],
-        paint: {
-          "line-color": c.boundary,
-          "line-width": 1.5,
-        },
-      },
-    ],
-  } as unknown as StyleSpecification;
-}
-
-interface MapViewProps {
-  lat: number | null;
-  lon: number | null;
-  dark: boolean;
-  onTileError?: (msg: string) => void;
-}
-
-export default function MapView({ lat, lon, dark, onTileError }: MapViewProps) {
+export default function MapView({
+  latitude,
+  longitude,
+  heading,
+  hdop,
+  isDark,
+  breadcrumb = [],
+  showBreadcrumb = false,
+  stations = [],
+  onTileError,
+  recenterToken = 0,
+}: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markerRef = useRef<maplibregl.Marker | null>(null);
-  const [tileError, setTileError] = useState<string | null>(null);
+  const markerElRef = useRef<HTMLDivElement | null>(null);
+  const stationsClickBound = useRef(false);
+  const [tileError, setTileError] = useState(false);
+  const [mapReady, setMapReady] = useState(false);
+  const [indicator, setIndicator] = useState<{ angle: number; distanceKm: number } | null>(null);
+  const t = useTranslations('gps');
 
-  // Initialize map once — read stored theme to avoid a dark/light flash
+  // Initialize map
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!containerRef.current || mapRef.current) return;
+
     ensureProtocol();
 
     const map = new maplibregl.Map({
       container: containerRef.current,
-      style: buildStyle(readStoredDark()),
-      center: BRAZIL_CENTER,
-      zoom: BRAZIL_ZOOM,
+      style: buildStyle(isDark),
+      center: [longitude ?? -46.78, latitude ?? -23.45],
+      zoom: 8,
+      attributionControl: false,
     });
 
-    map.addControl(new maplibregl.NavigationControl(), "top-right");
-    map.addControl(new maplibregl.ScaleControl({ unit: "metric" }), "bottom-left");
+    map.addControl(new maplibregl.NavigationControl(), 'top-right');
+    map.addControl(
+      new maplibregl.ScaleControl({ unit: 'metric' }),
+      'bottom-left',
+    );
 
-    map.on("error", (e) => {
-      const msg: string =
-        e?.error?.message ??
-        (typeof e?.error === "string" ? e.error : "Map tile error");
-      const isTileError =
-        msg.includes("404") ||
-        msg.includes("Bad response") ||
-        msg.includes("pmtiles");
-      if (isTileError) {
-        const friendly =
-          `Tile file not found (${PMTILES_RAW}). ` +
-          `Place a Brazil PMTiles file at apps/hermes-gps/public/brazil.pmtiles ` +
-          `or set NEXT_PUBLIC_PMTILES_URL in .env.local.`;
-        setTileError(friendly);
-        onTileError?.(friendly);
-      }
+    map.on('load', () => {
+      setMapReady(true);
     });
+
+    map.on('error', () => {
+      setTileError(true);
+      onTileError?.();
+    });
+
+    mapRef.current = map;
 
     return () => {
-      markerRef.current?.remove();
-      markerRef.current = null;
       map.remove();
       mapRef.current = null;
+      markerRef.current = null;
+      markerElRef.current = null;
+      setMapReady(false);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Sync map style with theme — MapLibre markers are HTML overlays and survive setStyle
+  // Re-center the map on the current position when the token changes.
   useEffect(() => {
-    mapRef.current?.setStyle(buildStyle(dark));
-  }, [dark]);
+    if (!recenterToken || !mapRef.current) return;
+    if (latitude == null || longitude == null) return;
+    mapRef.current.flyTo({
+      center: [longitude, latitude],
+      zoom: 10,
+      duration: 1500,
+      essential: true,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recenterToken]);
 
-  // Place / move station marker
+  // Update map style when the theme actually changes. The map is already
+  // created with the correct initial style, so skip the first run: calling
+  // setStyle() on the `mapReady` flip reloads the whole style, which makes the
+  // tiles blink out and wipes any custom layers (e.g. the breadcrumb trail).
+  const appliedThemeRef = useRef(isDark);
+  useEffect(() => {
+    if (!mapRef.current || !mapReady) return;
+    if (appliedThemeRef.current === isDark) return;
+    appliedThemeRef.current = isDark;
+    mapRef.current.setStyle(buildStyle(isDark));
+  }, [isDark, mapReady]);
+
+  // Update marker position, heading, and accuracy
+  useEffect(() => {
+    if (!mapRef.current || latitude == null || longitude == null) return;
+
+    // Create marker if it doesn't exist
+    if (!markerRef.current) {
+      const el = document.createElement('div');
+      el.className = 'hermes-marker';
+      el.setAttribute('aria-label', 'Station GPS position');
+      el.style.cssText = `
+        width: 48px;
+        height: 48px;
+        cursor: pointer;
+      `;
+
+      // Pulsing glow ring (animated)
+      const pulseEl = document.createElement('div');
+      pulseEl.className = 'hermes-marker-pulse';
+      pulseEl.style.cssText = `
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 100%;
+        height: 100%;
+        transform: translate(-50%, -50%);
+        border-radius: 50%;
+        background: rgba(249, 115, 22, 0.35);
+        pointer-events: none;
+        will-change: transform, opacity;
+        animation: hermes-pulse 2s ease-out infinite;
+      `;
+      el.appendChild(pulseEl);
+
+      // Accuracy circle overlay (scaled by HDOP)
+      const accuracyEl = document.createElement('div');
+      accuracyEl.className = 'hermes-marker-accuracy';
+      accuracyEl.style.cssText = `
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 100%;
+        height: 100%;
+        border: 1.5px dashed #f97316;
+        border-radius: 50%;
+        opacity: 0.3;
+        pointer-events: none;
+      `;
+      el.appendChild(accuracyEl);
+
+      // SVG marker image
+      const img = document.createElement('img');
+      img.src = '/marker.svg';
+      img.alt = '';
+      img.setAttribute('aria-hidden', 'true');
+      img.style.cssText = `
+        width: 48px;
+        height: 48px;
+        display: block;
+      `;
+      img.className = 'hermes-marker-arrow';
+      el.appendChild(img);
+
+      markerElRef.current = el;
+
+      markerRef.current = new maplibregl.Marker({
+        element: el,
+        anchor: 'center',
+        offset: [0, 0],
+      })
+        .setLngLat([longitude, latitude])
+        .addTo(mapRef.current);
+
+      return;
+    }
+
+    // Update arrow rotation based on heading
+    if (markerElRef.current && heading != null) {
+      const arrow = markerElRef.current.querySelector('.hermes-marker-arrow') as HTMLElement | null;
+      if (arrow) {
+        arrow.style.transform = `rotate(${heading}deg)`;
+      }
+    }
+
+    // Update accuracy circle scale based on HDOP
+    if (markerElRef.current && hdop != null) {
+      const accuracyCircle = markerElRef.current.querySelector('.hermes-marker-accuracy') as HTMLElement | null;
+      if (accuracyCircle) {
+        // Scale: HDOP 1.0 → 1.0x (no scaling), HDOP 5.0 → 2.0x (max), clamped
+        const scale = Math.min(1 + (hdop - 1) * 0.25, 2.0);
+        accuracyCircle.style.transform = `translate(-50%, -50%) scale(${Math.max(scale, 1.0)})`;
+        accuracyCircle.style.opacity = hdop > 2.0 ? '0.5' : '0.3';
+      }
+    }
+
+    // Fly to new position
+    mapRef.current.flyTo({
+      center: [longitude, latitude],
+      duration: 1500,
+      essential: true,
+    });
+
+    markerRef.current.setLngLat([longitude, latitude]);
+  }, [latitude, longitude, heading, hdop]);
+
+  // Show a direction indicator when the marker is outside the viewport.
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || lat === null || lon === null) return;
+    if (!map) return;
 
-    const lngLat: [number, number] = [lon, lat];
-
-    const place = () => {
-      if (markerRef.current) {
-        markerRef.current.setLngLat(lngLat);
-      } else {
-        const el = document.createElement("div");
-        el.className = "hermes-marker";
-        markerRef.current = new maplibregl.Marker({ element: el })
-          .setLngLat(lngLat)
-          .addTo(map);
+    const update = () => {
+      if (latitude == null || longitude == null) {
+        setIndicator(null);
+        return;
       }
-      map.flyTo({ center: lngLat, zoom: 10, duration: 1500 });
+
+      const center = map.getCenter();
+      const point = map.project([longitude, latitude]);
+      const { width, height } = map.getContainer().getBoundingClientRect();
+      const margin = 24;
+
+      const inside =
+        point.x >= margin &&
+        point.x <= width - margin &&
+        point.y >= margin &&
+        point.y <= height - margin;
+
+      if (inside) {
+        setIndicator(null);
+        return;
+      }
+
+      const angle = bearing([center.lng, center.lat], [longitude, latitude]);
+      const distanceKm =
+        new maplibregl.LngLat(center.lng, center.lat).distanceTo(
+          new maplibregl.LngLat(longitude, latitude),
+        ) / 1000;
+      setIndicator({ angle, distanceKm });
     };
 
-    map.isStyleLoaded() ? place() : map.once("load", place);
-  }, [lat, lon]);
+    update();
+    map.on('move', update);
+    map.on('zoom', update);
+    map.on('resize', update);
+    return () => {
+      map.off('move', update);
+      map.off('zoom', update);
+      map.off('resize', update);
+    };
+  }, [latitude, longitude]);
+
+  // ResizeObserver for responsive sizing
+  const handleResize = useCallback(() => {
+    if (mapRef.current) mapRef.current.resize();
+  }, []);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const observer = new ResizeObserver(handleResize);
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [handleResize]);
+
+  // Breadcrumb trail — add/update/remove GeoJSON line source + layer
+  useEffect(() => {
+    if (!mapRef.current || !mapReady) return;
+
+    const map = mapRef.current;
+
+    if (!showBreadcrumb || breadcrumb.length < 2) {
+      if (map.getLayer(BREADCRUMB_LAYER)) {
+        map.removeLayer(BREADCRUMB_LAYER);
+      }
+      if (map.getSource(BREADCRUMB_SOURCE)) {
+        map.removeSource(BREADCRUMB_SOURCE);
+      }
+      return;
+    }
+
+    const tokens = getMapTokens(isDark);
+
+    const coords: [number, number][] = breadcrumb.map((p) => [
+      p.longitude,
+      p.latitude,
+    ]);
+
+    const lineFeature: GeoJSON.Feature<GeoJSON.LineString> = {
+      type: 'Feature',
+      properties: {},
+      geometry: { type: 'LineString', coordinates: coords },
+    };
+
+    const pointFeatures: GeoJSON.Feature<GeoJSON.Point>[] = breadcrumb.map(
+      (p, index) => ({
+        type: 'Feature',
+        properties: { index, timestamp: p.at },
+        geometry: {
+          type: 'Point',
+          coordinates: [p.longitude, p.latitude],
+        },
+      }),
+    );
+
+    const geojson: GeoJSON.FeatureCollection = {
+      type: 'FeatureCollection',
+      features: [lineFeature, ...pointFeatures],
+    };
+
+    const source = map.getSource(BREADCRUMB_SOURCE) as
+      | maplibregl.GeoJSONSource
+      | undefined;
+
+    if (source) {
+      source.setData(geojson);
+    } else {
+      map.addSource(BREADCRUMB_SOURCE, { type: 'geojson', data: geojson });
+
+      map.addLayer({
+        id: BREADCRUMB_LAYER,
+        type: 'line',
+        source: BREADCRUMB_SOURCE,
+        paint: {
+          'line-color': tokens.trailRecent,
+          'line-width': 3,
+          'line-opacity': 0.7,
+          'line-gradient': [
+            'interpolate',
+            ['linear'],
+            ['line-progress'],
+            0,
+            tokens.trailRecent,
+            0.5,
+            tokens.trailMid,
+            1,
+            tokens.trailOld,
+          ],
+        },
+        layout: {
+          'line-cap': 'round',
+          'line-join': 'round',
+        },
+      });
+
+      // Click on trail → tooltip with timestamp and coordinates.
+      map.on('click', BREADCRUMB_LAYER, (e) => {
+        const feature = e.features?.[0];
+        const props = feature?.properties as
+          | { index?: number; timestamp?: string }
+          | undefined;
+        if (props?.index == null) return;
+
+        const point = breadcrumb[props.index];
+        if (!point) return;
+
+        const time = new Intl.DateTimeFormat(undefined, {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        }).format(new Date(point.at));
+
+        new maplibregl.Popup()
+          .setLngLat([point.longitude, point.latitude])
+          .setHTML(
+            `<div style="font-size:12px;line-height:1.5">
+               ${point.latitude.toFixed(6)}, ${point.longitude.toFixed(6)}<br/>
+               ${t('breadcrumbPoint', { time })}
+             </div>`,
+          )
+          .addTo(map);
+      });
+    }
+  }, [breadcrumb, showBreadcrumb, mapReady, isDark, t]);
+
+  // Other stations' last-known positions — add/update/remove GeoJSON dot layer.
+  useEffect(() => {
+    if (!mapRef.current || !mapReady) return;
+
+    const map = mapRef.current;
+    const positioned = stations.filter(
+      (s): s is GpsStation & { latitude: number; longitude: number } =>
+        s.latitude != null && s.longitude != null,
+    );
+
+    if (positioned.length === 0) {
+      if (map.getLayer(STATIONS_LAYER)) map.removeLayer(STATIONS_LAYER);
+      if (map.getSource(STATIONS_SOURCE)) map.removeSource(STATIONS_SOURCE);
+      return;
+    }
+
+    const features: GeoJSON.Feature<GeoJSON.Point>[] = positioned.map((s) => ({
+      type: 'Feature',
+      properties: {
+        name: s.uucp_name,
+        latitude: s.latitude,
+        longitude: s.longitude,
+        position_at: s.position_at ?? null,
+      },
+      geometry: {
+        type: 'Point',
+        coordinates: [s.longitude, s.latitude],
+      },
+    }));
+
+    const geojson: GeoJSON.FeatureCollection = {
+      type: 'FeatureCollection',
+      features,
+    };
+
+    const source = map.getSource(STATIONS_SOURCE) as
+      | maplibregl.GeoJSONSource
+      | undefined;
+
+    if (source) {
+      source.setData(geojson);
+      return;
+    }
+
+    map.addSource(STATIONS_SOURCE, { type: 'geojson', data: geojson });
+
+    map.addLayer({
+      id: STATIONS_LAYER,
+      type: 'circle',
+      source: STATIONS_SOURCE,
+      paint: {
+        'circle-radius': 6,
+        'circle-color': '#0ea5e9',
+        'circle-opacity': 0.9,
+        'circle-stroke-color': isDark ? '#ffffff' : '#0f172a',
+        'circle-stroke-width': 2,
+      },
+    });
+
+    // Click on a station → tooltip with callsign, coordinates and time.
+    // Registered once; layer-bound listeners survive style reloads, so guard
+    // against double-registration when the theme toggles and the layer is
+    // rebuilt.
+    if (!stationsClickBound.current) {
+      stationsClickBound.current = true;
+
+      map.on('click', STATIONS_LAYER, (e) => {
+        const feature = e.features?.[0];
+        const props = feature?.properties as
+          | {
+              name?: string;
+              latitude?: number;
+              longitude?: number;
+              position_at?: string | null;
+            }
+          | undefined;
+        if (!props || props.latitude == null || props.longitude == null) return;
+
+        const container = document.createElement('div');
+        container.className = 'hermes-station-card';
+
+        const header = document.createElement('div');
+        header.className = 'hermes-station-header';
+
+        const dot = document.createElement('span');
+        dot.className = 'hermes-station-dot';
+        dot.setAttribute('aria-hidden', 'true');
+
+        const name = document.createElement('span');
+        name.className = 'hermes-station-name';
+        name.textContent = props.name ?? '—';
+
+        header.append(dot, name);
+
+        const coords = document.createElement('div');
+        coords.className = 'hermes-station-coords';
+        coords.textContent = `${props.latitude.toFixed(5)}, ${props.longitude.toFixed(5)}`;
+
+        container.append(header, coords);
+
+        if (props.position_at) {
+          const date = new Date(props.position_at);
+          if (!Number.isNaN(date.getTime())) {
+            const time = new Intl.DateTimeFormat(undefined, {
+              month: 'short',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+            }).format(date);
+            const when = document.createElement('div');
+            when.className = 'hermes-station-time';
+            when.textContent = t('breadcrumbPoint', { time });
+            container.appendChild(when);
+          }
+        }
+
+        new maplibregl.Popup({
+          className: 'hermes-station-popup',
+          maxWidth: '260px',
+        })
+          .setLngLat([props.longitude, props.latitude])
+          .setDOMContent(container)
+          .addTo(map);
+      });
+    }
+  }, [stations, mapReady, isDark, t]);
 
   return (
-    <div className="relative w-full h-full">
-      <div ref={containerRef} className="w-full h-full" />
-      {tileError && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/40 p-6">
-          <div className="max-w-sm rounded-xl bg-white dark:bg-gray-900 shadow-xl px-6 py-5 text-sm space-y-3">
-            <p className="font-semibold text-red-600 dark:text-red-400">Map tiles unavailable</p>
-            <p className="text-gray-600 dark:text-gray-300 font-mono text-xs leading-relaxed break-all">
-              {tileError}
-            </p>
-            <p className="text-gray-500 dark:text-gray-400 text-xs">
-              Run{" "}
-              <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">
-                npm run download-tiles
-              </code>{" "}
-              from <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">apps/hermes-gps/</code> to download the tile file.
-              It will be saved automatically and skipped on future runs.
-            </p>
+    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      <div
+        ref={containerRef}
+        style={{ width: '100%', height: '100%' }}
+        aria-label="Offline map view"
+        role="application"
+      />
+      {indicator && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '1.5rem',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '0.25rem',
+            pointerEvents: 'none',
+            zIndex: 10,
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              height: '3rem',
+              width: '3rem',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: '9999px',
+              background: 'rgba(255,255,255,0.9)',
+              boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)',
+              transform: `rotate(${indicator.angle}deg)`,
+            }}
+            aria-label={`Station bearing ${Math.round(indicator.angle)}°`}
+          >
+            <Navigation2
+              style={{ height: '1.75rem', width: '1.75rem', color: '#f97316' }}
+              fill="currentColor"
+            />
           </div>
+          <span
+            style={{
+              borderRadius: '9999px',
+              background: 'rgba(255,255,255,0.8)',
+              padding: '0.125rem 0.5rem',
+              fontSize: '0.75rem',
+              fontWeight: 600,
+              color: '#374151',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+            }}
+          >
+            {indicator.distanceKm >= 100
+              ? `${Math.round(indicator.distanceKm)} km`
+              : `${indicator.distanceKm.toFixed(1)} km`}
+          </span>
+        </div>
+      )}
+      {tileError && (
+        <div
+          role="alert"
+          style={{
+            position: 'absolute',
+            bottom: '50%',
+            left: '50%',
+            transform: 'translate(-50%, 50%)',
+            background: 'var(--background)',
+            border: '1px solid var(--foreground)',
+            borderRadius: '8px',
+            padding: '1rem',
+            textAlign: 'center',
+            zIndex: 10,
+          }}
+        >
+          <p style={{ color: 'var(--foreground)', margin: 0 }}>
+            {t('tileError')}
+          </p>
         </div>
       )}
     </div>

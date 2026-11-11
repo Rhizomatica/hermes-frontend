@@ -1,181 +1,176 @@
-"use client";
+'use client';
 
-import dynamic from "next/dynamic";
-import { useCallback, useEffect, useState } from "react";
-import { MapPin, RefreshCw, Sun, Moon, Clock } from "lucide-react";
-import { useTheme } from "@hermes/ui";
-import { useTranslations } from "next-intl";
-import { useLocale } from "@/providers/LocaleProvider";
+import { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
+import { useTranslations } from 'next-intl';
+import { useAuth, useAuthGuard } from '@hermes/shared-auth';
+import { ChevronLeft } from 'lucide-react';
+import { useTheme, ErrorBanner, LoadingSpinner } from '@hermes/ui';
+import type { GpsPoint } from '@hermes/api';
+import { useGpsCoords } from '@/hooks/useGpsCoords';
+import { useGpsHistory } from '@/hooks/useGpsHistory';
+import { useGpsStations } from '@/hooks/useGpsStations';
+import { clearGpsCache } from '@/lib/gpsCache';
+import GpsSidePanel from '@/components/GpsSidePanel';
+import SosButton from '@/components/SosButton';
+import TripsPanel from '@/components/TripsPanel';
+import GpsFilesPanel from '@/components/GpsFilesPanel';
+import dynamic from 'next/dynamic';
 
-// SSR-disabled import: MapLibre GL JS requires browser APIs
-const MapView = dynamic(() => import("@/components/MapView"), { ssr: false });
+const MapView = dynamic(() => import('@/components/MapView'), { ssr: false });
 
-interface Coordinates {
-  latitude: string;
-  longitude: string;
-}
-
-const REFRESH_INTERVAL_MS = 30_000;
-
-function formatCoord(value: string, posLabel: string, negLabel: string): string {
-  const n = parseFloat(value);
-  if (isNaN(n)) return value;
-  const abs = Math.abs(n);
-  const deg = Math.floor(abs);
-  const minFull = (abs - deg) * 60;
-  const min = Math.floor(minFull);
-  const sec = ((minFull - min) * 60).toFixed(2);
-  const dir = n >= 0 ? posLabel : negLabel;
-  return `${deg}° ${min}' ${sec}" ${dir}`;
-}
-
+/**
+ * GPS main page — full-screen map with a compact bottom panel.
+ *
+ * Layout goals:
+ * - Lat/Lon rendered as compact, left-aligned copy buttons.
+ * - Action buttons (refresh, recenter, trips, trail, SOS) consolidated into a
+ *   single clearly-organized control row.
+ * - Status badges show GPS fix quality and logging state; a separate strip
+ *   shows the fix time and radio telemetry (TX/RX, frequency, mode, power).
+ *
+ * @example
+ * // Rendered at /gps in co-deployed mode
+ * <GpsPage />
+ */
 export default function GpsPage() {
-  const { theme, toggle } = useTheme();
-  const t = useTranslations("gps");
-  const { locale, setLocale } = useLocale();
-  const [coords, setCoords] = useState<Coordinates | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  const [countdown, setCountdown] = useState(REFRESH_INTERVAL_MS / 1000);
+  const t = useTranslations('gps');
+  const tc = useTranslations('common');
+  const user = useAuthGuard();
+  const { isAuthenticated, user: authUser } = useAuth();
+  const { theme } = useTheme();
+  const { position, fix, loading, error, stale, isCached, cacheAgeMs, refresh } =
+    useGpsCoords();
+  const { history, appendPosition, refresh: refreshHistory } = useGpsHistory();
+  const stations = useGpsStations();
 
-  const fetchCoords = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/gps");
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error((body as { message?: string }).message ?? `HTTP ${res.status}`);
-      }
-      const data: Coordinates = await res.json();
-      setCoords(data);
-      setLastUpdated(new Date());
-      setCountdown(REFRESH_INTERVAL_MS / 1000);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t("unknownError"));
-    } finally {
-      setLoading(false);
+  const [showTrail, setShowTrail] = useState(false);
+  const [recenterToken, setRecenterToken] = useState(0);
+  const [tripsOpen, setTripsOpen] = useState(false);
+  const [filesOpen, setFilesOpen] = useState(false);
+  // A selected trip's breadcrumb overrides the live trail until cleared.
+  const [tripTrail, setTripTrail] = useState<GpsPoint[] | null>(null);
+
+  const breadcrumb = tripTrail ?? history;
+  // A selected trip's trail is always shown; the toggle only governs the live trail.
+  const showBreadcrumb = tripTrail !== null || showTrail;
+  const viewingTrip = tripTrail !== null;
+
+  // Append new live positions to the breadcrumb history
+  const prevTimestampRef = useRef<string | null>(null);
+  const SHELL_URL = process.env.NEXT_PUBLIC_SHELL_URL ?? 'localhost:4000';
+
+  useEffect(() => {
+    if (
+      position &&
+      position.at &&
+      position.latitude != null &&
+      position.longitude != null &&
+      position.at !== prevTimestampRef.current
+    ) {
+      prevTimestampRef.current = position.at;
+      appendPosition({
+        at: position.at,
+        latitude: position.latitude,
+        longitude: position.longitude,
+        altitude_m: position.altitude_m,
+      });
     }
-  }, [t]);
+  }, [position, appendPosition]);
 
-  useEffect(() => { fetchCoords(); }, [fetchCoords]);
-
+  // Clear cached GPS position when the user logs out (ADR-003).
+  const prevAuthRef = useRef(isAuthenticated);
   useEffect(() => {
-    const interval = setInterval(fetchCoords, REFRESH_INTERVAL_MS);
-    return () => clearInterval(interval);
-  }, [fetchCoords]);
+    if (prevAuthRef.current && !isAuthenticated) {
+      clearGpsCache();
+    }
+    prevAuthRef.current = isAuthenticated;
+  }, [isAuthenticated]);
 
-  useEffect(() => {
-    if (loading) return;
-    const tick = setInterval(() => setCountdown((c) => Math.max(0, c - 1)), 1000);
-    return () => clearInterval(tick);
-  }, [loading]);
-
-  const lat = coords ? parseFloat(coords.latitude) : null;
-  const lon = coords ? parseFloat(coords.longitude) : null;
+  if (!user) {
+    return (
+      <main className="flex min-h-screen items-center justify-center p-4">
+        <LoadingSpinner label={t('loading')} />
+      </main>
+    );
+  }
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden">
-      {/* Full-screen map */}
-      <MapView lat={lat} lon={lon} dark={theme === "dark"} />
-
-      {/* ── Bottom panel ── */}
-      <div className="absolute bottom-0 left-0 right-0 z-10 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm border-t border-black/10 dark:border-white/10 px-4 pt-3 pb-4">
-
-        {/* Row 1: title + controls */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-orange-500" />
-            <span className="font-semibold tracking-wide text-sm">HERMES GPS</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setLocale(locale === "en" ? "pt" : "en")}
-              aria-label={t("toggleLocale")}
-              className="px-2 py-1 rounded-lg text-xs font-medium hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
-            >
-              {locale === "en" ? "PT" : "EN"}
-            </button>
-            <button
-              onClick={toggle}
-              aria-label={t("toggleTheme")}
-              className="p-1.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
-            >
-              {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            </button>
-          </div>
+    <main className="relative flex min-h-screen flex-col landscape:flex-row">
+      {/* Map region fills remaining space */}
+      <div className="relative min-h-0 min-w-0 flex-1">
+        <div className="absolute inset-0">
+          <MapView
+            latitude={position?.latitude ?? null}
+            longitude={position?.longitude ?? null}
+            heading={null}
+            hdop={null}
+            isDark={theme === 'dark'}
+            breadcrumb={breadcrumb}
+            showBreadcrumb={showBreadcrumb}
+            stations={stations.stations}
+            recenterToken={recenterToken}
+          />
         </div>
 
-        {/* Row 2: coordinates */}
-        {error ? (
-          <p className="text-xs text-red-600 dark:text-red-400 mb-2">{error}</p>
-        ) : (
-          <div className="flex gap-8 mb-2">
-            <CoordItem
-              label={t("latitude")}
-              raw={coords?.latitude ?? null}
-              dms={coords ? formatCoord(coords.latitude, "N", "S") : null}
-              loading={loading && !coords}
-            />
-            <CoordItem
-              label={t("longitude")}
-              raw={coords?.longitude ?? null}
-              dms={coords ? formatCoord(coords.longitude, "E", "W") : null}
-              loading={loading && !coords}
-            />
+        {/* Back link overlay */}
+        <Link
+          href={{ pathname: SHELL_URL }}
+          className="inline-flex left-4 top-4 z-10 rounded-lg bg-background/80 px-3 py-2 text-sm text-blue-500 backdrop-blur-sm"
+          aria-label={tc('backToHermes')}>
+          <ChevronLeft/>{tc('backToHermes')}
+        </Link>
+
+        {/* Error banner */}
+        {error && (
+          <div className="absolute left-4 right-4 top-16 z-10">
+            <ErrorBanner message={error} />
           </div>
         )}
 
-        {/* Row 3: status + refresh */}
-        <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-          <div className="flex items-center gap-1.5">
-            <Clock className="w-3 h-3" />
-            {lastUpdated
-              ? t("updated", { time: lastUpdated.toLocaleTimeString(), countdown })
-              : t("fetching")}
-          </div>
-          <button
-            onClick={fetchCoords}
-            disabled={loading}
-            aria-label={t("refresh")}
-            className="flex items-center gap-1 text-orange-600 dark:text-orange-400 hover:underline disabled:opacity-50"
-          >
-            <RefreshCw className={`w-3 h-3 ${loading ? "animate-spin" : ""}`} />
-            {t("refresh")}
-          </button>
-        </div>
+        <SosButton hasPosition={position != null} />
       </div>
-    </div>
-  );
-}
 
-function CoordItem({
-  label,
-  raw,
-  dms,
-  loading,
-}: {
-  label: string;
-  raw: string | null;
-  dms: string | null;
-  loading: boolean;
-}) {
-  return (
-    <div className="space-y-0.5">
-      <p className="text-[10px] font-medium uppercase tracking-widest text-gray-400 dark:text-gray-500">
-        {label}
-      </p>
-      {loading ? (
-        <div className="h-5 w-28 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
-      ) : raw ? (
-        <>
-          <p className="text-base font-mono font-semibold leading-tight">{raw}</p>
-          <p className="text-[11px] text-gray-500 dark:text-gray-400">{dms}</p>
-        </>
-      ) : (
-        <p className="text-base font-mono font-semibold text-gray-300 dark:text-gray-600">—</p>
+      <GpsSidePanel
+        authUser={authUser}
+        position={position}
+        fix={fix}
+        loading={loading}
+        stale={stale}
+        isCached={isCached}
+        cacheAgeMs={cacheAgeMs}
+        onRefresh={refresh}
+        showTrail={showTrail}
+        trailPointCount={history.length}
+        viewingTrip={viewingTrip}
+        tripPointCount={breadcrumb.length}
+        onToggleTrail={() => setShowTrail((v) => !v)}
+        onClearTrip={() => setTripTrail(null)}
+        onRecenter={() => setRecenterToken((v) => v + 1)}
+        onOpenTrips={() => setTripsOpen(true)}
+        onOpenFiles={() => setFilesOpen(true)}
+      />
+
+      {/* Trips history drawer */}
+      {tripsOpen && (
+        <TripsPanel
+          onClose={() => setTripsOpen(false)}
+          onViewTrip={(points) => setTripTrail(points)}
+          onTripClosed={() => {
+            void refreshHistory();
+          }}
+          role={authUser?.role}
+        />
       )}
-    </div>
+
+      {/* GPS files drawer */}
+      {filesOpen && (
+        <GpsFilesPanel
+          onClose={() => setFilesOpen(false)}
+          settings={position?.settings}
+          role={authUser?.role}
+        />
+      )}
+    </main>
   );
 }

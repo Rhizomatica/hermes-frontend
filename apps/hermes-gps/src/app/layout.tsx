@@ -1,41 +1,65 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
-import { ThemeProvider } from "@hermes/ui";
-import { LocaleProvider } from "@/providers/LocaleProvider";
+import type { Metadata, Viewport } from 'next';
+import { cookies } from 'next/headers';
+import { AuthProvider, LocaleProvider, WebSocketProvider, isLocale, type Locale } from '@hermes/shared-auth';
+import { ThemeProvider, ServiceWorkerRegistrator } from '@hermes/ui';
+import IntlProvider from '@/components/IntlProvider';
+import './globals.css';
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-export const metadata: Metadata = {
-  title: "HERMES GPS",
-  description: "Hermes station geolocation – a Rhizomatica project",
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover',
 };
 
-export default function RootLayout({
+export const metadata: Metadata = {
+  title: 'HERMES GPS',
+  description: 'HERMES — GPS Viewer',
+  manifest: '/manifest.json',
+};
+
+/**
+ * Root layout for hermes-gps.
+ *
+ * Provider hierarchy (ADR-006 §3.1):
+ *   NextIntlClientProvider → AuthProvider → ThemeProvider →
+ *   LocaleProvider → WebSocketProvider → children
+ */
+export default async function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
+  // Resolve the theme server-side from the shared cookie so the `dark` class
+  // is present on the initial HTML (removes the client-side flash-prevention
+  // <script>, which React 19 flags during hydration).
+  const theme = (await cookies()).get('hermes-theme')?.value;
+  const storedLocale = (await cookies()).get('hermes-locale')?.value;
+  const locale: Locale = isLocale(storedLocale) ? storedLocale : 'en';
+
   return (
-    <html lang="en" suppressHydrationWarning>
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var s=localStorage.getItem('hermes_theme');var p=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';if((s||p)==='dark')document.documentElement.classList.add('dark');}catch(e){}})();`,
-          }}
+    <html
+      lang={locale}
+      className={theme === 'dark' ? 'dark' : undefined}
+      suppressHydrationWarning
+    >
+      <body className="min-h-screen bg-background text-foreground antialiased">
+        <ServiceWorkerRegistrator
+          basePath={process.env.NEXT_PUBLIC_BASE_PATH ?? ''}
+          enabled={process.env.NODE_ENV === 'production'}
         />
-      </head>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <LocaleProvider>
-          <ThemeProvider>{children}</ThemeProvider>
+        {/* LocaleProvider wraps IntlProvider so locale changes re-render the message bundle */}
+        <LocaleProvider initialLocale={locale}>
+          <IntlProvider>
+            <AuthProvider>
+              <ThemeProvider>
+                <WebSocketProvider>
+                  {children}
+                </WebSocketProvider>
+              </ThemeProvider>
+            </AuthProvider>
+          </IntlProvider>
         </LocaleProvider>
       </body>
     </html>
