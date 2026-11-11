@@ -3,7 +3,7 @@ import https from 'node:https';
 const insecureAgent = new https.Agent({ rejectUnauthorized: false });
 
 function getBase(): string {
-  const url = process.env.HERMES_API_URL ?? 'https://10.70.96.5';
+  const url = process.env.HERMES_API_URL ?? 'http://localhost:3000';
   return url.endsWith('/') ? url : url + '/api/';
 }
 

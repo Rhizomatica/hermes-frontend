@@ -1,1 +1,23 @@
-{"chat":{"title":"Chat","noConversations":"No conversations yet","loading":"Loading messages…","sendMessage":"Send message"},"common":{"backToHermes":"← Back to HERMES"}}
+{
+  "chat": {
+    "title": "HERMES Chat",
+    "noConversations": "No conversations yet",
+    "loading": "Loading messages…",
+    "sendMessage": "Send message"
+  },
+  "common": {
+    "backToHermes": "Back"
+  },
+  "home": {
+    "title": "Conversations",
+    "loading": "Loading…",
+    "searchPlaceholder": "Search by station or callsign",
+    "noConversations": "No conversations yet",
+    "refresh": "Refresh",
+    "retry": "Retry",
+    "logout": "Logout",
+    "newChat": "New chat",
+    "openConversation": "Open conversation with {station}",
+    "unreadCount": "{count} unread messages"
+  }
+}

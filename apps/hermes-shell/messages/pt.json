@@ -1,24 +1,52 @@
 {
   "login": {
-    "callsignLabel": "Indicativo",
+    "tagline": "Sistema de intercâmbio multimídia rural e de emergência em alta frequência",
+    "usernameLabel": "Usuário",
     "passwordLabel": "Senha",
     "submit": "Entrar",
     "submitting": "Entrando…",
-    "invalidCredentials": "E-mail ou senha inválidos.",
+    "loading": "Carregando…",
+    "invalidCredentials": "Usuário ou senha inválidos.",
     "networkError": "Não foi possível conectar ao servidor."
   },
   "home": {
     "title": "HERMES",
     "greeting": "Bem-vindo(a), {name}",
-    "gpsViewer": "Visualizador GPS",
+    "welcome": "Bem-vindo(a) de volta",
+    "gpsViewer": "HERMES GPS",
     "gpsDescription": "Veja posição em tempo real e mapas offline",
-    "chat": "Chat",
+    "chat": "HERMES Chat",
     "chatDescription": "Mensagens e informações de rádio",
     "logout": "Sair",
-    "loading": "Carregando…"
+    "open": "Abrir",
+    "loading": "Carregando…",
+    "noStation": "Estação indisponível"
+  },
+  "user": {
+    "title": "Informações do Usuário",
+    "username": "Usuário",
+    "displayName": "Nome de Exibição",
+    "role": "Função",
+    "locale": "Idioma",
+    "na": "N/D"
+  },
+  "radio": {
+    "title": "Informações do Rádio",
+    "stationName": "Nome da Estação",
+    "callsign": "Indicativo",
+    "frequency": "Frequência",
+    "mode": "Modo",
+    "status": "Status",
+    "tx": "Transmitindo",
+    "rx": "Recebendo",
+    "power": "Potência",
+    "domain": "Domínio",
+    "version": "Versão",
+    "uptime": "Tempo ativo",
+    "na": "N/D"
   },
   "common": {
-    "backToHermes": "← Voltar ao HERMES",
+    "backToHermes": "Voltar",
     "themeToggle": "Alternar tema",
     "localeToggle": "Mudar idioma"
   }

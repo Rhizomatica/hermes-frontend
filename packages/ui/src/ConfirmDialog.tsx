@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 
 interface ConfirmDialogProps {
   open: boolean;
   title: string;
-  message?: string;
+  message?: ReactNode;
   confirmLabel: string;
   cancelLabel: string;
   onConfirm: () => void;
@@ -37,22 +37,26 @@ export default function ConfirmDialog({
     <dialog
       ref={ref}
       onCancel={onCancel}
-      className="rounded-2xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-xl p-6 w-80 max-w-[90vw] backdrop:bg-black/40 backdrop:backdrop-blur-sm"
+      className="w-full max-w-sm rounded-2xl bg-white p-6 text-gray-900 shadow-xl backdrop:bg-black/50 backdrop:backdrop-blur-sm dark:bg-gray-800 dark:text-white"
     >
-      <h2 className="text-base font-semibold mb-2">{title}</h2>
-      {message && <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">{message}</p>}
+      <h2 className="mb-3 text-lg font-bold leading-tight">{title}</h2>
+      {message ? (
+        <div className="mb-6 text-sm leading-relaxed text-gray-600 dark:text-gray-300">
+          {message}
+        </div>
+      ) : null}
       <div className="flex justify-end gap-2">
         <button
           type="button"
           onClick={onCancel}
-          className="px-4 py-2 text-sm rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+          className="min-h-[44px] rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
         >
           {cancelLabel}
         </button>
         <button
           type="button"
           onClick={onConfirm}
-          className="px-4 py-2 text-sm rounded-lg bg-red-600 hover:bg-red-700 text-white transition-colors"
+          className="min-h-[44px] rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
         >
           {confirmLabel}
         </button>

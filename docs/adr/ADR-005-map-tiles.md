@@ -8,7 +8,7 @@
 
 ## Context
 
-`hermes-gps-final` must display a geographic map showing the station's GPS position. Hermes stations operate in remote areas without internet access — the map must work fully offline.
+`hermes-gps` must display a geographic map showing the station's GPS position. Hermes stations operate in remote areas without internet access — the map must work fully offline.
 
 The PoC (`apps/hermes-gps/src/components/MapView.tsx`) uses **PMTiles** (a single-file tile archive format) served via the `pmtiles` JavaScript library with **MapLibre GL JS** for rendering. This approach has been validated in the PoC and works offline. No external tile servers (OpenStreetMap, Mapbox) are used.
 
@@ -43,7 +43,7 @@ The PoC (`apps/hermes-gps/src/components/MapView.tsx`) uses **PMTiles** (a singl
 │  • Also called by: postinstall (auto-download)        │
 │       │                                               │
 │       ▼                                               │
-│  apps/hermes-gps-final/public/brazil.pmtiles          │
+│  apps/hermes-gps/public/brazil.pmtiles          │
 │       │                                               │
 │       ▼                                               │
 │  MapLibre GL JS                                       │

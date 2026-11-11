@@ -10,7 +10,7 @@
 
 The Hermes frontend monorepo consumes the [hermes-backend](https://github.com/Rhizomatica/hermes-backend) REST API (Fastify + PostgreSQL). The existing PoC in `packages/api/` uses Node.js `https` module with a self-signed-certificate-tolerant agent. This works for SSR (Next.js API route handlers) but cannot run in the browser (client-side `fetch` scenarios like Web Workers, Capacitor native HTTP, or service workers).
 
-The final architecture has three apps (`hermes-shell`, `hermes-gps-final`, `hermes-chat-final`) that all need to call the backend API — sometimes from SSR (Next.js route handlers), sometimes from the browser (client-side hooks).
+The final architecture has three apps (`hermes-shell`, `hermes-gps`, `hermes-chat-final`) that all need to call the backend API — sometimes from SSR (Next.js route handlers), sometimes from the browser (client-side hooks).
 
 ## Decision
 

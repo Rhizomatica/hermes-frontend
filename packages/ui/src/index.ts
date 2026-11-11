@@ -1,4 +1,5 @@
 export { ThemeProvider, useTheme } from './ThemeProvider';
+export { ServiceWorkerRegistrator } from './ServiceWorkerRegistrator';
 export { default as ErrorBanner } from './ErrorBanner';
 export { default as LoadingSpinner } from './LoadingSpinner';
 export { default as ConfirmDialog } from './ConfirmDialog';

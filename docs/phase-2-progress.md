@@ -39,7 +39,7 @@
 
 | Gate | Status | Notes |
 |---|---|---|
-| `npm run build` — zero TS errors | ✅ | hermes-gps-final builds successfully |
+| `npm run build` — zero TS errors | ✅ | hermes-gps builds successfully |
 | `npm test` — >80% GPS hooks | ⏳ | Test file exists, not yet executed |
 | Map renders offline with PMTiles | ⏳ | Requires tile file |
 | WS connection updates coordinates | ⏳ | Requires backend + daemon running |
@@ -57,7 +57,7 @@
 ## Architecture Map (Post-Phase-2-Week-3)
 
 ```
-apps/hermes-gps-final/
+apps/hermes-gps/
 ├── src/
 │   ├── app/
 │   │   ├── page.tsx              ← Full-screen map + coordinate overlay

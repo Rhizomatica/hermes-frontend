@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        app: [hermes-shell, hermes-gps-final, hermes-chat-final]
+        app: [hermes-shell, hermes-gps, hermes-chat-final]
     steps:
       - uses: actions/checkout@v4
 
@@ -90,7 +90,7 @@ jobs:
           echo "  3. systemd service files on the sBitx: hermes-shell, hermes-gps, hermes-chat"
           echo ""
           echo "Deploy command (uncomment when secrets are configured):"
-          echo "# for app in hermes-shell hermes-gps-final hermes-chat-final; do"
+          echo "# for app in hermes-shell hermes-gps hermes-chat-final; do"
           echo "#   scp artifacts/\${app}-arm64/*.tar.gz \${SBITX_STAGING_HOST}:/opt/hermes/"
           echo "#   ssh \${SBITX_STAGING_HOST} 'cd /opt/hermes && tar -xzf \${app}.tar.gz && systemctl restart hermes-\${app}'"
           echo "# done"
@@ -115,7 +115,7 @@ jobs:
           echo "  2. Production sBitx hostname in GitHub Secrets (SBITX_PROD_HOST)"
           echo ""
           echo "Deploy command (uncomment when secrets are configured):"
-          echo "# for app in hermes-shell hermes-gps-final hermes-chat-final; do"
+          echo "# for app in hermes-shell hermes-gps hermes-chat-final; do"
           echo "#   scp artifacts/\${app}-arm64/*.tar.gz \${SBITX_PROD_HOST}:/opt/hermes/"
           echo "#   ssh \${SBITX_PROD_HOST} 'cd /opt/hermes && tar -xzf \${app}.tar.gz && systemctl restart hermes-\${app}'"
           echo "# done"

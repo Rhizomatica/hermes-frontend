@@ -1,18 +1,14 @@
 #!/usr/bin/env bash
-# Download a South America PMTiles extract for offline use.
-#
-# Why South America bbox instead of the full planet?
-#   - Full planet build:              ~8 GB
-#   - South America extract (0–12):   ~300–500 MB
-#   - Zoom levels 0–4 in ANY extract cover the ENTIRE world automatically,
-#     so the map still shows a full world overview when zoomed out.
+# Download a Brazil PMTiles extract for offline use with SHA256 integrity check.
 #
 # Usage:
-#   bash scripts/download-tiles.sh           # downloads; skips if file already exists
+#   bash scripts/download-tiles.sh           # downloads; skips if file+cache+checksum match
 #   bash scripts/download-tiles.sh --force   # re-download even if file exists
 #
-# Requires: curl
+# Requires: curl, sha256sum
 # The go-pmtiles CLI is downloaded automatically if not found on PATH.
+#
+# Integrates with npm postinstall hook to ensure tiles are available at build time.
 
 set -euo pipefail
 
@@ -27,11 +23,45 @@ done
 
 DEST="${SCRIPT_DIR}/../public/brazil.pmtiles"
 DEST="$(realpath -m "$DEST")"
+CHECKSUM_FILE="${DEST}.sha256"
 
-# ── Skip if already exists ──────────────────────────────────────────────────
+# ── Skip if file exists, checksum matches ────────────────────────────────────
 if [[ -f "$DEST" ]] && [[ "$FORCE" == false ]]; then
-  echo "Tile file already present: $DEST"
-  echo "Use --force to re-download."
+  if [[ -f "$CHECKSUM_FILE" ]]; then
+    echo "Checking SHA256 integrity..."
+    if sha256sum --check "$CHECKSUM_FILE" --status 2>/dev/null; then
+      echo "Tile file already present and checksum verified: $DEST"
+      exit 0
+    else
+      echo "Checksum mismatch — re-downloading..."
+    fi
+  else
+    echo "Tile file already present: $DEST"
+    echo "No checksum file found — use --force to re-download."
+    exit 0
+  fi
+fi
+
+# ── Direct download (when PMTILES_URL is set) ───────────────────────────────
+if [[ -n "${PMTILES_URL:-}" ]]; then
+  mkdir -p "$(dirname "$DEST")"
+  echo "Downloading tiles from PMTILES_URL..."
+  curl -# -fL "$PMTILES_URL" -o "$DEST" || {
+    echo "Error: failed to download tiles from PMTILES_URL."
+    exit 1
+  }
+
+  if [[ -n "${PMTILES_CHECKSUM:-}" ]]; then
+    echo "Verifying SHA256 checksum..."
+    echo "${PMTILES_CHECKSUM}  ${DEST}" | sha256sum --check --status || {
+      echo "Error: checksum mismatch for downloaded tiles."
+      exit 1
+    }
+    echo "Checksum verified."
+  fi
+
+  sha256sum "$DEST" > "$CHECKSUM_FILE"
+  echo "Done. Tiles downloaded from PMTILES_URL."
   exit 0
 fi
 
@@ -42,8 +72,10 @@ BBOX="-74.0,-33.8,-28.6,5.3"
 MAXZOOM=13
 
 SOURCE=""
-for i in 0 1 2 3 4 5 6; do
+MAX_DAYS_BACK=7
+for ((i=0; i<MAX_DAYS_BACK; i++)); do
   CANDIDATE="https://build.protomaps.com/$(date -d "-${i} days" +%Y%m%d).pmtiles"
+  echo "Trying source: $CANDIDATE ..."
   if curl -sSfI "$CANDIDATE" -o /dev/null 2>/dev/null; then
     SOURCE="$CANDIDATE"
     break
@@ -51,9 +83,12 @@ for i in 0 1 2 3 4 5 6; do
 done
 
 if [[ -z "$SOURCE" ]]; then
-  echo "Could not find a recent Protomaps planet build. Check https://maps.protomaps.com/builds/"
+  echo "Could not find a recent Protomaps planet build."
+  echo "Check https://maps.protomaps.com/builds/"
   exit 1
 fi
+
+echo "Source found: $SOURCE"
 
 # ── Resolve the go-pmtiles CLI ───────────────────────────────────────────────
 PMTILES_BIN="$(command -v pmtiles 2>/dev/null || true)"
@@ -88,22 +123,37 @@ if [[ -z "$PMTILES_BIN" ]]; then
 
   echo "Downloading go-pmtiles CLI ..."
   if [[ "$RELEASE_URL" == *.zip ]]; then
-    curl -sSfL "$RELEASE_URL" -o "$TMP_DIR/pmtiles.zip"
+    curl -# -fL "$RELEASE_URL" -o "$TMP_DIR/pmtiles.zip"
     unzip -q "$TMP_DIR/pmtiles.zip" -d "$TMP_DIR"
   else
-    curl -sSfL "$RELEASE_URL" | tar -xz -C "$TMP_DIR"
+    curl -# -fL "$RELEASE_URL" -o "$TMP_DIR/pmtiles.tar.gz"
+    tar -xz -C "$TMP_DIR" -f "$TMP_DIR/pmtiles.tar.gz"
   fi
   PMTILES_BIN="$TMP_DIR/pmtiles"
   chmod +x "$PMTILES_BIN"
 fi
 
-# ── Extract South America tiles ──────────────────────────────────────────────
+# ── Extract Brazil tiles with progress ───────────────────────────────────────
 mkdir -p "$(dirname "$DEST")"
-echo "Source: $SOURCE"
-echo "BBox:   $BBOX  (Brazil)"
-echo "MaxZoom: $MAXZOOM"
-echo "Dest:   $DEST"
+echo "Extracting tiles..."
+echo "  Source:   $SOURCE"
+echo "  BBox:     $BBOX  (Brazil)"
+echo "  MaxZoom:  $MAXZOOM"
+echo "  Dest:     $DEST"
+echo ""
+
 "$PMTILES_BIN" extract "$SOURCE" "$DEST" --bbox="$BBOX" --maxzoom="$MAXZOOM"
 
-SIZE="$(du -sh "$DEST" | cut -f1)"
-echo "Done. File size: $SIZE"
+# ── Generate SHA256 checksum ─────────────────────────────────────────────────
+if [[ -f "$DEST" ]]; then
+  echo ""
+  echo "Generating SHA256 checksum..."
+  sha256sum "$DEST" > "$CHECKSUM_FILE"
+  echo "Checksum saved to: $CHECKSUM_FILE"
+
+  SIZE="$(du -sh "$DEST" | cut -f1)"
+  echo "Done. File size: $SIZE"
+else
+  echo "Error: Tile extraction did not produce output file."
+  exit 1
+fi

@@ -18,10 +18,10 @@ The Hermes frontend consists of three applications that share authentication:
 | App | Purpose | Deployable Independently? |
 |---|---|---|
 | `hermes-shell` | Login page, app selector, navigation hub | ✅ |
-| `hermes-gps-final` | GPS coordinate viewer with offline maps | ✅ |
+| `hermes-gps` | GPS coordinate viewer with offline maps | ✅ |
 | `hermes-chat-final` | Messaging client with offline support | ✅ |
 
-Each app must be deployable independently (e.g., a station that only needs GPS can deploy just `hermes-gps-final`). But when multiple apps are deployed together, they must share a single login session — the user authenticates once and can navigate between apps without re-entering credentials.
+Each app must be deployable independently (e.g., a station that only needs GPS can deploy just `hermes-gps`). But when multiple apps are deployed together, they must share a single login session — the user authenticates once and can navigate between apps without re-entering credentials.
 
 ## Decision
 
@@ -35,7 +35,7 @@ Each app must be deployable independently (e.g., a station that only needs GPS c
                     │     https://station.local                 │
                     │                                           │
                     │  /          → hermes-shell    :4000       │
-                    │  /gps/*     → hermes-gps-final :4001      │
+                    │  /gps/*     → hermes-gps :4001      │
                     │  /chat/*    → hermes-chat-final :4002     │
                     │  /api/*     → hermes-backend   :8080      │
                     └──────────────────────────────────────────┘
@@ -55,7 +55,7 @@ Each app must be deployable independently (e.g., a station that only needs GPS c
                     │         nginx / caddy                     │
                     │     https://station.local                 │
                     │                                           │
-                    │  /      → hermes-gps-final  :4001         │
+                    │  /      → hermes-gps  :4001         │
                     │  /api/* → hermes-backend    :8080         │
                     └──────────────────────────────────────────┘
 ```
@@ -101,7 +101,7 @@ The Shell app renders an app selector with links:
 Each sub-app includes a "Back to Hermes" button:
 
 ```tsx
-// hermes-gps-final & hermes-chat-final — Navbar.tsx
+// hermes-gps & hermes-chat-final — Navbar.tsx
 <Link href="/">← Back to Hermes</Link>
 ```
 
@@ -115,7 +115,7 @@ Each app's `next.config.ts`:
 // apps/hermes-shell/next.config.ts
 export default { basePath: process.env.NEXT_PUBLIC_BASE_PATH ?? '' };
 
-// apps/hermes-gps-final/next.config.ts
+// apps/hermes-gps/next.config.ts
 export default { basePath: process.env.NEXT_PUBLIC_BASE_PATH ?? '' };
 
 // apps/hermes-chat-final/next.config.ts
@@ -128,7 +128,7 @@ Environment files:
 # hermes-shell/.env.production
 NEXT_PUBLIC_BASE_PATH=
 
-# hermes-gps-final/.env.production
+# hermes-gps/.env.production
 NEXT_PUBLIC_BASE_PATH=/gps
 
 # hermes-chat-final/.env.production
@@ -161,7 +161,7 @@ services:
     build: { context: ., args: { APP_NAME: hermes-shell } }
     ports: ["4000:3000"]
   gps:
-    build: { context: ., args: { APP_NAME: hermes-gps-final } }
+    build: { context: ., args: { APP_NAME: hermes-gps } }
     ports: ["4001:3000"]
   chat:
     build: { context: ., args: { APP_NAME: hermes-chat-final } }

@@ -30,7 +30,7 @@ It consumes two backend systems, both running on the same device:
 │                     HERMES Frontend                         │
 │                                                             │
 │  ┌──────────────┐  ┌──────────────────┐  ┌───────────────┐ │
-│  │ hermes-shell │  │ hermes-gps-final │  │hermes-chat-   │ │
+│  │ hermes-shell │  │ hermes-gps │  │hermes-chat-   │ │
 │  │   :4000      │  │     :4001        │  │   final :4002 │ │
 │  │              │  │                  │  │               │ │
 │  │ • Login      │  │ • Offline map    │  │ • Messaging   │ │
@@ -326,7 +326,7 @@ hermes-fronted/
 │   ├── hermes-gps/               # PoC (immutable reference)
 │   ├── hermes-gps-new/           # Empty (remove)
 │   ├── hermes-shell/             # Login + navigation hub
-│   ├── hermes-gps-final/         # GPS viewer (production)
+│   ├── hermes-gps/         # GPS viewer (production)
 │   └── hermes-chat-final/        # Chat client (production)
 │
 ├── packages/

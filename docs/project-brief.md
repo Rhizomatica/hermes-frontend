@@ -21,7 +21,7 @@ Three independently deployable web applications:
 | App | Purpose | Port | Primary Screen |
 |---|---|---|---|
 | **hermes-shell** | Login + app selector + navigation hub | `:4000` | sBitx 7-inch touchscreen |
-| **hermes-gps-final** | GPS coordinate viewer with offline map, real-time tracking, breadcrumb trail | `:4001` | sBitx 7-inch touchscreen |
+| **hermes-gps** | GPS coordinate viewer with offline map, real-time tracking, breadcrumb trail | `:4001` | sBitx 7-inch touchscreen |
 | **hermes-chat-final** | Messaging client with offline queue, file uploads, encrypted messages, radio info dashboard | `:4002` | sBitx 7-inch touchscreen |
 
 **Canonical deployment target**: **sBitx** — Raspberry Pi 4 (ARM64, 2–4GB RAM), 7-inch 800×480 touchscreen, Chromium kiosk mode, fully air-gapped. All services run on `localhost`.
@@ -37,7 +37,7 @@ Three independently deployable web applications:
 │              sBitx (Raspberry Pi)                 │
 │                                                   │
 │  Chromium kiosk → nginx → hermes-shell :4000      │
-│                         → hermes-gps-final :4001   │
+│                         → hermes-gps :4001   │
 │                         → hermes-chat-final :4002  │
 │                                                   │
 │  Backend services (localhost):                    │
@@ -126,7 +126,7 @@ hermes-fronted/
 │   ├── hermes-chat/              # PoC (reference only — not built)
 │   ├── hermes-gps/               # PoC (reference only — not built)
 │   ├── hermes-shell/             # Login + navigation hub
-│   ├── hermes-gps-final/         # GPS viewer (production)
+│   ├── hermes-gps/         # GPS viewer (production)
 │   └── hermes-chat-final/        # Chat client (production)
 │
 ├── packages/

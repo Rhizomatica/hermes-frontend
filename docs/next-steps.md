@@ -94,7 +94,7 @@ Read these files before writing a single line of code:
 
 **Why**: `useAuth()` and `useAuthGuard()` throw if not inside `<AuthProvider>`. Layouts currently wrap children only with `<NextIntlClientProvider>`. App will crash on load.
 
-**Files**: `apps/hermes-shell/src/app/layout.tsx`, `apps/hermes-gps-final/src/app/layout.tsx`, `apps/hermes-chat-final/src/app/layout.tsx`
+**Files**: `apps/hermes-shell/src/app/layout.tsx`, `apps/hermes-gps/src/app/layout.tsx`, `apps/hermes-chat-final/src/app/layout.tsx`
 
 **Provider order** (ADR-006): `AuthProvider → ThemeProvider → LocaleProvider → NextIntlClientProvider`
 
@@ -160,26 +160,26 @@ import { WebSocketProvider } from '@hermes/shared-auth';
 **Commit**: `feat(shell,gps,chat): add WebSocketProvider to layout provider hierarchy — task 2.1.2`
 
 #### 2.1.3: useGpsCoords hook
-**Files**: `apps/hermes-gps-final/src/hooks/useGpsCoords.ts` + `.test.ts`
+**Files**: `apps/hermes-gps/src/hooks/useGpsCoords.ts` + `.test.ts`
 **Pattern**: ServerState<T> (mandatory)
 **What**: Subscribe to `gps.position` + `gps.fix` WS events. Fallback to `GET /api/gps` polling every 30s when WS disconnected. `stale` flag if last update >60s. `lastUpdated` Date. Cleanup on unmount.
 **Test**: 100% coverage — WS update, REST fallback, error, stale, cleanup.
 **Commit**: `feat(gps): add useGpsCoords hook — task 2.1.3`
 
 #### 2.1.4: API route proxy GET /api/gps
-**Files**: `apps/hermes-gps-final/src/app/api/gps/route.ts`, `packages/api/src/types.ts` (add GpsPosition)
+**Files**: `apps/hermes-gps/src/app/api/gps/route.ts`, `packages/api/src/types.ts` (add GpsPosition)
 **Pattern**: API Route Pattern
 **GpsPosition**: `{ latitude, longitude, altitude, speed, heading, timestamp }`
 **Commit**: `feat(gps,api): add GpsPosition type and GET /api/gps route — task 2.1.4`
 
 #### 2.1.5: MapView component
-**Files**: `apps/hermes-gps-final/src/components/MapView.tsx`, `apps/hermes-gps-final/src/lib/mapStyle.ts`
+**Files**: `apps/hermes-gps/src/components/MapView.tsx`, `apps/hermes-gps/src/lib/mapStyle.ts`
 **Pattern**: Component Pattern. Dynamic import with `ssr: false`.
 **What**: Maplibre GL + PMTiles. Light/dark styles. Pulsing station marker. Fly-to (1.5s). NavControl + ScaleControl. Tile error overlay (i18n). ResizeObserver.
 **Commit**: `feat(gps): add MapView component with offline PMTiles — task 2.1.5`
 
 #### 2.1.6: GPS main page
-**Files**: `apps/hermes-gps-final/src/app/page.tsx` (overwrite), `apps/hermes-gps-final/src/components/CoordinatePanel.tsx`, messages/en.json, messages/pt.json
+**Files**: `apps/hermes-gps/src/app/page.tsx` (overwrite), `apps/hermes-gps/src/components/CoordinatePanel.tsx`, messages/en.json, messages/pt.json
 **What**: Full-screen MapView + bottom panel (coordinates decimal+DMS, timestamp, refresh button, theme/locale toggles). Error banner with retry. i18n.
 **Commit**: `feat(gps): add GPS main page with coordinate panel — task 2.1.6`
 

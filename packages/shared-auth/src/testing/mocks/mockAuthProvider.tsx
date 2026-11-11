@@ -1,8 +1,8 @@
 'use client';
 
 import { createContext, useContext, useMemo, type ReactNode } from 'react';
+import type { HermesUser } from '@hermes/api';
 import type { AuthContextValue } from '../../AuthProvider';
-import type { HermesUser } from '../../tokenStore';
 
 const MockAuthContext = createContext<AuthContextValue | null>(null);
 
@@ -26,7 +26,7 @@ export function mockAuthProvider({
       isLoading: config.isLoading ?? false,
       error: config.error ?? null,
       login: async () => {},
-      logout: () => {},
+      logout: async () => {},
     }),
     [config],
   );

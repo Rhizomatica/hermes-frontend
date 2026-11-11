@@ -1,0 +1,166 @@
+'use client';
+
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useWebSocket } from '@hermes/shared-auth';
+import type { Gps, GpsFixQuality, GpsEvent } from '@hermes/api';
+import { saveGpsCache, loadGpsCache, getCacheAgeMs } from '@/lib/gpsCache';
+
+/**
+ * ServerState<T> for GPS coordinate data with real-time updates.
+ *
+ * Consumes the hermes-radio-daemon `gps` WebSocket topic (`change: self`).
+ * Falls back to GET /api/gps polling when WS is disconnected.
+ * Loads cached position on startup and saves every new position
+ * for offline-capable "last known" display.
+ */
+export interface GpsState {
+  position: Gps | null;
+  fix: GpsFixQuality | null;
+  loading: boolean;
+  error: string | null;
+  lastUpdated: Date | null;
+  stale: boolean;
+  /** Whether current position was loaded from cache (offline fallback) */
+  isCached: boolean;
+  /** Age of cached data in milliseconds, or null if live */
+  cacheAgeMs: number | null;
+  refresh: () => Promise<void>;
+}
+
+const POLL_INTERVAL_MS = 30_000;
+const STALE_THRESHOLD_MS = 60_000;
+const MOCK_GPS = process.env.NEXT_PUBLIC_MOCK_GPS === 'true';
+
+export function useGpsCoords(): GpsState {
+  const { connected, subscribe } = useWebSocket();
+  const [position, setPosition] = useState<Gps | null>(null);
+  const [fix, setFix] = useState<GpsFixQuality | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [stale, setStale] = useState(false);
+  const [isCached, setIsCached] = useState(false);
+  const [cacheAgeMs, setCacheAgeMs] = useState<number | null>(null);
+
+  const pollInterval = useRef<ReturnType<typeof setInterval> | null>(null);
+  const mountedRef = useRef(true);
+
+  // Fetch position via REST
+  const fetchPosition = useCallback(async () => {
+    try {
+      const res = await fetch('/api/gps');
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ message: 'Unknown error' }));
+        if (mountedRef.current) setError(err.message ?? 'Failed to fetch GPS data');
+        return;
+      }
+      const json = (await res.json()) as Gps;
+      if (mountedRef.current) {
+        setPosition(json);
+        setFix(json.fix);
+        setLastUpdated(new Date());
+        setStale(false);
+        setError(null);
+        setIsCached(false);
+        setCacheAgeMs(null);
+        saveGpsCache(json);
+      }
+    } catch (err) {
+      // If live fetch fails, try loading from cache
+      const cached = loadGpsCache();
+      if (mountedRef.current) {
+        if (cached) {
+          setPosition(cached.position);
+          setLastUpdated(new Date(cached.cachedAt));
+          setStale(true);
+          setIsCached(true);
+          setCacheAgeMs(getCacheAgeMs());
+          setError(null);
+        } else {
+          setError(err instanceof Error ? err.message : 'Failed to fetch GPS data');
+        }
+      }
+    } finally {
+      if (mountedRef.current) setLoading(false);
+    }
+  }, []);
+
+  // WebSocket subscriptions (disabled in mock mode — the daemon's real data
+  // must not fight the mocked fixtures).
+  useEffect(() => {
+    if (MOCK_GPS || !connected) return;
+
+    const unsubscribe = subscribe('gps', (event) => {
+      if (!mountedRef.current) return;
+      const payload = event.data as GpsEvent | undefined;
+      if (payload?.change !== 'self' || !payload.gps) return;
+      const pos = payload.gps;
+      setPosition(pos);
+      setFix(pos.fix);
+      setLastUpdated(new Date());
+      setStale(false);
+      setLoading(false);
+      setError(null);
+      setIsCached(false);
+      setCacheAgeMs(null);
+      saveGpsCache(pos);
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [connected, subscribe]);
+
+  // REST polling: always in mock mode, otherwise only while the WS is down.
+  useEffect(() => {
+    if (!MOCK_GPS && connected) {
+      // Clear polling when the live WebSocket is connected
+      if (pollInterval.current) {
+        clearInterval(pollInterval.current);
+        pollInterval.current = null;
+      }
+      return;
+    }
+
+    // Start polling (deferred to avoid sync setState)
+    const id = setTimeout(() => {
+      fetchPosition();
+      pollInterval.current = setInterval(fetchPosition, POLL_INTERVAL_MS);
+    }, 0);
+
+    return () => {
+      clearTimeout(id);
+      if (pollInterval.current) {
+        clearInterval(pollInterval.current);
+        pollInterval.current = null;
+      }
+    };
+  }, [connected, fetchPosition]);
+
+  // Staleness check
+  useEffect(() => {
+    if (!lastUpdated) return;
+    const timer = setTimeout(() => {
+      if (mountedRef.current) setStale(true);
+    }, STALE_THRESHOLD_MS);
+    return () => clearTimeout(timer);
+  }, [lastUpdated]);
+
+  // Track mounted state. Re-assert `true` on every mount so the flag survives
+  // React StrictMode's dev-only unmount/remount cycle (ADR-006 / React 18).
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      if (pollInterval.current) clearInterval(pollInterval.current);
+    };
+  }, []);
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    await fetchPosition();
+  }, [fetchPosition]);
+
+  return { position, fix, loading, error, lastUpdated, stale, isCached, cacheAgeMs, refresh };
+}

@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <!-- Outer glow ring -->
+  <circle cx="24" cy="24" r="22" fill="none" stroke="#f97316" stroke-width="2" opacity="0.3">
+    <animate attributeName="r" values="22;24;22" dur="2s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.3;0.1;0.3" dur="2s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- Accuracy circle (HDOP — set via CSS transform: scale) -->
+  <circle cx="24" cy="24" r="18" fill="none" stroke="#f97316" stroke-width="1" opacity="0.25" stroke-dasharray="4 3">
+    <animate attributeName="stroke-dashoffset" values="0;14" dur="3s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- Direction arrow (rotated by heading) -->
+  <g class="hermes-marker-arrow" style="transform-origin: 24px 24px; transition: transform 0.5s ease;">
+    <!-- Arrow body -->
+    <path d="M24 6 L30 22 L26 22 L26 30 L22 30 L22 22 L18 22 Z"
+          fill="#f97316" stroke="#ffffff" stroke-width="1.5" stroke-linejoin="round"/>
+
+    <!-- Center dot -->
+    <circle cx="24" cy="24" r="5" fill="#ffffff" stroke="#f97316" stroke-width="2"/>
+    <circle cx="24" cy="24" r="2.5" fill="#f97316"/>
+
+    <!-- North indicator (on the arrow tip) -->
+    <path d="M24 4 L22.5 7 L25.5 7 Z" fill="#ffffff" stroke="#f97316" stroke-width="0.5"/>
+  </g>
+</svg>

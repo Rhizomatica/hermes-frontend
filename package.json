@@ -3,26 +3,40 @@
   "version": "0.0.0",
   "private": true,
   "packageManager": "npm@11.9.0",
+  "engines": {
+    "node": "^20.19.0"
+  },
+  "overrides": {
+    "@mapbox/jsonlint-lines-primitives": "2.0.2"
+  },
   "workspaces": [
     "apps/hermes-shell",
-    "apps/hermes-gps-final",
+    "apps/hermes-gps",
     "apps/hermes-chat-final",
     "packages/*"
   ],
   "scripts": {
     "dev:shell": "turbo run dev --filter=hermes-shell",
-    "dev:gps": "turbo run dev --filter=hermes-gps-final",
+    "dev:gps": "turbo run dev --filter=hermes-gps",
     "dev:chat": "turbo run dev --filter=hermes-chat-final",
+    "ws:proxy": "node scripts/ws-proxy.mjs",
+    "dev:all": "node scripts/dev-with-proxy.mjs",
     "dev": "turbo run dev",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "turbo run test:e2e"
+    "test:e2e": "turbo run test:e2e",
+    "clean": "node scripts/clean.mjs",
+    "reinstall": "npm run clean && npm ci",
+    "rebuild": "npm run reinstall && npm run build"
   },
   "devDependencies": {
+    "@vitest/coverage-v8": "^4",
+    "dotenv": "^16.6.1",
     "turbo": "^2",
-    "vitest": "^2"
+    "vite": "^7",
+    "vitest": "^4"
   }
 }

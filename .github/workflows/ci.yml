@@ -18,7 +18,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 20.19.0
           cache: 'npm'
       - run: npm ci --ignore-scripts
       - run: npm run lint
@@ -30,7 +30,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 20.19.0
           cache: 'npm'
       - run: npm ci --ignore-scripts
       - run: npm run typecheck
@@ -42,7 +42,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 20.19.0
           cache: 'npm'
       - run: npm ci --ignore-scripts
       - run: npm test -- --coverage
@@ -55,12 +55,12 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        app: [hermes-shell, hermes-gps-final, hermes-chat-final]
+        app: [hermes-shell, hermes-gps, hermes-chat-final]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 20.19.0
           cache: 'npm'
       - run: npm ci --ignore-scripts
       - run: npx turbo build --filter=${{ matrix.app }}
@@ -79,7 +79,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 20.19.0
           cache: 'npm'
       - run: npm ci --ignore-scripts
       - run: npx turbo build --filter=${{ matrix.app }}
@@ -107,13 +107,13 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 20.19.0
           cache: 'npm'
       - run: npm ci --ignore-scripts
       - run: npx turbo build
       - name: Check bundle sizes
         run: |
-          for app in hermes-shell hermes-gps-final hermes-chat-final; do
+          for app in hermes-shell hermes-gps hermes-chat-final; do
             SIZE=$(du -sk apps/$app/.next/standalone | cut -f1)
             echo "$app standalone: ${SIZE}KB"
             if [ "$SIZE" -gt 150000 ]; then

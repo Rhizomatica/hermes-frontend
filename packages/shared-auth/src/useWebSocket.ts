@@ -2,18 +2,58 @@
 
 import { useContext, createContext } from 'react';
 
-export interface WebSocketEvent {
-  type: string;
-  payload: Record<string, unknown>;
+/**
+ * A single topic event pushed by the station (`hermes.v1` `event` frame):
+ * `{ type: "event", topic, seq, ts, snapshot, data }`.
+ */
+export interface WsTopicEvent {
+  topic: string;
+  seq: number;
+  ts: string;
+  snapshot: boolean;
+  data: unknown;
 }
+
+/**
+ * The `hello` frame the station sends immediately after the WebSocket upgrade.
+ */
+export interface WsHello {
+  protocol: string;
+  service: string;
+  version: string;
+  role: string;
+  user?: unknown;
+  locale?: string;
+  topics?: string[];
+  commands?: string[];
+  limits?: Record<string, unknown>;
+}
+
+export type WebSocketState = 'connecting' | 'connected' | 'disconnected' | 'reconnecting';
 
 export interface WebSocketContextValue {
+  /** ADR-002 4-state machine. */
+  connectionState: WebSocketState;
+  /** Derived boolean for backward-compatible consumers. */
   connected: boolean;
-  lastEvent: WebSocketEvent | null;
-  subscribe: (eventType: string, handler: (event: WebSocketEvent) => void) => () => void;
+  /** The station's `hello` frame, once received. */
+  hello: WsHello | null;
+  lastEvent: WsTopicEvent | null;
+  /**
+   * Subscribe to one topic. Sends a `subscribe` frame to the station for the
+   * first subscriber and an `unsubscribe` frame when the last subscriber is
+   * removed. The handler receives the topic's `event` data envelope.
+   */
+  subscribe: (topic: string, handler: (event: WsTopicEvent) => void) => () => void;
+  /**
+   * Run a `hermes.v1` command and resolve with the reply's `data`. Rejects if
+   * the station answers `ok: false` (with the reply's error message) or if the
+   * socket is not connected.
+   */
+  sendCommand: (cmd: string, args?: unknown) => Promise<unknown>;
 }
 
-const WebSocketContext = createContext<WebSocketContextValue | null>(null);
+export const WebSocketContext = createContext<WebSocketContextValue | null>(null);
 
 /**
  * useWebSocket — consumes the WebSocket context.
@@ -29,9 +69,12 @@ export function useWebSocket(): WebSocketContextValue {
   // Server-side rendering — return stub
   if (typeof window === 'undefined') {
     return {
+      connectionState: 'disconnected',
       connected: false,
+      hello: null,
       lastEvent: null,
       subscribe: () => () => {},
+      sendCommand: async () => undefined,
     };
   }
 

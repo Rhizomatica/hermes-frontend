@@ -1,8 +1,8 @@
 # ADR-004: Offline Message Queue & HF Delivery Status
 
-**Status**: Accepted  
+**Status**: Proposed  
 **Date**: 2026-08-06  
-**Updated**: 2026-08-10 (HF Digital Specialist review — delivery status model and file size limits)  
+**Updated**: 2026-08-21 (demoted from Accepted — not yet implemented; see audit 2026-08-20 F5)  
 **Deciders**: Frontend Architect, Senior Project Manager, HF Digital Specialist
 
 ---
@@ -25,6 +25,13 @@ The delivery status model must reflect this HF pipeline, not Internet assumption
 ## Decision
 
 **We will implement an IndexedDB-backed offline message queue in `@hermes/shared-auth`.** The queue provides persistent local storage for messages awaiting HF transmission, with visibility into the full HF delivery pipeline.
+
+> **Status note (2026-08-21)**: This ADR is recorded as *Accepted* but is **not yet
+> implemented**. No `useOfflineQueue`, `useMessageStatus`, or IndexedDB (`idb`)
+> code exists in the repository (see `docs/audit/2026-08-20-architecture-audit-phase-2-gps.md` §F5).
+> It is therefore demoted to **Proposed**. When the queue is implemented, flip
+> this status back to Accepted/Implemented. Until then, the production "send"
+> path remains the fire-and-forget PoC behavior this ADR explicitly rejects.
 
 ### HF Delivery Status Model (5-Stage Pipeline)
 

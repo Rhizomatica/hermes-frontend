@@ -1,121 +1,81 @@
 /**
- * TokenStore abstraction (ADR-003).
+ * TokenStore abstraction (ADR-003), adapted for the station API.
  *
- * CookieTokenStore for production (HttpOnly cookies set by API proxy).
- * LocalStorageTokenStore for dev fallback.
- * Auto-detection based on cookie presence.
+ * The session token is a single opaque token stored in the HttpOnly
+ * `hermes_session` cookie set by the API proxy and is unreadable from
+ * JavaScript. There is no refresh token.
+ *
+ * The user identity (`hermes_user`) is a client-readable, host-scoped cookie
+ * (NOT port-scoped, unlike localStorage), which is how the shell, GPS, and chat
+ * apps — each on their own dev port — share the display identity. It carries no
+ * authorization claims (`role`, `disabled`); authoritative identity always comes
+ * from `GET /api/auth/me`.
  */
 
-export interface HermesUser {
-  id: number;
-  email: string;
-  name: string;
-  role: string;
-}
+import { HermesUser } from '@hermes/api';
+
+/**
+ * A client-safe projection of the user persisted to the (non-HttpOnly)
+ * `hermes_user` cookie. Deliberately excludes `role` and `disabled` so a forged
+ * cookie cannot grant admin/privileged access (ADR-003 / audit F3).
+ */
+export type CachedUser = Pick<
+  HermesUser,
+  'id' | 'username' | 'display_name' | 'locale' | 'avatar'
+>;
 
 export interface TokenStore {
-  getAccessToken(): string | null;
-  getRefreshToken(): string | null;
-  setTokens(access: string, refresh: string): void;
   clearTokens(): void;
-  getUser(): HermesUser | null;
-  setUser(user: HermesUser): void;
+  getUser(): CachedUser | null;
+  setUser(user: CachedUser): void;
 }
 
-// ------------------------------------------------------------------
-// CookieTokenStore — production path
-// ------------------------------------------------------------------
-
-const COOKIE_ACCESS = 'hermes_token';
-const COOKIE_REFRESH = 'hermes_refresh';
+const COOKIE_USER = 'hermes_user';
 
 function getCookie(name: string): string | null {
   if (typeof document === 'undefined') return null;
   const match = document.cookie.match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`));
-  return match ? decodeURIComponent(match[1]) : null;
+  return match ? match[1] : null;
+}
+
+/**
+ * Strip authorization claims and unknown fields before persisting the user to
+ * a client-writable cookie. The cookie exists only for optimistic display;
+ * authorization is always re-derived from the server.
+ */
+function toCachedUser(user: CachedUser): CachedUser {
+  const { id, username, display_name, locale, avatar } = user;
+  return { id, username, display_name, locale, avatar: avatar ?? null };
+}
+
+/** Read the display-only user from the host-scoped cookie. */
+function readCachedUser(): CachedUser | null {
+  const raw = getCookie(COOKIE_USER);
+  if (!raw) return null;
+  try {
+    return toCachedUser(JSON.parse(decodeURIComponent(raw)) as CachedUser);
+  } catch {
+    return null;
+  }
+}
+
+/** Persist the display-only user to the host-scoped cookie. */
+function writeCachedUser(user: CachedUser): void {
+  if (typeof document === 'undefined') return;
+  const json = encodeURIComponent(JSON.stringify(toCachedUser(user)));
+  document.cookie = `${COOKIE_USER}=${json}; Path=/; SameSite=Lax; Max-Age=604800`;
 }
 
 export const cookieTokenStore: TokenStore = {
-  getAccessToken() {
-    return getCookie(COOKIE_ACCESS);
-  },
-  getRefreshToken() {
-    return getCookie(COOKIE_REFRESH);
-  },
-  setTokens(_access: string, _refresh: string) {
-    // Cookies are set by API proxy via Set-Cookie headers
-    // Client cannot write HttpOnly cookies — no-op
-  },
   clearTokens() {
-    if (typeof localStorage !== 'undefined') {
-      localStorage.removeItem('hermes_user');
+    if (typeof document !== 'undefined') {
+      document.cookie = `${COOKIE_USER}=; Path=/; Max-Age=0`;
     }
   },
-  getUser(): HermesUser | null {
-    if (typeof localStorage === 'undefined') return null;
-    const raw = localStorage.getItem('hermes_user');
-    if (!raw) return null;
-    try {
-      return JSON.parse(raw) as HermesUser;
-    } catch {
-      return null;
-    }
-  },
-  setUser(user: HermesUser) {
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('hermes_user', JSON.stringify(user));
-    }
-  },
+  getUser: readCachedUser,
+  setUser: writeCachedUser,
 };
-
-// ------------------------------------------------------------------
-// LocalStorageTokenStore — dev fallback
-// ------------------------------------------------------------------
-
-export const localStorageTokenStore: TokenStore = {
-  getAccessToken(): string | null {
-    if (typeof localStorage === 'undefined') return null;
-    return localStorage.getItem('hermes_access');
-  },
-  getRefreshToken(): string | null {
-    if (typeof localStorage === 'undefined') return null;
-    return localStorage.getItem('hermes_refresh');
-  },
-  setTokens(access: string, refresh: string) {
-    if (typeof localStorage === 'undefined') return;
-    localStorage.setItem('hermes_access', access);
-    localStorage.setItem('hermes_refresh', refresh);
-  },
-  clearTokens() {
-    if (typeof localStorage === 'undefined') return;
-    localStorage.removeItem('hermes_access');
-    localStorage.removeItem('hermes_refresh');
-    localStorage.removeItem('hermes_user');
-  },
-  getUser(): HermesUser | null {
-    if (typeof localStorage === 'undefined') return null;
-    const raw = localStorage.getItem('hermes_user');
-    if (!raw) return null;
-    try {
-      return JSON.parse(raw) as HermesUser;
-    } catch {
-      return null;
-    }
-  },
-  setUser(user: HermesUser) {
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('hermes_user', JSON.stringify(user));
-    }
-  },
-};
-
-// ------------------------------------------------------------------
-// Auto-detection
-// ------------------------------------------------------------------
 
 export function detectTokenStore(): TokenStore {
-  if (typeof document !== 'undefined' && getCookie(COOKIE_ACCESS)) {
-    return cookieTokenStore;
-  }
-  return localStorageTokenStore;
+  return cookieTokenStore;
 }

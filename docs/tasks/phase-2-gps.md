@@ -2,7 +2,7 @@
 
 **Project**: hermes-fronted
 **Phase Duration**: Weeks 3–5
-**Prerequisites**: Phase 1 complete — `hermes-gps-final` scaffolded, auth-aware
+**Prerequisites**: Phase 1 complete — `hermes-gps` scaffolded, auth-aware
 **Generated**: 2026-08-06
 
 ## Phase Objectives
@@ -41,7 +41,7 @@ Deliver a production-ready GPS coordinate viewer with offline map, real-time pos
 
 ### [ ] Task 2.1.2: Add `WebSocketProvider` to all three app layouts
 
-**Description**: Add `<WebSocketProvider>` to the provider hierarchy in `hermes-shell`, `hermes-gps-final`, and `hermes-chat-final` root layouts. Provider order: `AuthProvider` → `ThemeProvider` → `LocaleProvider` → `WebSocketProvider`.
+**Description**: Add `<WebSocketProvider>` to the provider hierarchy in `hermes-shell`, `hermes-gps`, and `hermes-chat-final` root layouts. Provider order: `AuthProvider` → `ThemeProvider` → `LocaleProvider` → `WebSocketProvider`.
 
 **Acceptance Criteria**:
 - [ ] All three `layout.tsx` files include `<WebSocketProvider>` in provider hierarchy
@@ -50,7 +50,7 @@ Deliver a production-ready GPS coordinate viewer with offline map, real-time pos
 
 **Files to Edit**:
 - `apps/hermes-shell/src/app/layout.tsx` — add `WebSocketProvider`
-- `apps/hermes-gps-final/src/app/layout.tsx` — add `WebSocketProvider`
+- `apps/hermes-gps/src/app/layout.tsx` — add `WebSocketProvider`
 - `apps/hermes-chat-final/src/app/layout.tsx` — add `WebSocketProvider`
 
 **Doc Reference**: ADR-002, ADR-006 §Provider Hierarchy
@@ -71,8 +71,8 @@ Deliver a production-ready GPS coordinate viewer with offline map, real-time pos
 - [ ] Unit tested with mocked WebSocket
 
 **Files to Create/Edit**:
-- `apps/hermes-gps-final/src/hooks/useGpsCoords.ts`
-- `apps/hermes-gps-final/src/hooks/useGpsCoords.test.ts`
+- `apps/hermes-gps/src/hooks/useGpsCoords.ts`
+- `apps/hermes-gps/src/hooks/useGpsCoords.test.ts`
 
 **Stack Notes**: PoC reference: `apps/hermes-gps/src/app/page.tsx` lines 42–67 (REST polling pattern). Enhance with WS subscription. GPS coordinate format: decimal degrees from NMEA `$GPGGA`.
 
@@ -91,7 +91,7 @@ Deliver a production-ready GPS coordinate viewer with offline map, real-time pos
 - [ ] Type-safe response using `GpsPosition` type from `@hermes/api`
 
 **Files to Create/Edit**:
-- `apps/hermes-gps-final/src/app/api/gps/route.ts`
+- `apps/hermes-gps/src/app/api/gps/route.ts`
 - `packages/api/src/types.ts` — add `GpsPosition` interface
 
 **Stack Notes**: Use `hermesGet` from `@hermes/api`. Pass auth cookie from incoming request.
@@ -115,9 +115,9 @@ Deliver a production-ready GPS coordinate viewer with offline map, real-time pos
 - [ ] `ResizeObserver` on container for responsive map sizing
 
 **Files to Create/Edit**:
-- `apps/hermes-gps-final/src/components/MapView.tsx` — map component
+- `apps/hermes-gps/src/components/MapView.tsx` — map component
 - `packages/tailwind-config/src/map-tokens.ts` — theme-aware map color tokens
-- `apps/hermes-gps-final/src/lib/mapStyle.ts` — `buildStyle(dark)` pure function
+- `apps/hermes-gps/src/lib/mapStyle.ts` — `buildStyle(dark)` pure function
 
 **Stack Notes**: PoC reference: `apps/hermes-gps/src/components/MapView.tsx` (287 lines, validated). Extract `buildStyle` to pure function. Extract color tokens to `@hermes/tailwind-config`. Register `pmtiles` protocol once per page load (singleton pattern from PoC).
 
@@ -141,10 +141,10 @@ Deliver a production-ready GPS coordinate viewer with offline map, real-time pos
 - [ ] Responsive: panel respects mobile safe areas, map fills remaining space
 
 **Files to Create/Edit**:
-- `apps/hermes-gps-final/src/app/page.tsx` — main GPS page
-- `apps/hermes-gps-final/src/components/CoordinatePanel.tsx` — bottom panel
-- `apps/hermes-gps-final/messages/en.json` — `gps` namespace
-- `apps/hermes-gps-final/messages/pt.json` — `gps` namespace
+- `apps/hermes-gps/src/app/page.tsx` — main GPS page
+- `apps/hermes-gps/src/components/CoordinatePanel.tsx` — bottom panel
+- `apps/hermes-gps/messages/en.json` — `gps` namespace
+- `apps/hermes-gps/messages/pt.json` — `gps` namespace
 
 **Stack Notes**: PoC reference: `apps/hermes-gps/src/app/page.tsx` lines 32–150. Extract `CoordItem` to its own component.
 
@@ -168,10 +168,10 @@ Deliver a production-ready GPS coordinate viewer with offline map, real-time pos
 - [ ] Handles empty history (no polyline, no error)
 
 **Files to Create/Edit**:
-- `apps/hermes-gps-final/src/app/api/gps/history/route.ts`
-- `apps/hermes-gps-final/src/hooks/useGpsHistory.ts`
-- `apps/hermes-gps-final/src/components/MapView.tsx` — add breadcrumb layer logic
-- `apps/hermes-gps-final/src/components/BreadcrumbToggle.tsx`
+- `apps/hermes-gps/src/app/api/gps/history/route.ts`
+- `apps/hermes-gps/src/hooks/useGpsHistory.ts`
+- `apps/hermes-gps/src/components/MapView.tsx` — add breadcrumb layer logic
+- `apps/hermes-gps/src/components/BreadcrumbToggle.tsx`
 
 **Stack Notes**: Polyline: `map.addSource` with GeoJSON `LineString`. Use `line-gradient` paint property for recency gradient. Max 500 points (older points dropped).
 
@@ -192,10 +192,10 @@ Deliver a production-ready GPS coordinate viewer with offline map, real-time pos
 - [ ] i18n for all labels
 
 **Files to Create/Edit**:
-- `apps/hermes-gps-final/src/components/GpsStatusBadge.tsx`
-- `apps/hermes-gps-final/src/hooks/useGpsCoords.ts` — add fix fields
-- `apps/hermes-gps-final/messages/en.json` — `gps.status` namespace
-- `apps/hermes-gps-final/messages/pt.json` — `gps.status` namespace
+- `apps/hermes-gps/src/components/GpsStatusBadge.tsx`
+- `apps/hermes-gps/src/hooks/useGpsCoords.ts` — add fix fields
+- `apps/hermes-gps/messages/en.json` — `gps.status` namespace
+- `apps/hermes-gps/messages/pt.json` — `gps.status` namespace
 
 **Stack Notes**: Fix quality values per NMEA: 0=invalid, 1=GPS, 2=DGPS, 4=RTK fixed, 5=RTK float.
 
@@ -215,8 +215,8 @@ Deliver a production-ready GPS coordinate viewer with offline map, real-time pos
 - [ ] Cache is cleared on logout
 
 **Files to Create/Edit**:
-- `apps/hermes-gps-final/src/hooks/useGpsCoords.ts` — add cache logic
-- `apps/hermes-gps-final/src/lib/gpsCache.ts` — localStorage cache functions
+- `apps/hermes-gps/src/hooks/useGpsCoords.ts` — add cache logic
+- `apps/hermes-gps/src/lib/gpsCache.ts` — localStorage cache functions
 
 **Stack Notes**: Cache key: `hermes_gps_cache`. Store as JSON: `{ position: GpsPosition, fetchedAt: number }`.
 
@@ -235,7 +235,7 @@ Deliver a production-ready GPS coordinate viewer with offline map, real-time pos
 - [ ] Accessible: button role, `aria-label="Copy latitude"`
 
 **Files to Create/Edit**:
-- `apps/hermes-gps-final/src/components/CoordinatePanel.tsx` — add click handler + feedback
+- `apps/hermes-gps/src/components/CoordinatePanel.tsx` — add click handler + feedback
 
 **Stack Notes**: Use `navigator.clipboard.writeText()`. Fallback: `document.execCommand('copy')` with a temporary input element.
 
@@ -257,8 +257,8 @@ Deliver a production-ready GPS coordinate viewer with offline map, real-time pos
 - [ ] Configurable via env vars: `PMTILES_URL`, `PMTILES_CHECKSUM`
 
 **Files to Create/Edit**:
-- `apps/hermes-gps-final/scripts/download-tiles.sh`
-- `apps/hermes-gps-final/package.json` — add `"download-tiles"` and `"postinstall"` scripts
+- `apps/hermes-gps/scripts/download-tiles.sh`
+- `apps/hermes-gps/package.json` — add `"download-tiles"` and `"postinstall"` scripts
 
 **Stack Notes**: PoC reference: `apps/hermes-gps/scripts/download-tiles.sh`. Use `curl` with `-#` for progress bar. `sha256sum` for verification.
 
@@ -278,8 +278,8 @@ Deliver a production-ready GPS coordinate viewer with offline map, real-time pos
 - [ ] Marker transitions between positions with CSS `transition: transform 0.5s ease`
 
 **Files to Create/Edit**:
-- `apps/hermes-gps-final/src/components/MapView.tsx` — marker element + update logic
-- `apps/hermes-gps-final/public/marker.svg` — SVG marker asset
+- `apps/hermes-gps/src/components/MapView.tsx` — marker element + update logic
+- `apps/hermes-gps/public/marker.svg` — SVG marker asset
 
 **Stack Notes**: PoC already uses custom `<div>` marker (`hermes-marker` class). Enhance the element with SVG and arrow.
 
@@ -299,8 +299,8 @@ Deliver a production-ready GPS coordinate viewer with offline map, real-time pos
 - [ ] Date/time display respects locale (24h vs 12h, date order)
 
 **Files to Create/Edit**:
-- `apps/hermes-gps-final/messages/en.json`
-- `apps/hermes-gps-final/messages/pt.json`
+- `apps/hermes-gps/messages/en.json`
+- `apps/hermes-gps/messages/pt.json`
 
 **Stack Notes**: `Intl.RelativeTimeFormat` for "2 minutes ago", "há 2 minutos". `Intl.DateTimeFormat` for timestamps.
 
@@ -316,7 +316,7 @@ Deliver a production-ready GPS coordinate viewer with offline map, real-time pos
 - [ ] Tested on: Chrome, Firefox, Capacitor Android WebView
 
 **Files to Create/Edit**:
-- `apps/hermes-gps-final/e2e/gps.spec.ts` — Playwright test
+- `apps/hermes-gps/e2e/gps.spec.ts` — Playwright test
 - `docs/testing/gps-manual-checklist.md` — manual test guide
 
 **Stack Notes**: Mock `hermes-radio-daemon` WebSocket with `ws` library in test setup. Mock REST API with Playwright route interception.

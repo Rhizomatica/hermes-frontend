@@ -1,24 +1,52 @@
 {
   "login": {
-    "callsignLabel": "Callsign",
+    "tagline": "High-frequency Emergency and Rural Multimedia Exchange System",
+    "usernameLabel": "Username",
     "passwordLabel": "Password",
     "submit": "Sign In",
     "submitting": "Signing in…",
-    "invalidCredentials": "Invalid email or password.",
+    "loading": "Loading…",
+    "invalidCredentials": "Invalid username or password.",
     "networkError": "Could not reach the server."
   },
   "home": {
     "title": "HERMES",
     "greeting": "Welcome, {name}",
-    "gpsViewer": "GPS Viewer",
+    "welcome": "Welcome back",
+    "gpsViewer": "HERMES GPS",
     "gpsDescription": "View real-time position and offline maps",
-    "chat": "Chat",
+    "chat": "HERMES Chat",
     "chatDescription": "Messages and radio information",
     "logout": "Sign Out",
-    "loading": "Loading…"
+    "open": "Open",
+    "loading": "Loading…",
+    "noStation": "Unavailable station"
+  },
+  "user": {
+    "title": "User Information",
+    "username": "Username",
+    "displayName": "Display Name",
+    "role": "Role",
+    "locale": "Locale",
+    "na": "N/A"
+  },
+  "radio": {
+    "title": "Radio Information",
+    "stationName": "Station Name",
+    "callsign": "Callsign",
+    "frequency": "Frequency",
+    "mode": "Mode",
+    "status": "Status",
+    "tx": "Transmitting",
+    "rx": "Receiving",
+    "power": "Power",
+    "domain": "Domain",
+    "version": "Version",
+    "uptime": "Uptime",
+    "na": "N/A"
   },
   "common": {
-    "backToHermes": "← Back to HERMES",
+    "backToHermes": "Back",
     "themeToggle": "Toggle theme",
     "localeToggle": "Change language"
   }

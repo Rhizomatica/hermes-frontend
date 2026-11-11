@@ -1,11 +1,10 @@
 services:
-
   hermes-chat:
     build:
       context: .
       dockerfile: Dockerfile
       args:
-        APP: hermes-chat
+        APP: hermes-chat-final
         PORT: "3000"
     image: hermes-chat:latest
     ports:

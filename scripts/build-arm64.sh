@@ -5,7 +5,7 @@ set -euo pipefail
 
 APP="${1:-}"
 if [ -z "$APP" ]; then
-  echo "Usage: $0 <app-name>  (hermes-shell | hermes-gps-final | hermes-chat-final)"
+  echo "Usage: $0 <app-name>  (hermes-shell | hermes-gps | hermes-chat-final)"
   exit 1
 fi
 

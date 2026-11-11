@@ -2,34 +2,117 @@
 @tailwind components;
 @tailwind utilities;
 
+button,
+a,
+input,
+select,
+textarea,
+[role='button'] {
+  touch-action: manipulation;
+}
+
 :root {
-  --background: #e2e8f0;
-  --foreground: #111827;
+  --background: #ffffff;
+  --foreground: #0f172a;
 }
 
 .dark {
-  --background: #111827;
+  --background: #0f172a;
   --foreground: #e2e8f0;
 }
 
 body {
+  background-color: var(--background);
   color: var(--foreground);
+}
+
+@keyframes hermes-pulse {
+  0% {
+    transform: translate(-50%, -50%) scale(0.8);
+    opacity: 0.8;
+  }
+  70% {
+    transform: translate(-50%, -50%) scale(2.2);
+    opacity: 0;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(2.2);
+    opacity: 0;
+  }
+}
+
+/* Station dot popup — theme-aware card over MapLibre's default white box. */
+.hermes-station-popup .maplibregl-popup-content {
   background: var(--background);
-  font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif
+  color: var(--foreground);
+  border: 1px solid rgba(100, 116, 139, 0.35);
+  border-radius: 12px;
+  padding: 12px 14px;
+  box-shadow: 0 10px 30px rgba(2, 6, 23, 0.35);
 }
 
-/* Custom MapLibre station marker */
-.hermes-marker {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background-color: #10b981;
-  border: 3px solid #fff;
-  box-shadow: 0 0 0 3px #10b981, 0 2px 8px rgba(0, 0, 0, 0.4);
-  animation: marker-pulse 2s ease-in-out infinite;
+.hermes-station-popup .maplibregl-popup-tip {
+  border-top-color: var(--background);
+  border-bottom-color: var(--background);
 }
 
-@keyframes marker-pulse {
-  0%, 100% { box-shadow: 0 0 0 3px #10b981, 0 2px 8px rgba(0, 0, 0, 0.4); }
-  50%       { box-shadow: 0 0 0 7px rgba(16, 185, 129, 0.3), 0 2px 8px rgba(0, 0, 0, 0.4); }
+.hermes-station-popup .maplibregl-popup-close-button {
+  color: var(--foreground);
+  background: transparent;
+  opacity: 0.55;
+  top: 6px;
+  right: 6px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: 6px;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.hermes-station-popup .maplibregl-popup-close-button:hover {
+  opacity: 1;
+  background: rgba(100, 116, 139, 0.18);
+}
+
+.hermes-station-card {
+  min-width: 150px;
+  font-family: inherit;
+  line-height: 1.5;
+}
+
+.hermes-station-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-right: 16px; /* keep clear of the close button */
+}
+
+.hermes-station-dot {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+  border-radius: 9999px;
+  background: #0ea5e9;
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.22);
+}
+
+.hermes-station-name {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.hermes-station-coords {
+  margin-top: 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+  font-size: 12px;
+  opacity: 0.85;
+  white-space: nowrap;
+}
+
+.hermes-station-time {
+  margin-top: 4px;
+  font-size: 11px;
+  opacity: 0.6;
 }

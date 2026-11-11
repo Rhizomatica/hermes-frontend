@@ -1,5 +1,6 @@
-const CACHE_STATIC = 'hermes-static-v1';
-const CACHE_PAGES = 'hermes-pages-v1';
+const CACHE_VERSION = 'v2';
+const CACHE_STATIC = `hermes-static-${CACHE_VERSION}`;
+const CACHE_PAGES = `hermes-pages-${CACHE_VERSION}`;
 
 self.addEventListener('install', (event) => {
   event.waitUntil(self.skipWaiting());
@@ -52,7 +53,26 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Stale-while-revalidate for HTML pages
+  // Network-first for navigations so we always serve the current HTML.
+  // Otherwise a stale cached document would reference outdated CSS/JS
+  // chunks, breaking the layout on cross-app navigation (no console error,
+  // but a hard reload fixes it). Cache is still refreshed for offline use.
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          const clone = response.clone();
+          caches.open(CACHE_PAGES).then((cache) => {
+            cache.put(request, clone);
+          });
+          return response;
+        })
+        .catch(() => caches.match(request)),
+    );
+    return;
+  }
+
+  // Stale-while-revalidate for other requests
   event.respondWith(
     caches.match(request).then((cached) => {
       const fetched = fetch(request).then((response) => {
