@@ -16,6 +16,50 @@ import { test, expect } from '@playwright/test';
 
 const GPS_URL = 'http://localhost:4001';
 
+/** A `GET /api/gps` payload matching the daemon's `Gps` schema. */
+const GPS_RESPONSE = {
+  fix: '3d',
+  latitude: -23.45,
+  longitude: -46.78,
+  altitude_m: 800,
+  at: new Date().toISOString(),
+  settings: {
+    logging: true,
+    sample_interval_s: 30,
+    file_period_s: 3600,
+    email: null,
+  },
+};
+
+/**
+ * The auth provider validates the session with `GET /api/auth/me` on mount.
+ * There is no backend in CI, so authenticate the page with a stub user;
+ * otherwise the auth guard keeps the GPS UI unmounted.
+ */
+test.beforeEach(async ({ page }) => {
+  await page.route('**/api/auth/me', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: 1,
+        username: 'PU2UIT',
+        display_name: 'Test Operator',
+        avatar: null,
+        role: 'operator',
+        locale: 'en',
+        phone: null,
+        location: null,
+        disabled: false,
+        lxmf_address: null,
+        last_login_at: null,
+        created_at: '2026-01-01T00:00:00Z',
+        updated_at: '2026-01-01T00:00:00Z',
+      }),
+    }),
+  );
+});
+
 test.describe('GPS Main Page', () => {
   test('page loads and renders the map container', async ({ page }) => {
     await page.goto(GPS_URL);
@@ -25,27 +69,21 @@ test.describe('GPS Main Page', () => {
     await expect(mapContainer).toBeVisible({ timeout: 10_000 });
   });
 
-  test('shows loading or no-position state initially', async ({ page }) => {
+  test('shows the position panel once the page is ready', async ({ page }) => {
     await page.goto(GPS_URL);
 
-    // Should show either loading text or "Waiting for GPS position"
-    const statusText = page.locator('text=Waiting for GPS position');
-    const loadingText = page.locator('text=Loading map');
-
-    // At least one of these should be visible
-    const visible = await Promise.race([
-      statusText.isVisible().then((v) => v),
-      loadingText.isVisible().then((v) => v),
-    ]);
-    expect(visible).toBeTruthy();
+    // The panel renders whether or not a fix is available.
+    const copyLat = page.getByRole('button', { name: /copy latitude/i });
+    const noPosition = page.getByText(/waiting for gps position/i);
+    await expect(copyLat.or(noPosition).first()).toBeVisible({ timeout: 10_000 });
   });
 
   test('back link navigates to shell home', async ({ page }) => {
     await page.goto(GPS_URL);
 
-    const backLink = page.getByRole('link', { name: /back to hermes/i });
+    const backLink = page.getByRole('link', { name: /^back$/i });
     await expect(backLink).toBeVisible();
-    await expect(backLink).toHaveAttribute('href', '/');
+    await expect(backLink).toHaveAttribute('href', /4000/);
   });
 
   test('refresh button is present and clickable', async ({ page }) => {
@@ -68,20 +106,11 @@ test.describe('GPS Main Page', () => {
 
   test('copy-to-clipboard shows feedback toast', async ({ page }) => {
     // Mock the GPS API to return valid data so coordinates are visible
-    await page.route('**/api/gps*', async (route) => {
+    await page.route('**/api/gps', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({
-          data: {
-            latitude: -23.45,
-            longitude: -46.78,
-            altitude: 800,
-            speed: 45.5,
-            heading: 180,
-            timestamp: new Date().toISOString(),
-          },
-        }),
+        body: JSON.stringify(GPS_RESPONSE),
       });
     });
 
@@ -102,20 +131,11 @@ test.describe('GPS Main Page', () => {
 
   test('GPS status badge shows fix quality indicators', async ({ page }) => {
     // Mock API with GPS data
-    await page.route('**/api/gps*', async (route) => {
+    await page.route('**/api/gps', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({
-          data: {
-            latitude: -23.45,
-            longitude: -46.78,
-            altitude: 800,
-            speed: 45.5,
-            heading: 180,
-            timestamp: new Date().toISOString(),
-          },
-        }),
+        body: JSON.stringify(GPS_RESPONSE),
       });
     });
 
@@ -165,10 +185,8 @@ test.describe('GPS Main Page', () => {
     const mapContainer = page.locator('[aria-label="Offline map view"]');
 
     // Either the map loads or the error overlay shows
-    const errorOrMap = await Promise.race([
-      tileError.isVisible().then((v) => v),
-      mapContainer.isVisible().then((v) => v),
-    ]);
-    expect(errorOrMap).toBeTruthy();
+    await expect(mapContainer.or(tileError).first()).toBeVisible({
+      timeout: 10_000,
+    });
   });
 });
