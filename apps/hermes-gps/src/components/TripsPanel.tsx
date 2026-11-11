@@ -148,9 +148,11 @@ export default function TripsPanel({
                         <MapPin className="h-4 w-4 shrink-0 text-orange-500" />
                         <span className="min-w-0">
                           <span className="block truncate text-sm font-medium">
-                            {formatWhen(trip.started_at)}
+                            {trip.name}
                           </span>
                           <span className="block truncate text-xs text-foreground/60">
+                            {formatWhen(trip.started_at)}
+                            {' · '}
                             {isCurrent
                               ? t('tripsInProgress')
                               : t('tripsEnded', { date: formatWhen(trip.ended_at ?? '') })}

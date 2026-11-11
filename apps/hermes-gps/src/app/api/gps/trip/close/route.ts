@@ -7,12 +7,11 @@ import { mockClosedTrip } from '@/lib/mockGps';
  *
  * Closes the station's open trip via hermes-radio-daemon
  * `POST /api/v2/gps/trip/close` (operator role). The daemon sets `ended_at` on
- * the open trip and starts a new one; the closed trip is returned unchanged
- * from history.
+ * the open trip; closing a trip does not open a new one.
  *
  * @example
  * POST /api/gps/trip/close
- * → 200 { id, started_at, ended_at, point_count }
+ * → 200 { id, name, started_at, ended_at, point_count }
  */
 export async function POST(request: NextRequest) {
   try {

@@ -50,7 +50,7 @@
     "tripsCancel": "Cancel",
     "tripsCloseCurrent": "Close current trip",
     "tripsCloseCurrentTitle": "Close current trip?",
-    "tripsCloseCurrentMessage": "End the open trip and start a new one. Recorded positions stay in the history.",
+    "tripsCloseCurrentMessage": "End the open trip. Recorded positions stay in the track history.",
     "tripsCloseCurrentAction": "Close trip",
     "tripsLoading": "Loading trips…",
     "tripsRetry": "Retry",

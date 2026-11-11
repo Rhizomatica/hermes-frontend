@@ -82,10 +82,14 @@ export interface GpsPoint {
 }
 
 /**
- * A recorded trip (hermes-radio-daemon `Trip`).
+ * A recorded trip (hermes-radio-daemon `Trip`). A trip is a named time range
+ * over the station's track: its points are the track positions between
+ * `started_at` and `ended_at` (or now, while open).
  */
 export interface Trip {
   id: number;
+  /** User-defined trip name (required by the daemon). */
+  name: string;
   started_at: string;
   /** Null while the trip is open. */
   ended_at?: string | null;
