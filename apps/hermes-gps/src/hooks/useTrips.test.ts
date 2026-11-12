@@ -4,8 +4,8 @@ import { useTrips } from './useTrips';
 import type { Trip } from '@hermes/api';
 
 const tripsFixture: Trip[] = [
-  { id: 2, started_at: '2026-08-12T10:00:00Z', ended_at: null, point_count: 8 },
-  { id: 1, started_at: '2026-08-11T10:00:00Z', ended_at: '2026-08-11T16:00:00Z', point_count: 5 },
+  { id: 2, name: 'Field survey', started_at: '2026-08-12T10:00:00Z', ended_at: null, point_count: 8 },
+  { id: 1, name: 'Trip 1', started_at: '2026-08-11T10:00:00Z', ended_at: '2026-08-11T16:00:00Z', point_count: 5 },
 ];
 
 const tripFixture: Trip = tripsFixture[0];

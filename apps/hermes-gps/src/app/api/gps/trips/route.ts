@@ -11,7 +11,7 @@ import { mockTrips } from '@/lib/mockGps';
  *
  * @example
  * GET /api/gps/trips?limit=25
- * → 200 { data: [{ id, started_at, ended_at, point_count }], next_cursor? }
+ * → 200 { data: [{ id, name, started_at, ended_at, point_count }], next_cursor? }
  */
 export async function GET(request: NextRequest) {
   try {

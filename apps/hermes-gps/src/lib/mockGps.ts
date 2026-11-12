@@ -81,6 +81,7 @@ const TRIPS: Trip[] = (() => {
   const trips: Trip[] = [
     {
       id: 104,
+      name: 'Field survey',
       started_at: new Date(openAt).toISOString(),
       ended_at: null,
       point_count: OPEN_TRIP_POINT_COUNT,
@@ -91,6 +92,7 @@ const TRIPS: Trip[] = (() => {
     const startedAt = openAt - i * 26 * 60 * 60 * 1000; // one trip per day
     trips.push({
       id: 104 - i,
+      name: `Trip ${TRIP_COUNT - i}`,
       started_at: new Date(startedAt).toISOString(),
       ended_at: new Date(startedAt + 6 * 60 * 60 * 1000).toISOString(),
       point_count: 12 + i * 3,

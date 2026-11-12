@@ -50,7 +50,7 @@
     "tripsCancel": "Cancelar",
     "tripsCloseCurrent": "Fechar viagem atual",
     "tripsCloseCurrentTitle": "Fechar viagem atual?",
-    "tripsCloseCurrentMessage": "Encerra a viagem aberta e inicia uma nova. As posições gravadas permanecem no histórico.",
+    "tripsCloseCurrentMessage": "Encerra a viagem aberta. As posições gravadas permanecem no histórico do trajeto.",
     "tripsCloseCurrentAction": "Fechar viagem",
     "tripsLoading": "Carregando viagens…",
     "tripsRetry": "Tentar novamente",

@@ -74,7 +74,7 @@ jobs:
     timeout-minutes: 15
     strategy:
       matrix:
-        app: [hermes-shell]
+        app: [hermes-gps]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -82,13 +82,9 @@ jobs:
           node-version: 20.19.0
           cache: 'npm'
       - run: npm ci --ignore-scripts
-      - run: npx turbo build --filter=${{ matrix.app }}
-      - name: Start app in background
-        run: |
-          cd apps/${{ matrix.app }}
-          node .next/standalone/apps/${{ matrix.app }}/server.js &
-          sleep 5
-          curl --retry 10 --retry-delay 2 --retry-connrefused http://localhost:3000
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+        working-directory: apps/${{ matrix.app }}
       - name: Run Playwright E2E
         run: npx playwright test --project=chromium
         working-directory: apps/${{ matrix.app }}
