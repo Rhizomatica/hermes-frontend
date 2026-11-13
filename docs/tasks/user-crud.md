@@ -3,7 +3,7 @@
 **App**: `apps/hermes-shell`
 **Backend reference**: `hermes-radio-daemon` branch `user-crud-review`
 **Backend spec**: `api/spec/api-rest.yaml` (`users` tag)
-**Status**: Planned
+**Status**: Implemented (pending review)
 
 ---
 
