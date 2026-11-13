@@ -60,8 +60,13 @@ function hermesRequest(
         let raw = '';
         res.on('data', (chunk: string) => { raw += chunk; });
         res.on('end', () => {
+          const status = res.statusCode ?? 200;
+          if (raw.trim() === '') {
+            resolve({ data: null, status });
+            return;
+          }
           try {
-            resolve({ data: JSON.parse(raw), status: res.statusCode ?? 200 });
+            resolve({ data: JSON.parse(raw), status });
           } catch {
             resolve({ data: { message: 'Invalid API response', raw: raw.slice(0, 400) }, status: 502 });
           }
@@ -101,6 +106,11 @@ export type {
   Station,
   HermesUser,
   HermesRole,
+  UserPage,
+  UserCreate,
+  UserPatch,
+  PasswordChange,
+  Problem,
 } from './types';
 export { destArray, stationId, canonicalize } from './normalize';
 export { buildConversations, filterConversation } from './conversation';
@@ -113,6 +123,9 @@ export const hermesPost = (path: string, body: unknown, cookie?: string, authori
 
 export const hermesPatch = (path: string, body: unknown, cookie?: string, authorization?: string) =>
   hermesRequest(path, 'PATCH', JSON.stringify(body), cookie, authorization);
+
+export const hermesPut = (path: string, body: unknown, cookie?: string, authorization?: string) =>
+  hermesRequest(path, 'PUT', JSON.stringify(body), cookie, authorization);
 
 export const hermesDelete = (path: string, cookie?: string, authorization?: string) =>
   hermesRequest(path, 'DELETE', undefined, cookie, authorization);

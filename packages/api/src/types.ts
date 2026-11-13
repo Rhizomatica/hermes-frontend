@@ -250,3 +250,61 @@ export interface HermesUser {
 
 /** Station API roles, least to most privileged (api-rest.yaml `Role`). */
 export type HermesRole = 'readonly' | 'user' | 'operator' | 'admin';
+
+/** A page of users, as returned by `GET /api/v2/users`. */
+export interface UserPage {
+  data: HermesUser[];
+  next_cursor?: string;
+}
+
+/** Body of `POST /api/v2/users` (api-rest.yaml `UserCreate`). */
+export interface UserCreate {
+  username: string;
+  password: string;
+  display_name?: string | null;
+  role?: HermesRole;
+  locale?: string;
+  phone?: string;
+  location?: string;
+}
+
+/**
+ * Body of `PATCH /api/v2/users/{id}` (api-rest.yaml `UserPatch`).
+ *
+ * `role`, `locale` and `disabled` are admin-only. `phone` and `location`
+ * accept `null` to clear the value.
+ */
+export interface UserPatch {
+  display_name?: string | null;
+  role?: HermesRole;
+  locale?: string;
+  phone?: string | null;
+  location?: string | null;
+  disabled?: boolean;
+}
+
+/**
+ * Body of `PUT /api/v2/users/{id}/password` (api-rest.yaml `PasswordChange`).
+ *
+ * A non-admin changing their own password must send `current_password`. An
+ * admin resetting someone else's password may omit it.
+ */
+export interface PasswordChange {
+  current_password?: string;
+  new_password: string;
+}
+
+/**
+ * RFC 9457 problem returned by the station API on errors.
+ *
+ * Validation failures (422) carry per-field messages under `errors`.
+ */
+export interface Problem {
+  type: string;
+  title: string;
+  status: number;
+  code: string;
+  detail?: string;
+  request_id?: string;
+  errors?: Record<string, string[]>;
+}
