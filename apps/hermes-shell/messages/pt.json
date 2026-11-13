@@ -20,7 +20,9 @@
     "logout": "Sair",
     "open": "Abrir",
     "loading": "Carregando…",
-    "noStation": "Estação indisponível"
+    "noStation": "Estação indisponível",
+    "users": "HERMES Usuários",
+    "usersDescription": "Crie e gerencie contas da estação"
   },
   "user": {
     "title": "Informações do Usuário",
@@ -28,7 +30,8 @@
     "displayName": "Nome de Exibição",
     "role": "Função",
     "locale": "Idioma",
-    "na": "N/D"
+    "na": "N/D",
+    "profile": "Perfil"
   },
   "radio": {
     "title": "Informações do Rádio",
@@ -49,5 +52,95 @@
     "backToHermes": "Voltar",
     "themeToggle": "Alternar tema",
     "localeToggle": "Mudar idioma"
+  },
+  "users": {
+    "title": "Usuários",
+    "listTitle": "Contas da estação",
+    "listDescription": "Pessoas com conta e caixa de correio nesta estação.",
+    "create": "Adicionar usuário",
+    "createTitle": "Criar usuário",
+    "editTitle": "Editar usuário",
+    "save": "Salvar",
+    "saving": "Salvando…",
+    "cancel": "Cancelar",
+    "loading": "Carregando usuários…",
+    "loadingMore": "Carregando…",
+    "loadMore": "Carregar mais",
+    "empty": "Nenhum usuário ainda.",
+    "noMatches": "Nenhum usuário corresponde à busca.",
+    "searchPlaceholder": "Buscar usuários carregados",
+    "created": "Usuário criado.",
+    "updated": "Usuário atualizado.",
+    "deleted": "Usuário {username} excluído.",
+    "forbidden": "Somente um administrador pode gerenciar usuários.",
+    "rootHint": "Conta de recuperação. Não pode ser editada, excluída nem ter a senha alterada.",
+    "delete": "Excluir",
+    "deleteTitle": "Excluir usuário?",
+    "deleteMessage": "Isso exclui permanentemente {username} e sua caixa de correio.",
+    "roles": {
+      "readonly": "Somente leitura",
+      "user": "Usuário",
+      "operator": "Operador",
+      "admin": "Administrador"
+    },
+    "locales": {
+      "en": "Inglês",
+      "es": "Espanhol",
+      "pt-BR": "Português (Brasil)",
+      "fr": "Francês"
+    },
+    "badges": {
+      "you": "Você",
+      "root": "Root",
+      "disabled": "Desativado"
+    },
+    "actions": {
+      "editAria": "Editar {username}",
+      "passwordAria": "Alterar senha de {username}",
+      "deleteAria": "Excluir {username}"
+    },
+    "fields": {
+      "username": "Usuário",
+      "password": "Senha",
+      "displayName": "Nome de exibição",
+      "role": "Função",
+      "locale": "Idioma",
+      "phone": "Telefone",
+      "location": "Localização",
+      "disabled": "Conta desativada",
+      "currentPassword": "Senha atual",
+      "newPassword": "Nova senha",
+      "confirmPassword": "Confirmar nova senha"
+    },
+    "validation": {
+      "username": "1 a 32 caracteres: a-z, 0-9, . _ -",
+      "password": "Pelo menos 8 caracteres.",
+      "displayName": "No máximo 64 caracteres.",
+      "role": "Escolha uma função válida.",
+      "locale": "Escolha um idioma válido.",
+      "currentPassword": "Informe sua senha atual.",
+      "passwordMatch": "As senhas não coincidem."
+    },
+    "password": {
+      "title": "Alterar senha",
+      "forUser": "Defina uma nova senha para {username}.",
+      "endsSessions": "As outras sessões deste usuário serão encerradas.",
+      "changed": "Senha alterada."
+    },
+    "errors": {
+      "generic": "Algo deu errado."
+    }
+  },
+  "profile": {
+    "title": "Perfil",
+    "accountTitle": "Conta",
+    "editTitle": "Editar perfil",
+    "loading": "Carregando perfil…",
+    "lastLogin": "Último acesso",
+    "save": "Salvar alterações",
+    "saving": "Salvando…",
+    "saved": "Perfil salvo.",
+    "changePassword": "Alterar senha",
+    "passwordChanged": "Senha alterada."
   }
 }

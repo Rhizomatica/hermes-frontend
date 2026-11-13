@@ -20,7 +20,9 @@
     "logout": "Sign Out",
     "open": "Open",
     "loading": "Loading…",
-    "noStation": "Unavailable station"
+    "noStation": "Unavailable station",
+    "users": "HERMES Users",
+    "usersDescription": "Create and manage station accounts"
   },
   "user": {
     "title": "User Information",
@@ -28,7 +30,8 @@
     "displayName": "Display Name",
     "role": "Role",
     "locale": "Locale",
-    "na": "N/A"
+    "na": "N/A",
+    "profile": "Profile"
   },
   "radio": {
     "title": "Radio Information",
@@ -49,5 +52,95 @@
     "backToHermes": "Back",
     "themeToggle": "Toggle theme",
     "localeToggle": "Change language"
+  },
+  "users": {
+    "title": "Users",
+    "listTitle": "Station accounts",
+    "listDescription": "People with an account and mailbox on this station.",
+    "create": "Add user",
+    "createTitle": "Create user",
+    "editTitle": "Edit user",
+    "save": "Save",
+    "saving": "Saving…",
+    "cancel": "Cancel",
+    "loading": "Loading users…",
+    "loadingMore": "Loading…",
+    "loadMore": "Load more",
+    "empty": "No users yet.",
+    "noMatches": "No users match your search.",
+    "searchPlaceholder": "Search loaded users",
+    "created": "User created.",
+    "updated": "User updated.",
+    "deleted": "User {username} deleted.",
+    "forbidden": "Only an administrator may manage users.",
+    "rootHint": "Recovery account. It cannot be edited, deleted, or have its password changed.",
+    "delete": "Delete",
+    "deleteTitle": "Delete user?",
+    "deleteMessage": "This permanently deletes {username} and their mailbox.",
+    "roles": {
+      "readonly": "Read-only",
+      "user": "User",
+      "operator": "Operator",
+      "admin": "Administrator"
+    },
+    "locales": {
+      "en": "English",
+      "es": "Spanish",
+      "pt-BR": "Portuguese (Brazil)",
+      "fr": "French"
+    },
+    "badges": {
+      "you": "You",
+      "root": "Root",
+      "disabled": "Disabled"
+    },
+    "actions": {
+      "editAria": "Edit {username}",
+      "passwordAria": "Change password for {username}",
+      "deleteAria": "Delete {username}"
+    },
+    "fields": {
+      "username": "Username",
+      "password": "Password",
+      "displayName": "Display name",
+      "role": "Role",
+      "locale": "Language",
+      "phone": "Phone",
+      "location": "Location",
+      "disabled": "Account disabled",
+      "currentPassword": "Current password",
+      "newPassword": "New password",
+      "confirmPassword": "Confirm new password"
+    },
+    "validation": {
+      "username": "1 to 32 characters: a-z, 0-9, . _ -",
+      "password": "At least 8 characters.",
+      "displayName": "At most 64 characters.",
+      "role": "Choose a valid role.",
+      "locale": "Choose a valid language.",
+      "currentPassword": "Enter your current password.",
+      "passwordMatch": "The passwords do not match."
+    },
+    "password": {
+      "title": "Change password",
+      "forUser": "Set a new password for {username}.",
+      "endsSessions": "Other sessions for this user will be signed out.",
+      "changed": "Password changed."
+    },
+    "errors": {
+      "generic": "Something went wrong."
+    }
+  },
+  "profile": {
+    "title": "Profile",
+    "accountTitle": "Account",
+    "editTitle": "Edit profile",
+    "loading": "Loading profile…",
+    "lastLogin": "Last sign-in",
+    "save": "Save changes",
+    "saving": "Saving…",
+    "saved": "Profile saved.",
+    "changePassword": "Change password",
+    "passwordChanged": "Password changed."
   }
 }
