@@ -82,6 +82,8 @@ vi.mock('lucide-react', () => ({
   MapPin: () => <span data-testid="icon-map" />,
   MessagesSquare: () => <span data-testid="icon-chat" />,
   ArrowRight: () => <span data-testid="icon-arrow-right" />,
+  Users: () => <span data-testid="icon-users" />,
+  UserRound: () => <span data-testid="icon-user" />,
 }));
 
 vi.mock('@/hooks/useRadioStatus', () => ({
@@ -165,7 +167,15 @@ describe('AppSelector', () => {
     const chatUrl = process.env.NEXT_PUBLIC_CHAT_URL ?? '/chat';
     const hrefs = screen.getAllByRole('link').map((l) => l.getAttribute('href'));
 
-    expect(hrefs).toEqual([gpsUrl, chatUrl]);
+    expect(hrefs).toEqual(['/profile', gpsUrl, chatUrl]);
+  });
+
+  it('shows the users card only to admins', () => {
+    guardState.user = makeUser({ role: 'admin' });
+    render(<AppSelector />);
+
+    const hrefs = screen.getAllByRole('link').map((l) => l.getAttribute('href'));
+    expect(hrefs).toContain('/users');
   });
 
   it('toggles the theme when the theme button is clicked', () => {

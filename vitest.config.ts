@@ -22,8 +22,13 @@ export default defineConfig({
       // specific `@/*` imports exercised by unit tests to their real locations.
       '@/lib/gpsCache': resolve(__dirname, 'apps/hermes-gps/src/lib/gpsCache'),
       '@/components/InfoList': resolve(__dirname, 'apps/hermes-shell/src/components/InfoList'),
+      '@/components/users': resolve(__dirname, 'apps/hermes-shell/src/components/users'),
       '@/hooks/useRadioStatus': resolve(__dirname, 'apps/hermes-shell/src/hooks/useRadioStatus'),
       '@/hooks/useStationInfo': resolve(__dirname, 'apps/hermes-shell/src/hooks/useStationInfo'),
+      '@/hooks/useUsers': resolve(__dirname, 'apps/hermes-shell/src/hooks/useUsers'),
+      '@/hooks/useProfile': resolve(__dirname, 'apps/hermes-shell/src/hooks/useProfile'),
+      '@/lib/problem': resolve(__dirname, 'apps/hermes-shell/src/lib/problem'),
+      '@/lib/userOptions': resolve(__dirname, 'apps/hermes-shell/src/lib/userOptions'),
       // Shared workspace-package aliases.
       '@hermes/api': resolve(__dirname, 'packages/api/src'),
       '@hermes/shared-auth': resolve(__dirname, 'packages/shared-auth/src'),
