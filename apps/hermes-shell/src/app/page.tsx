@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useAuth, useAuthGuard, useLocale } from '@hermes/shared-auth';
-import { LogOut, Moon, Sun, MapPin, MessagesSquare, ArrowRight } from 'lucide-react';
+import { LogOut, Moon, Sun, MapPin, MessagesSquare, ArrowRight, Users, UserRound } from 'lucide-react';
 import { useTheme, LoadingSpinner } from '@hermes/ui';
 import InfoList from '@/components/InfoList';
 import { useRadioStatus } from '@/hooks/useRadioStatus';
@@ -61,7 +61,7 @@ export default function AppSelector() {
 
   const userItems = [
     { label: tu('username'), value: user.username },
-    { label: tu('displayName'), value: user.display_name ?? user.username },
+    { label: tu('displayName'), value: user.display_name || user.username },
     { label: tu('role'), value: user.role },
     { label: tu('locale'), value: user.locale || locale },
   ];
@@ -100,7 +100,7 @@ export default function AppSelector() {
     { label: tr('uptime'), value: formatUptime(stationInfo.uptime) },
   ];
 
-  const initials = (user.display_name ?? user.username)
+  const initials = (user.display_name || user.username)
     .split(' ')
     .map((n) => n[0])
     .filter(Boolean)
@@ -148,17 +148,23 @@ export default function AppSelector() {
                 {t('welcome')}
               </p>
               <h1 className="truncate text-xl font-bold text-gray-900 dark:text-white">
-                {user.display_name ?? user.username}
+                {user.display_name || user.username}
               </h1>
               <p className="truncate text-sm text-gray-500 dark:text-gray-400">
                 {user.username}
               </p>
             </div>
           </div>
-          <button onClick={handleLogout} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-600 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600 dark:border-gray-700 dark:text-gray-300 dark:hover:border-red-900 dark:hover:bg-red-900/20 dark:hover:text-red-400" style={{ minHeight: '44px' }}>
-            <LogOut className="h-4 w-4" />
-            {t('logout')}
-          </button>
+          <div className="flex shrink-0 items-center gap-2">
+            <Link href="/profile" className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-600 transition-colors hover:border-orange-200 hover:bg-orange-50 hover:text-orange-600 dark:border-gray-700 dark:text-gray-300 dark:hover:border-orange-500/30 dark:hover:bg-orange-500/10 dark:hover:text-orange-400" style={{ minHeight: '44px' }}>
+              <UserRound className="h-4 w-4" />
+              {tu('profile')}
+            </Link>
+            <button onClick={handleLogout} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-600 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600 dark:border-gray-700 dark:text-gray-300 dark:hover:border-red-900 dark:hover:bg-red-900/20 dark:hover:text-red-400" style={{ minHeight: '44px' }}>
+              <LogOut className="h-4 w-4" />
+              {t('logout')}
+            </button>
+          </div>
         </section>
 
         {/* App cards */}
@@ -188,6 +194,21 @@ export default function AppSelector() {
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </span>
           </Link>
+
+          {user.role === 'admin' && (
+            <Link href="/users" className="group relative overflow-hidden rounded-2xl border border-gray-200/70 bg-white/70 p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:border-orange-300/70 hover:bg-white/90 hover:shadow-lg hover:shadow-orange-500/10 dark:border-gray-800 dark:bg-gray-800/60 dark:hover:border-orange-500/30 dark:hover:bg-gray-800/80">
+              <div className="pointer-events-none absolute right-0 top-0 h-28 w-28 translate-x-10 -translate-y-10 rounded-full bg-orange-100/70 blur-2xl transition-all group-hover:bg-orange-200/70 dark:bg-orange-500/10" />
+              <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500/10 to-orange-500/20 text-orange-600 ring-1 ring-orange-500/10 dark:text-orange-400 dark:ring-orange-500/20">
+                <Users className="h-7 w-7" />
+              </span>
+              <h2 className="mt-4 text-xl font-bold text-gray-900 dark:text-white">{t('users')}</h2>
+              <p className="mt-1 text-sm leading-relaxed text-gray-500 dark:text-gray-400">{t('usersDescription')}</p>
+              <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-orange-600 dark:text-orange-400">
+                {t('open')}
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+              </span>
+            </Link>
+          )}
         </div>
 
         {/* User info */}
