@@ -238,11 +238,11 @@ export interface HermesUser {
   display_name: string | null;
   avatar: string | null;
   role: HermesRole;
-  locale: string; // 'en' | 'es' | 'pt-BR' | 'fr'
+  locale: string | null; // 'en' | 'es' | 'pt-BR' | 'fr'
   phone: string | null;
   location: string | null;
   disabled: boolean;
-  lxmf_address: unknown | null;
+  lxmf_address: string | null;
   last_login_at: string | null;
   created_at: string;
   updated_at: string;
@@ -271,11 +271,12 @@ export interface UserCreate {
 /**
  * Body of `PATCH /api/v2/users/{id}` (api-rest.yaml `UserPatch`).
  *
- * `role`, `locale` and `disabled` are admin-only. `phone` and `location`
- * accept `null` to clear the value.
+ * `role`, `locale` and `disabled` are admin-only; `root` must stay an admin.
+ * `phone` and `location` accept `null` to clear the value. `display_name`
+ * is a plain string here; only `UserCreate` allows null.
  */
 export interface UserPatch {
-  display_name?: string | null;
+  display_name?: string;
   role?: HermesRole;
   locale?: string;
   phone?: string | null;
