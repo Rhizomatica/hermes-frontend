@@ -6,9 +6,9 @@ import { hermesPut } from '@hermes/api';
  *
  * Changes a user's password via hermes-radio-daemon
  * `PUT /api/v2/users/{user_id}/password`. Non-admins changing their own
- * password must send `current_password`; admins may omit it. `root` cannot
- * be changed. On success the daemon answers 204 and ends that user's other
- * sessions.
+ * password must send `current_password`; admins may omit it. `root` may
+ * change its own password. On success the daemon answers 204 and ends that
+ * user's other sessions.
  *
  * @example
  * PUT /api/users/7/password

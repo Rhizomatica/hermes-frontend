@@ -73,7 +73,8 @@
     "updated": "User updated.",
     "deleted": "User {username} deleted.",
     "forbidden": "Only an administrator may manage users.",
-    "rootHint": "Recovery account. It cannot be edited, deleted, or have its password changed.",
+    "rootHint": "Recovery account. It must stay an administrator and cannot be deleted.",
+    "rootMustStayAdmin": "Root must stay an administrator.",
     "delete": "Delete",
     "deleteTitle": "Delete user?",
     "deleteMessage": "This permanently deletes {username} and their mailbox.",
@@ -81,13 +82,15 @@
       "readonly": "Read-only",
       "user": "User",
       "operator": "Operator",
-      "admin": "Administrator"
+      "admin": "Administrator",
+      "unknown": "Unknown"
     },
     "locales": {
       "en": "English",
       "es": "Spanish",
       "pt-BR": "Portuguese (Brazil)",
-      "fr": "French"
+      "fr": "French",
+      "unknown": "Unknown"
     },
     "badges": {
       "you": "You",
@@ -119,7 +122,8 @@
       "role": "Choose a valid role.",
       "locale": "Choose a valid language.",
       "currentPassword": "Enter your current password.",
-      "passwordMatch": "The passwords do not match."
+      "passwordMatch": "The passwords do not match.",
+      "usernameReserved": "This username is reserved."
     },
     "password": {
       "title": "Change password",

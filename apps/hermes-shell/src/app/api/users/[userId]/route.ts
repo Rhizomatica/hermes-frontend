@@ -53,7 +53,8 @@ export async function GET(
  *
  * Applies a partial update via hermes-radio-daemon
  * `PATCH /api/v2/users/{user_id}`. Non-admins may change only their own
- * display name, phone and location; `root` cannot be changed.
+ * display name, phone and location; `root` may manage its account but must
+ * stay an admin.
  *
  * @example
  * PATCH /api/users/7

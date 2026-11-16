@@ -139,6 +139,84 @@ describe('UserFormDialog', () => {
     );
   });
 
+  it('rejects the reserved root username before submitting', async () => {
+    const onSubmit = vi.fn();
+    render(
+      <UserFormDialog
+        open
+        mode="create"
+        canManage
+        onClose={vi.fn()}
+        onSubmit={onSubmit}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText('fields.username'), {
+      target: { value: 'root' },
+    });
+    fireEvent.change(screen.getByLabelText('fields.password'), {
+      target: { value: 'long-password' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'save' }));
+
+    expect(await screen.findByText('validation.usernameReserved')).toBeTruthy();
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it('keeps root as admin and submits it in the patch', async () => {
+    const root = makeUser({ id: 1, username: 'root', role: 'admin' });
+    const onSubmit = vi.fn().mockResolvedValue({ ok: true, data: root });
+
+    render(
+      <UserFormDialog
+        open
+        mode="edit"
+        user={root}
+        canManage
+        onClose={vi.fn()}
+        onSubmit={onSubmit}
+      />,
+    );
+
+    expect((screen.getByLabelText('fields.role') as HTMLSelectElement).disabled).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: 'save' }));
+
+    await waitFor(() =>
+      expect(onSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({ role: 'admin' }),
+      ),
+    );
+  });
+
+  it('counts display_name in Unicode code points', async () => {
+    const onSubmit = vi.fn().mockResolvedValue({
+      ok: true,
+      data: makeUser({ id: 11, username: 'new.user' }),
+    });
+    render(
+      <UserFormDialog
+        open
+        mode="create"
+        canManage
+        onClose={vi.fn()}
+        onSubmit={onSubmit}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText('fields.username'), {
+      target: { value: 'new.user' },
+    });
+    fireEvent.change(screen.getByLabelText('fields.password'), {
+      target: { value: 'long-password' },
+    });
+    fireEvent.change(screen.getByLabelText('fields.displayName'), {
+      target: { value: '😀'.repeat(64) },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'save' }));
+
+    await waitFor(() => expect(onSubmit).toHaveBeenCalled());
+  });
+
   it('shows server field errors without closing', async () => {
     const onClose = vi.fn();
     const onSubmit = vi.fn().mockResolvedValue({

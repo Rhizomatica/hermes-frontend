@@ -10,7 +10,12 @@ import type { HermesUser } from '@hermes/api';
 import { useProfile } from '@/hooks/useProfile';
 import type { UserMutationResult } from '@/hooks/useUsers';
 import SetPasswordDialog from '@/components/users/SetPasswordDialog';
-import { MAX_DISPLAY_NAME } from '@/lib/userOptions';
+import {
+  MAX_DISPLAY_NAME,
+  displayNameLength,
+  isUserLocale,
+  isUserRole,
+} from '@/lib/userOptions';
 
 const SHELL_URL = process.env.NEXT_PUBLIC_SHELL_URL ?? '';
 
@@ -79,13 +84,17 @@ export default function ProfilePage() {
             <div>
               <dt className="text-gray-500 dark:text-gray-400">{tu('fields.role')}</dt>
               <dd className="font-semibold text-gray-900 dark:text-white">
-                {tu(`roles.${current.role}`)}
+                {isUserRole(current.role)
+                  ? tu(`roles.${current.role}`)
+                  : tu('roles.unknown')}
               </dd>
             </div>
             <div>
               <dt className="text-gray-500 dark:text-gray-400">{tu('fields.locale')}</dt>
               <dd className="font-semibold text-gray-900 dark:text-white">
-                {tu(`locales.${current.locale}`)}
+                {isUserLocale(current.locale)
+                  ? tu(`locales.${current.locale}`)
+                  : tu('locales.unknown')}
               </dd>
             </div>
             <div>
@@ -152,7 +161,7 @@ function ProfileForm({ user, onSubmit, onChangePassword }: ProfileFormProps) {
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    if (displayName.length > MAX_DISPLAY_NAME) {
+    if (displayNameLength(displayName) > MAX_DISPLAY_NAME) {
       setFieldErrors({ display_name: [tu('validation.displayName')] });
       return;
     }
@@ -198,7 +207,6 @@ function ProfileForm({ user, onSubmit, onChangePassword }: ProfileFormProps) {
               className={inputClass}
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              maxLength={MAX_DISPLAY_NAME}
               aria-invalid={Boolean(errorFor('display_name'))}
             />
             {errorFor('display_name') && (

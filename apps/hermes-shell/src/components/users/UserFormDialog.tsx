@@ -10,6 +10,10 @@ import {
   USERNAME_PATTERN,
   USER_LOCALES,
   USER_ROLES,
+  displayNameLength,
+  isReservedUsername,
+  isUserLocale,
+  isUserRole,
 } from '@/lib/userOptions';
 import type { UserMutationResult } from '@/hooks/useUsers';
 
@@ -64,6 +68,7 @@ export default function UserFormDialog({
   const [pending, setPending] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
+  const editingRoot = mode === 'edit' && user?.username === 'root';
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -71,7 +76,7 @@ export default function UserFormDialog({
     setUsername(user?.username ?? '');
     setPassword('');
     setDisplayName(user?.display_name ?? '');
-    setRole(user?.role ?? 'user');
+    setRole(user?.username === 'root' ? 'admin' : (user?.role ?? 'user'));
     setLocale(user?.locale ?? 'en');
     setPhone(user?.phone ?? '');
     setLocation(user?.location ?? '');
@@ -89,22 +94,21 @@ export default function UserFormDialog({
 
   function validate(): Record<string, string[]> {
     const errors: Record<string, string[]> = {};
-    if (mode === 'create' && !USERNAME_PATTERN.test(username)) {
+    if (mode === 'create' && isReservedUsername(username)) {
+      errors.username = [t('validation.usernameReserved')];
+    } else if (mode === 'create' && !USERNAME_PATTERN.test(username)) {
       errors.username = [t('validation.username')];
     }
     if (mode === 'create' && password.length < MIN_PASSWORD_LENGTH) {
       errors.password = [t('validation.password')];
     }
-    if (displayName.length > MAX_DISPLAY_NAME) {
+    if (displayNameLength(displayName) > MAX_DISPLAY_NAME) {
       errors.display_name = [t('validation.displayName')];
     }
-    if (canManage && !USER_ROLES.includes(role as (typeof USER_ROLES)[number])) {
+    if (canManage && !isUserRole(role)) {
       errors.role = [t('validation.role')];
     }
-    if (
-      canManage &&
-      !USER_LOCALES.includes(locale as (typeof USER_LOCALES)[number])
-    ) {
+    if (canManage && !isUserLocale(locale)) {
       errors.locale = [t('validation.locale')];
     }
     return errors;
@@ -199,7 +203,6 @@ export default function UserFormDialog({
             className={inputClass}
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
-            maxLength={MAX_DISPLAY_NAME}
             aria-invalid={Boolean(errorFor('display_name'))}
           />
         </Field>
@@ -211,6 +214,8 @@ export default function UserFormDialog({
                 className={inputClass}
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
+                disabled={editingRoot}
+                aria-label={t('fields.role')}
               >
                 {USER_ROLES.map((r) => (
                   <option key={r} value={r}>
@@ -218,6 +223,11 @@ export default function UserFormDialog({
                   </option>
                 ))}
               </select>
+              {editingRoot && (
+                <span className="mt-1 block text-xs text-gray-500 dark:text-gray-400">
+                  {t('rootMustStayAdmin')}
+                </span>
+              )}
             </Field>
             <Field label={t('fields.locale')} error={errorFor('locale')}>
               <select

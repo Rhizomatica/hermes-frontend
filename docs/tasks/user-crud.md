@@ -3,7 +3,7 @@
 **App**: `apps/hermes-shell`
 **Backend reference**: `hermes-radio-daemon` branch `user-crud-review`
 **Backend spec**: `api/spec/api-rest.yaml` (`users` tag)
-**Status**: Implemented (pending review)
+**Status**: Implemented and aligned with `user-crud-review`
 
 ---
 
@@ -13,7 +13,7 @@ Implement user administration and self-service profile editing in `hermes-shell`
 
 - Admins: list, create, edit, disable, delete users, reset passwords.
 - Any authenticated user: view/edit their own profile (display name, phone, location) and change their own password.
-- The reserved `root` recovery account is visible but immutable (no edit, delete, or password change).
+- The reserved `root` recovery account is visible and may edit its own account and password, but cannot be deleted or demoted from admin.
 
 Out of scope for this iteration (not implemented by the backend branch either):
 
@@ -35,20 +35,21 @@ All paths are under `/api/v2`.
 | GET | `/users?limit=&cursor=` | admin | `UserPage`: `{ data: User[], next_cursor? }` |
 | POST | `/users` | admin | `UserCreate`; 201 `User`; 409 username taken; 422 field errors |
 | GET | `/users/{id}` | admin or self | 403 for another user |
-| PATCH | `/users/{id}` | admin or self | `UserPatch`; `role`, `locale`, `disabled` admin-only; 403 for `root` |
+| PATCH | `/users/{id}` | admin or self | `UserPatch`; `role`, `locale`, `disabled` admin-only; `root` must stay an admin |
 | DELETE | `/users/{id}` | admin | 204; 403 for `root`; admins may delete themselves |
-| PUT | `/users/{id}/password` | admin or self | `{ current_password?, new_password }`; non-admin needs current; 403 for `root`; ends other sessions |
+| PUT | `/users/{id}/password` | admin or self | `{ current_password?, new_password }`; non-admin needs current; `root` may change its own; ends other sessions |
 
 Important invariants from `user-crud-review`:
 
 - Username `root` is reserved at creation.
-- `root` cannot be patched, deleted, or have its password changed.
-- Deleting the last admin is no longer blocked; do not add that guard in the client.
-- `display_name` is at most 64 characters, counted in Unicode code points.
+- `root` may edit its own display name, phone, location, locale, disabled flag and password, but its role must remain `admin`; it cannot be deleted.
+- The daemon refuses to demote, disable, or delete the last active admin; the client surfaces that 403 and does not try to duplicate the guard with partial page data.
+- `display_name` is at most 64 characters, counted in Unicode code points (not UTF-16 units).
 - `username` matches `^[a-z0-9._-]{1,32}$`.
 - Allowed roles: `readonly`, `user`, `operator`, `admin`.
 - Allowed locales: `en`, `es`, `pt-BR`, `fr`.
 - `phone` in `UserCreate` is a string; in `UserPatch` it is `string | null` (null clears). Same for `location`.
+- `display_name` accepts `string | null` in `UserCreate`, but only a string in `UserPatch`.
 - Errors are RFC 9457 `application/problem+json`, with per-field validation under `errors: Record<string, string[]>` for 422.
 - Pagination uses an opaque `cursor`; `next_cursor` is absent/empty on the last page.
 
@@ -130,7 +131,7 @@ Create `apps/hermes-shell/src/components/users/`:
 Behavior:
 
 - Hide role/locale/disabled controls for non-admin editors.
-- For `root`, disable edit/delete/password actions and show an explanatory label.
+- For `root`, keep edit and password actions available, lock the role field to `admin`, disable delete, and show an explanatory label.
 - Prevent a user from deleting/disabling themselves via UI warnings; backend rules win if bypassed.
 - Client-side search filters the loaded users by username/display name; state that it covers loaded pages only (or hide search until backend supports `q`).
 
@@ -166,7 +167,7 @@ Unit/component:
 - `lib/problem.test.ts` — problem+json parsing, field errors, fallbacks.
 - `hooks/useUsers.test.ts` — loading, data, pagination, refresh failure retains data, create/update/delete/password success and 4xx paths.
 - `hooks/useProfile.test.ts` — load, save, password change, field errors.
-- `components/users/*.test.tsx` — form validation, role/locale controls hidden for non-admin, root actions disabled, delete confirmation, password dialog, list rendering.
+- `components/users/*.test.tsx` — form validation, role/locale controls hidden for non-admin, root delete disabled with root role locked to admin, delete confirmation, password dialog, list rendering.
 - `app/users/page.test.tsx` — admin vs non-admin states.
 - `app/profile/page.test.tsx` — fields and submit flows.
 - API route handler tests with `@hermes/api` mocked: forwarding cookie/auth, ID validation, status/body passthrough.
@@ -206,7 +207,7 @@ Update:
 
 - An admin can list, paginate, create, edit, disable/enable, delete users, and reset passwords.
 - Creating a duplicate username shows a field/conflict error; invalid fields show inline messages sourced from the daemon’s 422 `errors`.
-- `root` is listed, clearly marked, and has no edit/delete/password controls.
+- `root` is listed, clearly marked, can edit its own account and password, stays an admin, and has no delete control.
 - A non-admin sees only their own profile, can edit display name/phone/location, and can change their password with the current one.
 - Non-admins never see the Users navigation entry; direct `/users` access shows a forbidden state.
 - All requests flow through shell API routes with cookie/authorization forwarding; no direct browser-to-daemon calls.
@@ -220,7 +221,7 @@ Update:
 
 - **Role claims are client-controllable** (`hermes_user` cookie). Treat role checks as UI-only. Do not add authorization decisions in Next.js proxy routes based on the cookie; the daemon is the authority.
 - **No backend search/filter.** Client-side filtering can be misleading; either label it clearly or defer until the daemon adds a query parameter.
-- **Optimistic updates are risky** for roles/disabled because the daemon may reject root or self operations. Prefer refresh-after-mutation.
+- **Optimistic updates are risky** for roles/disabled because the daemon may reject root, last-admin or self operations. Prefer refresh-after-mutation.
 - **Password change ends other sessions.** After an admin resets a password, that user’s other sessions are invalidated by design; surface this in the confirmation text.
 - **Mailbox creation is a backend side effect.** Create/delete can be slower than expected; show pending states and disable double submits.
-- **`root` is a recovery account.** Do not offer “change password” shortcuts that only work for other users; the backend will return 403.
+- **`root` is a recovery account.** It can manage its own account and password, but the backend refuses deletion and any role other than `admin`.

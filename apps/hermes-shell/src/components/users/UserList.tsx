@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { KeyRound, Pencil, Trash2 } from 'lucide-react';
 import type { HermesUser } from '@hermes/api';
+import { isUserLocale, isUserRole } from '@/lib/userOptions';
 
 export interface UserListProps {
   /** Users to render. */
@@ -23,11 +24,19 @@ function isRoot(user: HermesUser): boolean {
   return user.username === 'root';
 }
 
+function roleLabel(user: HermesUser, t: (key: string) => string): string {
+  return isUserRole(user.role) ? t(`roles.${user.role}`) : t('roles.unknown');
+}
+
+function localeLabel(user: HermesUser, t: (key: string) => string): string {
+  return isUserLocale(user.locale) ? t(`locales.${user.locale}`) : t('locales.unknown');
+}
+
 /**
  * Responsive list of users with admin actions.
  *
- * `root` is shown with a recovery-account badge and no mutating actions,
- * matching the daemon's immutability rules.
+ * `root` is shown with a recovery-account badge. It can edit its own account
+ * and password, but cannot be deleted or demoted from admin.
  *
  * @example
  * <UserList users={users} currentUserId={me.id} canManage onEdit={…} onSetPassword={…} onDelete={…} />
@@ -74,7 +83,7 @@ export default function UserList({
                 )}
               </div>
               <p className="truncate text-sm text-gray-500 dark:text-gray-400">
-                {user.username} · {t(`roles.${user.role}`)} · {user.locale}
+                {user.username} · {roleLabel(user, t)} · {localeLabel(user, t)}
               </p>
               {root && (
                 <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
@@ -88,7 +97,6 @@ export default function UserList({
                 <button
                   type="button"
                   onClick={() => onEdit(user)}
-                  disabled={root}
                   aria-label={t('actions.editAria', { username: user.username })}
                   className="flex h-11 w-11 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-40 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white"
                 >
@@ -97,7 +105,6 @@ export default function UserList({
                 <button
                   type="button"
                   onClick={() => onSetPassword(user)}
-                  disabled={root}
                   aria-label={t('actions.passwordAria', {
                     username: user.username,
                   })}

@@ -46,7 +46,7 @@ describe('UserList', () => {
     );
 
     expect(screen.getByText('Matheus')).toBeTruthy();
-    expect(screen.getByText('pu2uit · roles.operator · en')).toBeTruthy();
+    expect(screen.getByText('pu2uit · roles.operator · locales.en')).toBeTruthy();
   });
 
   it('falls back to the username when display_name is empty', () => {
@@ -79,7 +79,7 @@ describe('UserList', () => {
     expect(screen.getByText('badges.you')).toBeTruthy();
   });
 
-  it('disables all mutating actions for root', () => {
+  it('lets root edit its account and password but not be deleted', () => {
     render(
       <UserList
         users={[makeUser({ id: 2, username: 'root' })]}
@@ -92,9 +92,24 @@ describe('UserList', () => {
     );
 
     expect(screen.getByText('badges.root')).toBeTruthy();
-    expect(screen.getByLabelText('actions.editAria').hasAttribute('disabled')).toBe(true);
-    expect(screen.getByLabelText('actions.passwordAria').hasAttribute('disabled')).toBe(true);
+    expect(screen.getByLabelText('actions.editAria').hasAttribute('disabled')).toBe(false);
+    expect(screen.getByLabelText('actions.passwordAria').hasAttribute('disabled')).toBe(false);
     expect(screen.getByLabelText('actions.deleteAria').hasAttribute('disabled')).toBe(true);
+  });
+
+  it('falls back to unknown labels for unrecognised roles and locales', () => {
+    render(
+      <UserList
+        users={[makeUser({ role: 'auditor' as never, locale: 'de' })]}
+        currentUserId={null}
+        canManage={false}
+        onEdit={vi.fn()}
+        onSetPassword={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('pu2uit · roles.unknown · locales.unknown')).toBeTruthy();
   });
 
   it('calls the row actions', () => {
