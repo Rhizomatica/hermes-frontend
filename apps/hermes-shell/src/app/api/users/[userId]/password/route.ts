@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { hermesPut } from '@hermes/api';
+import { userIdFrom } from '@/lib/userId';
 
 /**
  * PUT /api/users/{userId}/password
@@ -20,7 +21,8 @@ export async function PUT(
   { params }: { params: Promise<{ userId: string }> },
 ) {
   const { userId } = await params;
-  if (!/^\d+$/.test(userId) || Number(userId) <= 0) {
+  const id = userIdFrom(userId);
+  if (id == null) {
     return NextResponse.json({ message: 'Invalid user id.' }, { status: 400 });
   }
 
@@ -35,7 +37,7 @@ export async function PUT(
     const cookie = request.headers.get('cookie') ?? undefined;
     const authorization = request.headers.get('authorization') ?? undefined;
     const { data, status } = await hermesPut(
-      `/api/v2/users/${userId}/password`,
+      `/api/v2/users/${id}/password`,
       body,
       cookie,
       authorization,

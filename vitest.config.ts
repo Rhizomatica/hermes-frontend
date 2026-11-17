@@ -28,6 +28,7 @@ export default defineConfig({
       '@/hooks/useUsers': resolve(__dirname, 'apps/hermes-shell/src/hooks/useUsers'),
       '@/hooks/useProfile': resolve(__dirname, 'apps/hermes-shell/src/hooks/useProfile'),
       '@/lib/problem': resolve(__dirname, 'apps/hermes-shell/src/lib/problem'),
+      '@/lib/userId': resolve(__dirname, 'apps/hermes-shell/src/lib/userId'),
       '@/lib/userOptions': resolve(__dirname, 'apps/hermes-shell/src/lib/userOptions'),
       // Shared workspace-package aliases.
       '@hermes/api': resolve(__dirname, 'packages/api/src'),

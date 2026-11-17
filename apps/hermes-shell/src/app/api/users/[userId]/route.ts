@@ -1,12 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { hermesDelete, hermesGet, hermesPatch } from '@hermes/api';
-
-/** Validate the {userId} path segment; null when it is not a positive integer. */
-function userIdFrom(value: string): number | null {
-  if (!/^\d+$/.test(value)) return null;
-  const id = Number(value);
-  return Number.isSafeInteger(id) && id > 0 ? id : null;
-}
+import { userIdFrom } from '@/lib/userId';
 
 function invalidId(): NextResponse {
   return NextResponse.json({ message: 'Invalid user id.' }, { status: 400 });
