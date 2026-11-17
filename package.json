@@ -4,7 +4,7 @@
   "private": true,
   "packageManager": "npm@11.9.0",
   "engines": {
-    "node": "^20.19.0"
+    "node": ">=26 <27"
   },
   "overrides": {
     "@mapbox/jsonlint-lines-primitives": "2.0.2"
