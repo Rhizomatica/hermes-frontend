@@ -29,6 +29,7 @@ loadEnv({ path: new URL('../.env.local', import.meta.url).pathname });
 const HOST = process.env.WS_PROXY_HOST ?? '0.0.0.0';
 const PORT = Number(process.env.WS_PROXY_PORT ?? 8082);
 const API_URL = process.env.HERMES_API_URL ?? 'http://localhost:8080';
+const TLS_SERVERNAME = process.env.HERMES_API_TLS_SERVERNAME?.trim();
 
 const WS_PATH = '/api/v2/ws';
 
@@ -87,9 +88,13 @@ server.on('upgrade', (req, socket, head) => {
     return refuse(socket, 401, 'missing hermes_session cookie');
   }
 
-  const upstream = new WebSocket(upstreamUrl(), ['hermes.v1'], {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const upstreamTarget = upstreamUrl();
+  const options = { headers: { Authorization: `Bearer ${token}` } };
+  if (TLS_SERVERNAME && new URL(upstreamTarget).protocol === 'wss:') {
+    options.servername = TLS_SERVERNAME;
+  }
+
+  const upstream = new WebSocket(upstreamTarget, ['hermes.v1'], options);
 
   let client = null;
   let settled = false;

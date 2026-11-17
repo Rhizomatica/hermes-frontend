@@ -11,6 +11,7 @@ services:
       - "3000:3000"
     environment:
       HERMES_API_URL: ${HERMES_API_URL}
+      HERMES_API_TLS_SERVERNAME: ${HERMES_API_TLS_SERVERNAME:-}
     restart: unless-stopped
 
   hermes-gps:
@@ -25,6 +26,7 @@ services:
       - "3001:3001"
     environment:
       HERMES_API_URL: ${HERMES_API_URL}
+      HERMES_API_TLS_SERVERNAME: ${HERMES_API_TLS_SERVERNAME:-}
     volumes:
       # brazil.pmtiles is too large to bake into the image — mount from the host.
       # Run  npm run download-tiles  inside apps/hermes-gps/ first.

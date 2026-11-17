@@ -1,8 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { filterConversation } from '@hermes/api';
-import type { Message } from '@hermes/api';
+import { useCallback, useEffect, useState } from 'react';
+import { filterConversation, type Message } from '@hermes/api';
 import { useWebSocket } from '@hermes/shared-auth';
 
 /**
@@ -35,6 +34,27 @@ interface ChatPayload {
 
 const CACHE_KEY = 'chat:messages';
 const STALE_AFTER_MS = 30_000;
+
+function readFreshCache(): ChatPayload | null {
+  const cached = cache.get(CACHE_KEY);
+  if (!cached || Date.now() - cached.fetchedAt >= STALE_AFTER_MS) return null;
+  return cached.data;
+}
+
+async function loadChatPayload(): Promise<ChatPayload> {
+  let promise = inFlight.get(CACHE_KEY);
+  if (!promise) {
+    promise = fetchChatPayload();
+    inFlight.set(CACHE_KEY, promise);
+  }
+  try {
+    const payload = await promise;
+    cache.set(CACHE_KEY, { data: payload, fetchedAt: Date.now() });
+    return payload;
+  } finally {
+    inFlight.delete(CACHE_KEY);
+  }
+}
 
 async function fetchChatPayload(): Promise<ChatPayload> {
   const [msgRes, sentRes, uulsRes] = await Promise.all([
@@ -93,56 +113,50 @@ export function useChatData(
   aliasMap: Map<string, string> = new Map(),
 ): ChatDataState {
   const { subscribe } = useWebSocket();
-  const [allMessages, setAllMessages] = useState<Message[]>([]);
-  const [sentIds, setSentIds] = useState<Set<number>>(new Set());
-  const [syncedIds, setSyncedIds] = useState<Set<number>>(new Set());
-  const [loading, setLoading] = useState(true);
+  const [initialCache] = useState(readFreshCache);
+  const [allMessages, setAllMessages] = useState<Message[]>(initialCache?.messages ?? []);
+  const [sentIds, setSentIds] = useState<Set<number>>(() => new Set(initialCache?.sentIds));
+  const [syncedIds, setSyncedIds] = useState<Set<number>>(() => new Set(initialCache?.syncedIds));
+  const [loading, setLoading] = useState(initialCache === null);
   const [error, setError] = useState<string | null>(null);
 
-  const stationRef = useRef(station);
-  stationRef.current = station;
-  const aliasMapRef = useRef(aliasMap);
-  aliasMapRef.current = aliasMap;
+  const applyPayload = useCallback((payload: ChatPayload) => {
+    setAllMessages(payload.messages);
+    setSentIds(new Set(payload.sentIds));
+    setSyncedIds(new Set(payload.syncedIds));
+  }, []);
 
   const refresh = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      // Deduplicate concurrent requests
-      const existing = inFlight.get(CACHE_KEY);
-      let payload = existing ? await existing : null;
-
-      if (!payload) {
-        const promise = fetchChatPayload();
-        inFlight.set(CACHE_KEY, promise);
-        payload = await promise;
-      }
-
-      cache.set(CACHE_KEY, { data: payload, fetchedAt: Date.now() });
-
-      setAllMessages(payload.messages);
-      setSentIds(new Set(payload.sentIds));
-      setSyncedIds(new Set(payload.syncedIds));
+      applyPayload(await loadChatPayload());
     } catch {
       setError('Could not load messages.');
     } finally {
-      inFlight.delete(CACHE_KEY);
       setLoading(false);
     }
-  }, []);
+  }, [applyPayload]);
 
-  // Initial load: serve cached data (stale-while-revalidate) then refetch.
+  // Initial load: cached data was applied above; only fetch when it is stale.
   useEffect(() => {
-    const cached = cache.get(CACHE_KEY);
-    if (cached && Date.now() - cached.fetchedAt < STALE_AFTER_MS) {
-      setAllMessages(cached.data.messages);
-      setSentIds(new Set(cached.data.sentIds));
-      setSyncedIds(new Set(cached.data.syncedIds));
-      setLoading(false);
-      return;
-    }
-    refresh();
-  }, [refresh]);
+    if (readFreshCache()) return;
+    let cancelled = false;
+    loadChatPayload()
+      .then((payload) => {
+        if (cancelled) return;
+        applyPayload(payload);
+        setLoading(false);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setError('Could not load messages.');
+        setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [applyPayload]);
 
   // Real-time: a message arrived or its state changed. The daemon's `messages`
   // topic (hermes.v1) carries `{ change, message }`; `created`/`received`
@@ -167,7 +181,7 @@ export function useChatData(
   }, [subscribe]);
 
   const messages = station
-    ? filterConversation(allMessages, station, aliasMapRef.current)
+    ? filterConversation(allMessages, station, aliasMap)
     : allMessages;
 
   return { messages, sentIds, syncedIds, loading, error, refresh };

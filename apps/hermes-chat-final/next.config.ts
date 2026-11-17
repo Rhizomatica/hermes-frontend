@@ -30,6 +30,7 @@ function connectSrc(): string {
 }
 
 const nextConfig: NextConfig = {
+  output: 'standalone',
   basePath: process.env.NEXT_PUBLIC_BASE_PATH ?? '',
   transpilePackages: [
     '@hermes/api',

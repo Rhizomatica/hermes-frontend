@@ -1,5 +1,6 @@
 import http from 'node:http';
 import https from 'node:https';
+import { buildRequestOptions } from './requestOptions';
 
 function getBase(): string {
   const url = process.env.HERMES_API_URL ?? 'http://localhost:8080';
@@ -49,13 +50,7 @@ function hermesRequest(
     const transport = isHttps ? https : http;
 
     const req = transport.request(
-      {
-        hostname: url.hostname,
-        port: url.port || (isHttps ? 443 : 80),
-        path: url.pathname + url.search,
-        method,
-        headers,
-      },
+      buildRequestOptions(url, method, headers),
       (res) => {
         let raw = '';
         res.on('data', (chunk: string) => { raw += chunk; });
@@ -171,13 +166,7 @@ export function hermesPostMultipart(
     };
 
     const req = transport.request(
-      {
-        hostname: url.hostname,
-        port: url.port || (isHttps ? 443 : 80),
-        path: url.pathname + url.search,
-        method: 'POST',
-        headers,
-      },
+      buildRequestOptions(url, 'POST', headers),
       (res) => {
         let raw = '';
         res.on('data', (chunk: string) => { raw += chunk; });
@@ -211,13 +200,7 @@ export function hermesGetBuffer(
   return new Promise((resolve) => {
     const extraHeaders: Record<string, string> = buildAuthHeaders(cookie);
     const req = transport.request(
-      {
-        hostname: url.hostname,
-        port: url.port || (isHttps ? 443 : 80),
-        path: url.pathname + url.search,
-        method: 'GET',
-        headers: { ...extraHeaders },
-      },
+      buildRequestOptions(url, 'GET', { ...extraHeaders }),
       (res) => {
         const chunks: Buffer[] = [];
         res.on('data', (chunk: Buffer) => { chunks.push(chunk); });
