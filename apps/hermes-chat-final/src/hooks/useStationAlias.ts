@@ -1,8 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { stationId } from '@hermes/api';
-import type { Station } from '@hermes/api';
+import { stationId, type Station } from '@hermes/api';
 
 export interface StationAliasResult {
   aliasMap: Map<string, string>;

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { hermesGet, hermesPost, hermesDelete, stationId } from '@hermes/api';
-import type { Message } from '@hermes/api';
+import { hermesGet, hermesPost, hermesDelete, stationId, type Message } from '@hermes/api';
 
 /**
  * GET /api/messages
