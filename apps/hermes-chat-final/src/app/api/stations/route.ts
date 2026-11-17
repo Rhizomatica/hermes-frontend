@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { hermesGet } from '@hermes/api';
-import type { Station } from '@hermes/api';
+import { hermesGet, type Station } from '@hermes/api';
 
 /**
  * GET /api/stations
