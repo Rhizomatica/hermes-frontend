@@ -41,6 +41,7 @@ export default function UsersPanel({ currentUser }: UsersPanelProps) {
   const [deleteTarget, setDeleteTarget] = useState<HermesUser | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -52,12 +53,19 @@ export default function UsersPanel({ currentUser }: UsersPanelProps) {
     );
   }, [users.users, query]);
 
+  function clearFeedback() {
+    setSuccess(null);
+    setActionError(null);
+  }
+
   function openCreate() {
+    clearFeedback();
     setEditing(null);
     setFormOpen(true);
   }
 
   function openEdit(user: HermesUser) {
+    clearFeedback();
     setEditing(user);
     setFormOpen(true);
   }
@@ -65,6 +73,7 @@ export default function UsersPanel({ currentUser }: UsersPanelProps) {
   async function submitCreate(
     input: UserCreate | UserPatch,
   ): Promise<UserMutationResult<HermesUser>> {
+    clearFeedback();
     const result = await users.createUser(input as UserCreate);
     if (result.ok) setSuccess(t('created'));
     return result;
@@ -76,6 +85,7 @@ export default function UsersPanel({ currentUser }: UsersPanelProps) {
     if (!editing) {
       return { ok: false, message: t('errors.generic'), fieldErrors: {} };
     }
+    clearFeedback();
     const result = await users.updateUser(editing.id, input as UserPatch);
     if (result.ok) setSuccess(t('updated'));
     return result;
@@ -88,6 +98,7 @@ export default function UsersPanel({ currentUser }: UsersPanelProps) {
     if (!passwordUser) {
       return { ok: false, message: t('errors.generic'), fieldErrors: {} };
     }
+    clearFeedback();
     const result = await users.setPassword(passwordUser.id, {
       ...(currentPassword ? { current_password: currentPassword } : {}),
       new_password: newPassword,
@@ -97,15 +108,17 @@ export default function UsersPanel({ currentUser }: UsersPanelProps) {
   }
 
   async function confirmDelete() {
-    if (!deleteTarget) return;
+    if (!deleteTarget || deleting) return;
+    clearFeedback();
+    setDeleting(true);
     const result = await users.deleteUser(deleteTarget.id);
+    setDeleting(false);
     if (result.ok) {
       setSuccess(t('deleted', { username: deleteTarget.username }));
-      setDeleteTarget(null);
     } else {
       setActionError(result.message);
-      setDeleteTarget(null);
     }
+    setDeleteTarget(null);
   }
 
   return (
@@ -206,6 +219,7 @@ export default function UsersPanel({ currentUser }: UsersPanelProps) {
         })}
         confirmLabel={t('delete')}
         cancelLabel={t('cancel')}
+        pending={deleting}
         onConfirm={() => void confirmDelete()}
         onCancel={() => setDeleteTarget(null)}
       />
