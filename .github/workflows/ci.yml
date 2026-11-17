@@ -83,9 +83,14 @@ jobs:
           cache: 'npm'
       - run: npm ci --ignore-scripts
       - run: npx turbo build --filter=${{ matrix.app }}
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
       - name: Start app in background
         run: |
           cd apps/${{ matrix.app }}
+          mkdir -p .next/standalone/apps/${{ matrix.app }}/.next
+          cp -r .next/static .next/standalone/apps/${{ matrix.app }}/.next/static
+          cp -r public .next/standalone/apps/${{ matrix.app }}/public
           node .next/standalone/apps/${{ matrix.app }}/server.js &
           sleep 5
           curl --retry 10 --retry-delay 2 --retry-connrefused http://localhost:3000
