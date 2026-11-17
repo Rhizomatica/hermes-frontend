@@ -6,6 +6,7 @@ import type { HermesUser, UserCreate, UserPatch } from '@hermes/api';
 import {
   ConfirmDialog,
   ErrorBanner,
+  InlineSpinner,
   LoadingSpinner,
   SearchInput,
 } from '@hermes/ui';
@@ -171,8 +172,9 @@ export default function UsersPanel({ currentUser }: UsersPanelProps) {
               type="button"
               onClick={() => void users.loadMore()}
               disabled={users.loadingMore}
-              className="min-h-[44px] rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-40 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
+              className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-40 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
             >
+              {users.loadingMore && <InlineSpinner label={t('loadingMore')} />}
               {users.loadingMore ? t('loadingMore') : t('loadMore')}
             </button>
           </div>

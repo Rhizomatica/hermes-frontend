@@ -6,13 +6,12 @@ import {
   Crosshair,
   FolderOpen,
   History,
-  Loader2,
   LucideFileWarning,
   Moon,
   RefreshCw,
   Sun,
 } from 'lucide-react';
-import { useTheme } from '@hermes/ui';
+import { InlineSpinner, useTheme } from '@hermes/ui';
 import type { Gps, GpsFixQuality, HermesUser } from '@hermes/api';
 import { useRadioStatus } from '@/hooks/useRadioStatus';
 import { useStationName } from '@/hooks/useStationName';
@@ -262,7 +261,7 @@ export default function GpsSidePanel({
           className="flex items-center gap-2 rounded-lg p-2 text-gray-600 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-700 disabled:opacity-50"
         >
           {loading ? (
-            <Loader2 className="h-5 w-5 animate-spin" />
+            <InlineSpinner size={20} label={t('refreshLabel')} />
           ) : (
             <RefreshCw className="h-5 w-5" />
           )}

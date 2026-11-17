@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Loader2, Siren } from 'lucide-react';
-import { ConfirmDialog } from '@hermes/ui';
+import { ConfirmDialog, InlineSpinner } from '@hermes/ui';
+import { Siren } from 'lucide-react';
 import { useSosEmergency } from '@/hooks/useSosEmergency';
 
 export interface SosButtonProps {
@@ -43,7 +43,7 @@ export default function SosButton({ hasPosition }: SosButtonProps) {
         style={{ minHeight: '44px', minWidth: '44px' }}
       >
         {sos.sending || sos.clearing ? (
-          <Loader2 className="h-5 w-5 animate-spin" />
+          <InlineSpinner size={20} label={t('sosSending')} />
         ) : (
           <Siren className="h-5 w-5" />
         )}

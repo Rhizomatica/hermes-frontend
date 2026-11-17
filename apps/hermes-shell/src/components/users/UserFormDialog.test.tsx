@@ -8,7 +8,7 @@ vi.mock('next-intl', () => ({
 }));
 
 vi.mock('@hermes/ui', () => ({
-  LoadingSpinner: () => <span data-testid="spinner" />,
+  InlineSpinner: () => <span data-testid="spinner" />,
 }));
 
 beforeAll(() => {

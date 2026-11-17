@@ -4,8 +4,8 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import type { GpsPoint, HermesRole, Trip } from '@hermes/api';
 import { useTrips } from '@/hooks/useTrips';
-import { ConfirmDialog, ErrorBanner, LoadingSpinner } from '@hermes/ui';
-import { ChevronRight, Clock, Loader2, MapPin, X } from 'lucide-react';
+import { ConfirmDialog, ErrorBanner, InlineSpinner, LoadingSpinner } from '@hermes/ui';
+import { ChevronRight, Clock, MapPin, X } from 'lucide-react';
 
 export interface TripsPanelProps {
   /** Close the panel. */
@@ -97,7 +97,7 @@ export default function TripsPanel({
               style={{ minHeight: '44px' }}
             >
               {trips.closing ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <InlineSpinner label={t('tripsCloseCurrent')} />
               ) : (
                 <Clock className="h-4 w-4" />
               )}
@@ -160,7 +160,7 @@ export default function TripsPanel({
                         </span>
                       </span>
                       {trips.loadingPoints && isSelected ? (
-                        <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+                        <InlineSpinner label={t('tripsLoading')} />
                       ) : (
                         <ChevronRight className="h-4 w-4 shrink-0 text-foreground/40" />
                       )}
@@ -178,7 +178,7 @@ export default function TripsPanel({
               disabled={trips.loadingMore}
               className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg bg-gray-200 px-4 py-2 text-sm font-medium disabled:opacity-50 dark:bg-gray-700"
             >
-              {trips.loadingMore && <Loader2 className="h-4 w-4 animate-spin" />}
+              {trips.loadingMore && <InlineSpinner label={t('tripsLoadMore')} />}
               {t('tripsLoadMore')}
             </button>
           )}

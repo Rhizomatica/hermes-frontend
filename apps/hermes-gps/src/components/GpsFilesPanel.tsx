@@ -3,12 +3,11 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import type { GpsSettings, HermesRole } from '@hermes/api';
-import { ConfirmDialog, ErrorBanner, LoadingSpinner } from '@hermes/ui';
+import { ConfirmDialog, ErrorBanner, InlineSpinner, LoadingSpinner } from '@hermes/ui';
 import {
   Clock,
   Download,
   FileText,
-  Loader2,
   Mail,
   Send,
   SlidersHorizontal,
@@ -177,7 +176,7 @@ export default function GpsFilesPanel({ onClose, settings, role }: GpsFilesPanel
                         style={{ minHeight: '44px', minWidth: '44px' }}
                       >
                         {files.downloading === file.name ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <InlineSpinner label={t('gpsFilesDownload')} />
                         ) : (
                           <Download className="h-4 w-4" />
                         )}
@@ -210,7 +209,7 @@ export default function GpsFilesPanel({ onClose, settings, role }: GpsFilesPanel
               style={{ minHeight: '44px' }}
             >
               {files.deleting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <InlineSpinner label={t('gpsFilesDeleteAll')} />
               ) : (
                 <Trash2 className="h-4 w-4" />
               )}

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useTranslations } from 'next-intl';
 import type { HermesUser, UserCreate, UserPatch } from '@hermes/api';
-import { LoadingSpinner } from '@hermes/ui';
+import { InlineSpinner } from '@hermes/ui';
 import {
   MAX_DISPLAY_NAME,
   MIN_PASSWORD_LENGTH,
@@ -291,7 +291,7 @@ export default function UserFormDialog({
             disabled={pending}
             className="inline-flex min-h-[44px] items-center gap-2 rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-400 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            {pending && <LoadingSpinner label={t('saving')} />}
+            {pending && <InlineSpinner label={t('saving')} />}
             {t('save')}
           </button>
         </div>

@@ -24,3 +24,30 @@ export default function LoadingSpinner({
     </div>
   );
 }
+
+/**
+ * Small, label-less spinner for inline use inside buttons and rows.
+ *
+ * Unlike {@link LoadingSpinner}, it keeps the surrounding text and uses the
+ * current text color, so it blends into any button variant.
+ *
+ * @example
+ * <button disabled={pending}>
+ *   {pending && <InlineSpinner label={t('saving')} />}
+ *   {t('save')}
+ * </button>
+ */
+export function InlineSpinner({
+  className = "",
+  size = 16,
+  label = "Loading…",
+}: LoadingSpinnerProps) {
+  return (
+    <Loader2
+      role="status"
+      aria-label={label}
+      className={`shrink-0 animate-spin text-current${className ? ` ${className}` : ""}`}
+      style={{ width: size, height: size }}
+    />
+  );
+}

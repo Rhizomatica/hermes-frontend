@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { ChevronLeft, KeyRound } from 'lucide-react';
 import { useAuthGuard, useLocale } from '@hermes/shared-auth';
-import { ErrorBanner, LoadingSpinner } from '@hermes/ui';
+import { ErrorBanner, InlineSpinner, LoadingSpinner } from '@hermes/ui';
 import type { HermesUser } from '@hermes/api';
 import { useProfile } from '@/hooks/useProfile';
 import type { UserMutationResult } from '@/hooks/useUsers';
@@ -266,8 +266,9 @@ function ProfileForm({ user, onSubmit, onChangePassword }: ProfileFormProps) {
             <button
               type="submit"
               disabled={pending}
-              className="min-h-[44px] rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-400 disabled:cursor-not-allowed disabled:opacity-40"
+              className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-400 disabled:cursor-not-allowed disabled:opacity-40"
             >
+              {pending && <InlineSpinner label={t('saving')} />}
               {pending ? t('saving') : t('save')}
             </button>
           </div>

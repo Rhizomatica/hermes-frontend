@@ -24,6 +24,7 @@ vi.mock('next-intl', () => ({
 
 vi.mock('@hermes/ui', () => ({
   LoadingSpinner: ({ label }: { label?: string }) => <div role="status">{label}</div>,
+  InlineSpinner: ({ label }: { label?: string }) => <span role="status">{label}</span>,
   ErrorBanner: ({ message }: { message: string }) => <div role="alert">{message}</div>,
 }));
 
