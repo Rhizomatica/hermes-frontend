@@ -41,7 +41,9 @@ NEXT_PUBLIC_WS_URL=ws://localhost:8082/api/v2/ws
 ```
 
 `HERMES_API_TLS_SERVERNAME` sets Node's TLS `servername` option, so certificate
-verification stays enabled. No SSH tunnel and no `/etc/hosts` entry are needed.
+verification stays enabled. It affects the TLS handshake only; the HTTP `Host`
+header still contains the address from `HERMES_API_URL`. No SSH tunnel and no
+`/etc/hosts` entry are needed.
 
 Restart the dev stack after changing `.env.local`:
 
@@ -52,7 +54,8 @@ npm run dev:all
 Verify the daemon is reachable before logging in:
 
 ```bash
-curl https://caldono.hermes.radio:8080/api/v2/health
+curl --resolve caldono.hermes.radio:8080:10.70.96.210 \
+  https://caldono.hermes.radio:8080/api/v2/health
 ```
 
 Use `/api/v2/health`, not `/api/v2/system`: the deployed daemon does not expose
