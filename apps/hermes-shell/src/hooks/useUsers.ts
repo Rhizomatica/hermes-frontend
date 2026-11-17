@@ -91,6 +91,7 @@ export function useUsers(): UsersState {
       if (mountedRef.current) {
         setUsers((prev) => (reset ? page.data : [...prev, ...page.data]));
         setNextCursor(page.next_cursor ?? null);
+        setError(null);
       }
       return;
     }
