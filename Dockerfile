@@ -4,11 +4,15 @@ WORKDIR /repo
 
 # Copy only manifests first so this layer is cached between code changes
 COPY package.json package-lock.json ./
-COPY apps/hermes-chat/package.json  ./apps/hermes-chat/
-COPY apps/hermes-gps/package.json   ./apps/hermes-gps/
-COPY packages/api/package.json          ./packages/api/
+COPY apps/hermes-shell/package.json      ./apps/hermes-shell/
+COPY apps/hermes-gps/package.json        ./apps/hermes-gps/
+COPY apps/hermes-chat-final/package.json ./apps/hermes-chat-final/
+COPY packages/api/package.json           ./packages/api/
+COPY packages/config/package.json        ./packages/config/
+COPY packages/shared-auth/package.json   ./packages/shared-auth/
 COPY packages/tailwind-config/package.json ./packages/tailwind-config/
-COPY packages/ui/package.json           ./packages/ui/
+COPY packages/ui/package.json            ./packages/ui/
+COPY packages/utils/package.json         ./packages/utils/
 
 # --ignore-scripts skips the hermes-gps postinstall tile download;
 # tiles are mounted as a volume at runtime instead.
