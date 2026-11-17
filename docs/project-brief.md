@@ -103,7 +103,7 @@ Everything except steps 1, 3, 4, and 5 is automated.
 
 | Layer | Technology |
 |---|---|
-| Runtime | Node.js 26 LTS |
+| Runtime | Node.js 20.19 (Debian trixie) |
 | Monorepo | Turborepo 2.x |
 | Framework | Next.js 16 (App Router) |
 | UI | React 19, Tailwind CSS 3.4 |

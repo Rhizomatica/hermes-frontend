@@ -141,7 +141,7 @@ Each app has its own `Dockerfile`:
 
 ```dockerfile
 # Generic Dockerfile for all apps
-FROM node:22-alpine
+FROM node:20.19-alpine
 WORKDIR /app
 ARG APP_NAME
 COPY package.json package-lock.json ./

@@ -86,7 +86,7 @@
 |---|---|---|---|
 | 🟢 Low | CR-2 | SW files are minified to single lines | Won't fix |
 | 💡 Enhancement | CR-3 | No comment in turbo.json/package.json explaining PoC exclusion | Won't fix |
-| 🟡 Medium | R-10 | `npm test` fails — jsdom@30 requires Node.js 22+. Vitest with jsdom environment cannot boot on Node 20. | Requires Node.js upgrade OR downgrade jsdom to v25.x |
+| 🟡 Medium | R-10 | `npm test` fails — jsdom@30 requires Node.js 22+. Vitest with jsdom environment cannot boot on Node 20. | Resolved by pinning `jsdom@^26` (Node 18+); the runtime stays on Node 20.19 |
 | 💡 Enhancement | R-11 | No unit test files written for any package (tokenStore, AuthProvider, createServerStateHook) | Phase 1 task 1.2.1 and 1.2.9 AC require tests; implementation pending test environment fix |
 
 ### Suggested Next Steps

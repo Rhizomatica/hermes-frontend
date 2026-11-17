@@ -35,6 +35,19 @@ The existing documents (ADRs, task lists, architecture overview) address "offlin
 | Storage | microSD card (16–64 GB) | PMTiles file (~200MB) must fit. IndexedDB limited. Log rotation required. |
 | Power | Battery/solar possible | App must handle unexpected shutdowns gracefully. IndexedDB durability critical. |
 
+### Runtime
+
+Production runs directly on the host's Node.js, not inside a container: the deploy scripts extract the Next.js standalone output and systemd starts it with `/usr/bin/node`. Debian 13 (trixie) ships `nodejs 20.19.x`, so the frontend is pinned to that runtime.
+
+| Item | Value |
+|---|---|
+| Production runtime | Debian trixie `nodejs` 20.19.x (`/usr/bin/node`) |
+| Build image | `node:20.19-alpine` (see `Dockerfile`) |
+| Engine constraint | `^20.19.0` in `package.json`; `.nvmrc` is `20.19` |
+| CI | Resolves the Node version from `.nvmrc` |
+
+Do not require a newer Node.js without a new ADR. Revisit this decision when a dependency drops Node 20 support (for example Next.js or Vite) or when Debian stops shipping `nodejs` security updates for trixie, whichever comes first.
+
 ### Architecture Adjustments
 
 #### 1. Multi-Arch Docker Builds
