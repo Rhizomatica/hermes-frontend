@@ -38,11 +38,15 @@ export async function POST(request: NextRequest) {
   // Return the authenticated user; AuthProvider re-validates via /api/auth/me.
   const response = NextResponse.json(session.user ?? {});
 
+  // The station is HTTPS-only. Keep cookies off plaintext in production but
+  // allow them over http during local development.
+  const secureFlag = process.env.NODE_ENV === 'production' ? '; Secure' : '';
+
   if (session.token) {
     // HttpOnly: the client must not read the token from JavaScript (ADR-003).
     response.headers.set(
       'Set-Cookie',
-      `hermes_session=${session.token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=604800`,
+      `hermes_session=${session.token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=604800${secureFlag}`,
     );
   }
 
@@ -52,7 +56,10 @@ export async function POST(request: NextRequest) {
   const cached = session.user ? toCachedUser(session.user) : null;
   if (cached) {
     const userJson = encodeURIComponent(JSON.stringify(cached));
-    response.headers.append('Set-Cookie', `hermes_user=${userJson}; SameSite=Lax; Path=/; Max-Age=604800`);
+    response.headers.append(
+      'Set-Cookie',
+      `hermes_user=${userJson}; SameSite=Lax; Path=/; Max-Age=604800${secureFlag}`,
+    );
   }
   return response;
 }

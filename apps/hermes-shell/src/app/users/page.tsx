@@ -7,8 +7,6 @@ import { useAuthGuard } from '@hermes/shared-auth';
 import { LoadingSpinner } from '@hermes/ui';
 import UsersPanel from '@/components/users/UsersPanel';
 
-const SHELL_URL = process.env.NEXT_PUBLIC_SHELL_URL ?? '';
-
 /**
  * Admin user-management page.
  *
@@ -37,7 +35,7 @@ export default function UsersPage() {
       <header className="sticky top-0 z-10 border-b border-gray-200/70 bg-background/70 backdrop-blur-md dark:border-gray-800">
         <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-3">
           <Link
-            href={SHELL_URL || '/'}
+            href="/"
             className="inline-flex min-h-[44px] items-center gap-1 rounded-lg px-2 text-sm font-medium text-orange-600 hover:bg-orange-50 dark:text-orange-400 dark:hover:bg-orange-500/10"
             aria-label={tc('backToHermes')}
           >

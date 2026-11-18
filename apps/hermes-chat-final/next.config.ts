@@ -10,23 +10,11 @@ loadEnv({ path: path.resolve(process.cwd(), '../../.env.local') });
 
 const withNextIntl = createNextIntlPlugin();
 
-// Build the connect-src list for the CSP. The radio daemon's WebSocket runs on
-// a configurable host (NEXT_PUBLIC_WS_URL); allow its origin so the browser can
-// connect to it. Dev keeps ws://localhost:* for the default localhost setup.
+// Build the connect-src list for the CSP. The WebSocket is same-origin (`/ws`
+// proxied by nginx), so `'self'` covers it in production. Dev keeps the
+// localhost origins for `next dev`.
 function connectSrc(): string {
-  const sources = ["'self'", 'ws://localhost:*', 'http://localhost:*'];
-  const wsUrl = process.env.NEXT_PUBLIC_WS_URL;
-  if (wsUrl) {
-    try {
-      const url = new URL(wsUrl);
-      if (url.protocol === 'ws:' || url.protocol === 'wss:') {
-        sources.push(`${url.protocol}//${url.host}`);
-      }
-    } catch {
-      // Unparseable URL — keep the dev defaults.
-    }
-  }
-  return sources.join(' ');
+  return ["'self'", 'ws://localhost:*', 'wss://localhost:*', 'http://localhost:*'].join(' ');
 }
 
 const nextConfig: NextConfig = {
