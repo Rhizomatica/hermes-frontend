@@ -3,16 +3,17 @@
 **Project**: hermes-frontend
 **Type**: Deployment / migration
 **Branch**: `feature/deploy-radio-coexist`
-**Target**: `https://10.70.96.210/`
-**Status**: Planning
+**Target**: the agreed bench station (details kept in the PR/tracker)
+**Status**: Planning — revised after PR #7 review
 **Created**: 2026-11-17
-**Revised**: 2026-11-17 — ports are the deployment model; `/next` is out of scope
+**Revised**: 2026-11-18 — runtime URL derivation, station name, system Node,
+radiod health gate, and resource limits from the review
 
 ---
 
 ## Goal
 
-Deploy the new Next.js frontend to the radio at `10.70.96.210` **without replacing
+Deploy the new Next.js frontend to the agreed bench station **without replacing
 HERMES-GUI**. The existing Angular GUI stays the main interface at `/`. The new
 frontend runs on its own HTTPS ports so both run together for a gradual migration.
 
@@ -25,16 +26,16 @@ login, or radio behaviour.
 | Decision | Value |
 |---|---|
 | Coexistence model | Separate HTTPS ports, permanently |
-| GUI | `https://10.70.96.210/` — unchanged |
-| Shell | `https://10.70.96.210:4000/` |
-| GPS | `https://10.70.96.210:4001/` |
-| Chat | `https://10.70.96.210:4002/` (later) |
+| GUI | `https://<station>/` — unchanged |
+| Shell | `https://<station>:4000/` |
+| GPS | `https://<station>:4001/` |
+| Chat | `https://<station>:4002/` (later) |
 | Public base path | Empty for every app |
-| Build URL | `https://10.70.96.210` (IP address) — provisional, confirm at D1 |
-| First deploy scope | `hermes-shell` + `hermes-gps` |
+| Station-specific builds | None — app URLs are derived at runtime from `location` |
+| First deploy scope | `hermes-shell` + `hermes-gps` (confirm given `HAS_GPS=false`) |
 | Build location | Cross-build ARM64 standalone artifacts on the dev host/CI and ship tarballs |
-| Artifact delivery | GitHub Release assets via `HERMES_FRONTEND_RELEASE_URL` plus SHA256; local `HERMES_FRONTEND_ARTIFACTS` fallback for air-gapped installs — provisional, confirm at D1 |
-| Node runtime | System `/usr/bin/node` when it is >= 20.19; otherwise a pinned Node 20.19 runtime under `/opt/hermes-frontend/runtime` — provisional, confirm at D1 |
+| Artifact delivery | GitHub Release assets via `HERMES_FRONTEND_RELEASE_URL` plus SHA256; local `HERMES_FRONTEND_ARTIFACTS` fallback |
+| Node runtime | System `/usr/bin/node` only; the installer requires the app's minimum version |
 | Installer default | Install files, units, and nginx snippet; do not enable/start unless `HERMES_FRONTEND_ENABLE=true` |
 | WebSocket | Proxied at `/ws` on each frontend port with upstream TLS verification |
 | Production runtime | Native Node + systemd, no containers |
@@ -43,18 +44,18 @@ login, or radio behaviour.
 
 ## Decision Gates
 
-Three decisions are provisional and are settled by D1:
-
-| Decision | D1 input | Default if the input is unavailable |
+| Gate | Input | Default |
 |---|---|---|
-| Build URL | Certificate SANs; whether the station hostname resolves | Keep the IP `10.70.96.210` |
 | Artifact delivery | Whether GitHub Releases are reachable from the station | Use a local `HERMES_FRONTEND_ARTIFACTS` directory |
-| Node runtime | `node --version` on the station | Install the pinned Node 20.19 runtime |
+| Maintenance window | The bench owners running Mercury tests | Do not install or start until a window is agreed |
+| First deploy scope | The station reports `HAS_GPS=false` | Shell only, unless GPS UI testing is explicitly wanted |
 
 Gates:
-- **D2 is blocked** until the build URL is confirmed.
-- **D8 is blocked** until artifact delivery and Node runtime are confirmed.
-- Every other decision in the table above is not gated and can proceed.
+- **D2 is not blocked** by a build-URL decision; one station-independent release
+  serves every station.
+- **D8 is blocked** until artifact delivery and the maintenance window are
+  confirmed.
+- Every other decision can proceed.
 
 ## Why Ports
 
@@ -65,8 +66,8 @@ Separate ports are the intended architecture, not a temporary step:
 - No `basePath` support or client `fetch('/api/...')` refactor is required.
 - Theme, locale, and session cookies are host-scoped and already shared across
   ports (`ThemeProvider`, `LocaleProvider`, `hermes_session`).
-- The code already supports absolute cross-app URLs and cross-origin login
-  redirects; this is how the apps run in development.
+- The apps all live on the same host and differ only by port, so the browser can
+  derive their URLs from the page it was loaded from.
 - The GUI's PHP `/api` and the new frontend's Next `/api` routes stay in separate
   origins, so they can coexist indefinitely without a namespace collision.
 - A future cutover is still possible: move the winning UI to `:443` and the GUI
@@ -78,17 +79,20 @@ the GUI; it can be pointed at `:4000` later for the trial.
 
 ## Current State and Gaps
 
-Verified against the repositories:
+Verified against the repositories and the read-only station review:
 
 - HERMES-GUI is an Angular static build in `/var/www/html`, served by nginx on 443
   with `location /` as the catch-all. Its API is the PHP API at `/api`; its radio
-  socket is `wss://<host>:8080/websocket`.
+  socket is `wss://<station>:8080/websocket`.
 - HERMES-GUI registers `ngsw-worker.js` in production with the default scope `/`.
   Because the new frontend is on a different port, this is harmless.
 - `hermes-frontend` has three Next.js apps with `output: 'standalone'`. They talk
   to `hermes-radio-daemon` `/api/v2` and use their own `/api/auth/*` routes.
 - The real standalone layout is `apps/<app>/server.js` plus a sibling
   `node_modules/`; it is **not** a flat `server.js` at the release root.
+- The client currently builds cross-app URLs from `NEXT_PUBLIC_*_URL` at compile
+  time. That bakes one station per build; the review asks for runtime derivation
+  from `location` instead.
 - `hermes-installer/tasks/frontend_setup.sh` exists but is **not wired into
   `installer.sh`**. It also has stale values: `hermes-gps-final`,
   `NEXT_PUBLIC_RADIO_DAEMON_WS_URL` (code reads `NEXT_PUBLIC_WS_URL`), and
@@ -107,30 +111,41 @@ Verified against the repositories:
   `href={{ pathname: NEXT_PUBLIC_SHELL_URL }}` and a default of
   `'localhost:4000'`; this needs a plain absolute URL.
 
+Review facts (read-only):
+
+- Station Node is `20.19.2`.
+- `/api/v2/health` answers `200`.
+- The certificate covers `*.hermes.radio` and `hermes.radio` only.
+- The Pi has 1.8 GB of RAM and 3 usable cores; core 3 is isolated for radiod's
+  DSP.
+- radiod listens on `0.0.0.0:8080` with its own TLS; nginx is not involved.
+- `/api/v2` exists only when radiod is built with its Go API (Go 1.27). A radiod
+  without it answers 404 on `/api/v2/health`.
+
 ## Target Architecture
 
 ```
-nginx 443            -> /var/www/html                 HERMES-GUI (unchanged)
-nginx 8080 (daemon)  -> hermes-radio-daemon           REST /api/v2 + WebSocket
-nginx 4000 (TLS)     -> 127.0.0.1:4100                hermes-shell
-nginx 4001 (TLS)     -> 127.0.0.1:4101                hermes-gps
-nginx 4002 (TLS)     -> 127.0.0.1:4102                hermes-chat-final (later)
+nginx 443             -> /var/www/html                 HERMES-GUI (unchanged)
+radiod 8080 (direct)  -> hermes-radio-daemon           REST /api/v2 + WebSocket
+nginx 4000 (TLS)      -> 127.0.0.1:4100                hermes-shell
+nginx 4001 (TLS)      -> 127.0.0.1:4101                hermes-gps
+nginx 4002 (TLS)      -> 127.0.0.1:4102                hermes-chat-final (later)
 
 Each new server block also proxies:
-  /ws                -> https://127.0.0.1:8080/api/v2/ws
+  /ws                 -> https://127.0.0.1:8080/api/v2/ws
   4001 only: /brazil.pmtiles -> /opt/hermes-frontend/tiles/brazil.pmtiles
 
 Browser:
-  https://10.70.96.210:4000       shell, wss://10.70.96.210:4000/ws
-  https://10.70.96.210:4001       gps,   wss://10.70.96.210:4001/ws
+  https://<station>.hermes.radio:4000    shell, wss://<host>/ws
+  https://<station>.hermes.radio:4001    gps,   wss://<host>/ws
 ```
 
 Systemd binds the Next servers to `127.0.0.1`; only nginx exposes them.
 
-The build uses the IP address, so the station certificate may not match and the
-browser will show the same name-mismatch warning as the GUI. Accept it once for
-the test. The WebSocket is proxied through the same origin so it does not add a
-second certificate failure.
+The browser uses the station name so the certificate matches. With the IP, the
+browser shows a warning, the service worker does not register, and the kiosk has
+no way to accept the warning. The build no longer depends on this choice because
+the app URLs are derived at runtime.
 
 ## Deployment Contract
 
@@ -139,7 +154,7 @@ second certificate failure.
 | Public | Internal | App | Notes |
 |---|---|---|---|
 | 443 | — | HERMES-GUI | unchanged |
-| 8080 | — | radio daemon | existing, TLS |
+| 8080 | — | radiod | direct, its own TLS |
 | 4000 | 4100 | `hermes-shell` | entry point |
 | 4001 | 4101 | `hermes-gps` | serves tiles |
 | 4002 | 4102 | `hermes-chat-final` | later |
@@ -172,32 +187,46 @@ Each app keeps the standalone shape Next produces:
 `/usr/bin/node apps/<app>/server.js`. The sibling `node_modules` must be kept so
 Node resolves the standalone dependencies.
 
+### Runtime URL derivation
+
+The client builds its sibling-app URLs from the page it was loaded from. No
+station address is baked into the bundle.
+
+| URL | Value |
+|---|---|
+| Shell | `${location.protocol}//${location.hostname}:4000` |
+| GPS | `${location.protocol}//${location.hostname}:4001` |
+| Chat | `${location.protocol}//${location.hostname}:4002` |
+| Login | `${shell}/login` |
+| WebSocket | `wss://${location.host}/ws` |
+| PMTiles | `/brazil.pmtiles` (same origin as GPS) |
+
+The helper must be SSR-safe: return relative paths on the server, or compute the
+cross-app values after mount, so hydration does not mismatch.
+
 ### Environment matrix
 
-Build-time (baked into the client bundle; each app is built separately):
+Build-time (one artifact for every station):
 
 | Variable | Shell | GPS |
 |---|---|---|
 | `NEXT_PUBLIC_BASE_PATH` | empty | empty |
-| `NEXT_PUBLIC_SHELL_URL` | `https://10.70.96.210:4000` | `https://10.70.96.210:4000` |
-| `NEXT_PUBLIC_GPS_URL` | `https://10.70.96.210:4001` | `https://10.70.96.210:4001` |
-| `NEXT_PUBLIC_CHAT_URL` | `https://10.70.96.210:4002` | — |
 | `NEXT_PUBLIC_ENABLE_CHAT` | `false` for first deploy | — |
-| `NEXT_PUBLIC_LOGIN_URL` | `/login` | — |
-| `NEXT_PUBLIC_WS_URL` | `wss://10.70.96.210:4000/ws` | `wss://10.70.96.210:4001/ws` |
 | `NEXT_PUBLIC_PMTILES_URL` | — | `/brazil.pmtiles` |
 | `NEXT_PUBLIC_APP_TIME_ZONE` | station timezone | station timezone |
+| `GIT_COMMIT_HASH` | version stamp | version stamp |
 
 Runtime (read by the Next server process):
 
 | Variable | Value |
 |---|---|
 | `HERMES_API_URL` | `https://127.0.0.1:8080` |
-| `HERMES_API_TLS_SERVERNAME` | Station certificate name (e.g. `caldono.hermes.radio`) |
-| `NODE_EXTRA_CA_CERTS` | Station CA bundle when the daemon certificate is not publicly trusted |
+| `HERMES_API_TLS_SERVERNAME` | `<station>.hermes.radio` |
+| `NODE_EXTRA_CA_CERTS` | not needed while the station certificate is publicly trusted |
 | `PORT` | `4100` / `4101` / `4102` |
 | `HOSTNAME` | `127.0.0.1` |
 | `NODE_ENV` | `production` |
+| `NODE_OPTIONS` | `--max-old-space-size=256` (tune after measurement) |
 
 ### Cookies and sessions
 
@@ -215,7 +244,8 @@ Runtime (read by the Next server process):
 - Only the shell has `public/sw.js`. For the first deploy, disable service worker
   registration in GPS and chat (or add `sw.js` to each) so production does not
   request a missing file.
-- The shell may keep its own service worker on `:4000`.
+- The shell may keep its own service worker on `:4000`; it registers only when the
+  origin uses the matching station certificate.
 
 ### systemd
 
@@ -227,6 +257,9 @@ One unit per app: `hermes-frontend-shell`, `hermes-frontend-gps`, and later
 - `ExecStart=/usr/bin/node apps/<app>/server.js`.
 - `EnvironmentFile=/etc/hermes-frontend/<app>.env`.
 - `Restart=on-failure`, `After=network-online.target`.
+- `NODE_OPTIONS=--max-old-space-size=256` from the start.
+- `Nice=10` and `CPUWeight=50` so radiod and the modem keep priority.
+- Optional `MemoryHigh`/`MemoryMax` once the real footprint is measured.
 - No hard dependency on a specific radio controller unit name.
 
 ### nginx
@@ -236,8 +269,10 @@ One TLS `server` block per public port. Reuse the station certificate.
 - `location /` proxies to the matching internal port. Do **not** rewrite the URI;
   the apps are built with an empty base path.
 - `location = /ws` proxies to `https://127.0.0.1:8080/api/v2/ws` with HTTP/1.1
-  upgrade headers and upstream TLS (`proxy_ssl_server_name`,
-  `proxy_ssl_name <station name>`, CA verification).
+  upgrade headers.
+- Upstream TLS: `proxy_ssl_server_name on`, `proxy_ssl_name
+  <station>.hermes.radio`, `proxy_ssl_trusted_certificate
+  /etc/ssl/certs/ca-certificates.crt`, `proxy_ssl_verify on`.
 - On `:4001`, `location = /brazil.pmtiles` serves
   `/opt/hermes-frontend/tiles/brazil.pmtiles` with range support.
 - Forward `Host`, `X-Forwarded-For`, `X-Forwarded-Proto`.
@@ -248,48 +283,50 @@ One TLS `server` block per public port. Reuse the station certificate.
 
 ### [ ] D1: Station preflight audit
 
-**Description**: Read-only checks on `10.70.96.210` before changing anything.
-This task resolves the three provisional decisions (build URL, artifact
-delivery, Node runtime) and produces the inputs for D2 and D8.
+**Description**: Read-only checks on the agreed bench station before changing
+anything. This task confirms the artifact-delivery gate and produces the inputs
+for D6 and D8.
 
 **Acceptance**:
 - Debian version, free disk, and free RAM recorded.
-- `node --version` recorded; it must be >= 20.19 or the pinned-runtime fallback is
-  planned.
-- GitHub Releases reachable from the station, or a local artifact source is
-  confirmed.
+- `node --version` recorded; the installer will require the app's minimum
+  version. No private runtime is installed.
+- `/api/v2/health` returns `200`; if it does not, stop — radiod lacks the Go API.
+- radiod is confirmed to listen on `0.0.0.0:8080`.
+- The certificate covers the station name; the browser/kiosk URL uses
+  `https://<station>.hermes.radio`.
 - `4000-4002` are free and allowed through the firewall/VPN.
-- Daemon REST/WS listen address confirmed (`127.0.0.1:8080` or station address).
-- Certificate SANs and the daemon CA recorded; `NODE_EXTRA_CA_CERTS` path chosen.
-  Note that accessing by IP will show a name-mismatch warning if the certificate
-  has no IP SAN.
 - PHP API confirmed not to use a `hermes_session` cookie.
-- GUI and daemon currently healthy; a config backup is taken.
+- GUI and radiod currently healthy; a config backup is taken.
 - A test daemon user is available.
-- The build URL, artifact delivery, and Node runtime decisions are recorded in
-  this document.
+- A maintenance window is agreed with the bench owners; the test station is used
+  for time-sensitive Mercury tests.
+- The artifact-delivery gate is recorded.
 
 ---
 
-### [ ] D2: Cross-build ARM64 artifacts
+### [ ] D2: Cross-build station-independent ARM64 artifacts
 
-**Description**: Make the Docker build accept and bake every `NEXT_PUBLIC_*`
-value, then publish shell and GPS as GitHub Release assets with checksums and a
-build manifest. The build uses `https://10.70.96.210` as the target URL.
+**Description**: Make the Docker build publish one shell tarball and one GPS
+tarball that work on every station. Only app-behaviour variables and the version
+stamp are build-time inputs.
 
 **Files**:
-- `Dockerfile` — `ARG`/`ENV` for the public variables and `GIT_COMMIT_HASH`
+- `Dockerfile` — `ARG`/`ENV` for `NEXT_PUBLIC_BASE_PATH`,
+  `NEXT_PUBLIC_ENABLE_CHAT`, `NEXT_PUBLIC_PMTILES_URL`,
+  `NEXT_PUBLIC_APP_TIME_ZONE`, and `GIT_COMMIT_HASH`
 - `scripts/build-frontend-arm64.sh` — new script using `--target runner` and
   `--output type=local`
-- `.github/workflows/release.yml` — pass the same build args and publish the
-  tarballs, `.sha256` files, and manifest as release assets
+- `.github/workflows/release.yml` — publish the tarballs, `.sha256` files, and
+  manifest as release assets
 
 **Acceptance**:
 - Produces `hermes-shell-*.tar.gz` and `hermes-gps-*.tar.gz` plus `.sha256`.
-- The manifest records the target URLs, version, and build time.
+- The manifest records the version and build time, not a station address.
 - The GitHub Release contains every asset the installer expects.
 - No `.env*` file is required in the build context.
 - The tarball keeps the `apps/<app>/server.js` + `node_modules` layout.
+- The same artifact is valid for every station.
 
 ---
 
@@ -320,6 +357,7 @@ manual deploy.
 
 **Acceptance**:
 - Units run as `hermes`, bind to `127.0.0.1`, and restart on failure.
+- `NODE_OPTIONS=--max-old-space-size=256`, `Nice=10`, and `CPUWeight=50` are set.
 - `systemctl start hermes-frontend-shell hermes-frontend-gps` succeeds.
 - Apps survive `daemon-reload` and a station reboot.
 - Logs are available through `journalctl -u hermes-frontend-*`.
@@ -332,11 +370,13 @@ manual deploy.
 modifying the existing 443 block.
 
 **Acceptance**:
-- `https://10.70.96.210:4000` reaches the shell; `:4001` reaches GPS.
-- `https://10.70.96.210/` still returns the GUI; `/api` still reaches PHP.
+- `https://<station>:4000` reaches the shell; `:4001` reaches GPS.
+- `https://<station>/` still returns the GUI; `/api` still reaches PHP.
 - Assets load from each app's own origin.
-- `wss://<host>:4000/ws` and `wss://<host>:4001/ws` connect to the daemon.
-- `https://10.70.96.210:4001/brazil.pmtiles` serves the tile file.
+- `wss://<host>:4000/ws` and `wss://<host>:4001/ws` connect to radiod.
+- The upstream proxy uses `proxy_ssl_name <station>.hermes.radio` and the system
+  CA bundle.
+- `https://<station>:4001/brazil.pmtiles` serves the tile file.
 - `nginx -t` passes before reload.
 
 ---
@@ -351,10 +391,13 @@ task. Add it to `installer.sh` imports, `TASKS`, descriptions, and `run_task`.
 - The task does not clone or build the monorepo on the station and does not
   require Docker.
 - `HERMES_FRONTEND_APPS` selects `shell`, `gps`, `chat`, or a combination.
+- `/api/v2/health` is checked and must return `200`; otherwise the task refuses
+  to enable the apps.
+- The system `node` version is checked against the apps' minimum; no private
+  runtime is installed.
 - `HERMES_FRONTEND_RELEASE_URL` is used by default; `HERMES_FRONTEND_ARTIFACTS`
   works as the local fallback. Both are checksum-verified.
-- Runtime env derives the daemon TLS name from the station, not a hardcoded
-  `caldono.hermes.radio`.
+- Runtime env derives the daemon TLS name from the station, not a hardcoded name.
 - The task installs files, units, and the nginx snippet but does **not** enable
   or start the units. `HERMES_FRONTEND_ENABLE=true` opts into start.
 - Re-running the task is idempotent and keeps `previous`.
@@ -362,60 +405,70 @@ task. Add it to `installer.sh` imports, `TASKS`, descriptions, and `run_task`.
 
 ---
 
-### [ ] D7: First-deploy app adjustments
+### [ ] D7: Runtime URLs and first-deploy app adjustments
 
-**Description**: Small code changes required by the ports model and the
-shell + GPS scope.
+**Description**: Replace station-specific build-time URLs with runtime
+derivation, and make the small changes required by the shell + GPS scope.
 
 **Files**:
-- `apps/hermes-shell/src/app/page.tsx` — hide Chat when not deployed
-- `apps/hermes-gps/src/app/page.tsx` — fix `SHELL_URL` default and `href`
+- `packages/utils` or `packages/api` — `appOrigin(port)` and `wsUrl()` helpers
+- `apps/hermes-shell/src/app/page.tsx` — use the helper for GPS/chat links; hide
+  Chat when not deployed
+- `apps/hermes-gps/src/app/page.tsx` — use the helper for the shell link
+- `packages/shared-auth/src/useAuthGuard.ts` — build the login URL from the helper
 - `apps/hermes-shell/src/app/api/auth/login/route.ts` — add `Secure`
 - `apps/hermes-gps/src/app/layout.tsx` and chat layout — disable service worker
   registration for now
+- `packages/shared-auth/src/WebSocketProvider.tsx` — use `wsUrl()`
 
 **Acceptance**:
+- No `NEXT_PUBLIC_*_URL` station address remains in the client.
+- Cross-app links work on the station name and on a local test host.
+- SSR output does not mismatch on hydration.
 - No Chat link is rendered for the first deploy.
-- The GPS "Back to Hermes" link is a plain absolute URL.
 - The session cookie is `HttpOnly`, `Secure`, `SameSite=Strict`, `Path=/`.
 - GPS and chat do not request a missing `/sw.js`.
 
 ---
 
-### [ ] D8: First deploy on the radio (shell + GPS)
+### [ ] D8: First deploy on the bench station
 
-**Description**: Execute the runbook on `10.70.96.210` during a maintenance
-window. The GUI must remain available throughout.
+**Description**: Execute the runbook during the agreed maintenance window, when
+no Mercury test is running. The GUI must remain available throughout.
 
 **Runbook**:
-1. Record the current GUI state and take a station config backup.
-2. Publish or fetch the shell + GPS release assets and verify their checksums.
-3. Install into `/opt/hermes-frontend/releases/<version>/` and switch `current`.
-4. Install runtime env files and systemd units.
-5. Add the new nginx server blocks; run `nginx -t` before reloading.
-6. Start the two units manually for the test (the installer does not start them
+1. Confirm the window with the bench owners; record the current GUI state and
+   take a station config backup.
+2. Fetch the shell + GPS release assets and verify their checksums.
+3. Confirm `/api/v2/health` returns `200`.
+4. Install into `/opt/hermes-frontend/releases/<version>/` and switch `current`.
+5. Install runtime env files and systemd units.
+6. Add the new nginx server blocks; run `nginx -t` before reloading.
+7. Start the two units manually for the test (the installer does not start them
    by default).
-7. Run the validation checklist in D9.
+8. Run the validation checklist in D9.
 
 **Acceptance**:
 - GUI at `/` is unchanged before, during, and after the deploy.
 - New frontend login and GPS work at `:4000` and `:4001`.
 - No changes to the kiosk URL are made in this task.
+- The deploy happens outside a Mercury test.
 
 ---
 
 ### [ ] D9: Validation checklist
 
 **GUI regression**:
-- [ ] `https://10.70.96.210/` loads the GUI.
+- [ ] `https://<station>/` loads the GUI.
 - [ ] GUI login, radio status, messages, and station pages still work.
-- [ ] `wss://10.70.96.210:8080/websocket` still connects.
+- [ ] `wss://<station>:8080/websocket` still connects.
 
 **New frontend**:
-- [ ] The certificate warning for the IP address is accepted once, as with the GUI.
-- [ ] `https://10.70.96.210:4000` redirects to `/login` when unauthenticated.
+- [ ] `https://<station>.hermes.radio:4000` has no certificate warning.
+- [ ] The shell's service worker registers.
+- [ ] The shell redirects to `/login` when unauthenticated.
 - [ ] Login succeeds with a daemon user; session is shared with `:4001`.
-- [ ] App selector links to `https://10.70.96.210:4001`.
+- [ ] App selector links to `https://<station>.hermes.radio:4001`.
 - [ ] `:4001` loads, tiles render, and GPS data updates.
 - [ ] Logout clears the session and returns to `:4000/login`.
 - [ ] A hard refresh on a deep route does not 404.
@@ -425,7 +478,8 @@ window. The GUI must remain available throughout.
 
 **System**:
 - [ ] Both units start on reboot.
-- [ ] Memory use stays within the ADR-008 budget.
+- [ ] Memory use stays within the 1.8 GB station budget.
+- [ ] Next does not starve radiod or the modem under load.
 - [ ] `journalctl` shows no TLS or proxy errors.
 - [ ] Re-running the deploy is idempotent and `previous` is usable.
 
@@ -456,12 +510,16 @@ window. The GUI must remain available throughout.
   is standalone artifacts + systemd on separate ports.
 - `README.md` — replace the sBitx deploy section with the multi-port runbook.
 - `.env.example` — build-time vs runtime variables; remove the stale
-  `NEXT_PUBLIC_RADIO_DAEMON_WS_URL`.
+  `NEXT_PUBLIC_RADIO_DAEMON_WS_URL` and station-specific URLs.
 - `scripts/deploy-sbitx.sh`, `scripts/rollback-sbitx.sh` — update to the new
   contract or remove.
 - `.github/workflows/release.yml` — remove or rewrite the placeholder
   staging/production deploy jobs.
 - `hermes-installer` README/docs — describe the new `frontend` task.
+
+**Acceptance**:
+- The repository contains no real station address or private certificate name.
+- Test-station details live in the PR or task tracker, not in the repo.
 
 **Commit**: `docs(repo): document multi-port radio coexistence and Docker policy`
 
@@ -469,19 +527,19 @@ window. The GUI must remain available throughout.
 
 | Risk | Impact | Mitigation |
 |---|---|---|
-| PHP API also uses `hermes_session` | Cookie collision across ports | Preflight; use a distinct cookie name and translate to `Authorization` |
-| Daemon certificate not trusted by Node | Server-side API calls fail | `NODE_EXTRA_CA_CERTS` pointing at the CA; confirm the daemon bind address |
-| Station Node is older than 20.19 | Next servers will not start | Install the pinned Node 20.19 runtime and point systemd at it |
+| Bench station is running Mercury tests | Time-sensitive tests disrupted | Agree a maintenance window before installing or starting |
+| radiod lacks the Go API | `/api/v2` returns 404 | D1 and the installer check `/api/v2/health` must be 200 |
+| System Node is older than the apps require | Next servers will not start | Installer checks the version and refuses; let `apt` carry the runtime |
+| Runtime URL derivation and SSR | Hydration mismatch or empty links | SSR-safe helper; test on the station name and a local host |
+| Memory/CPU pressure from two Next servers | radiod or modem timing disturbed | `NODE_OPTIONS`, `Nice=10`, `CPUWeight=50`; measure after deploy |
 | GitHub Releases unreachable from the station | Installer cannot fetch artifacts | Support `HERMES_FRONTEND_ARTIFACTS` as a local fallback; verify checksums |
-| IP address baked into the build | Moving the station requires a rebuild | Accept for the first test; parameterize per station later |
-| Certificate SAN does not include the IP | Browser warning | Accept once; the WebSocket is proxied on the same origin so it adds no second failure |
-| WebSocket `Origin` rejected by the daemon | Socket fails through nginx | Test; adjust `proxy_set_header Origin` only if required |
+| PHP API also uses `hermes_session` | Cookie collision across ports | Preflight; use a distinct cookie name and translate to `Authorization` |
+| WebSocket `Origin` rejected by radiod | Socket fails through nginx | Test; adjust `proxy_set_header Origin` only if required |
 | Service worker 404 in GPS/chat | Console errors, no offline shell | Disable registration for the first deploy |
 | Chat link 404 | Broken navigation | Hide chat for the first deploy |
-| Memory use of two/three Next servers | Exceeds the 2-4 GB station budget | Measure; set `NODE_OPTIONS=--max-old-space-size`; add chat only after measuring |
 | Ports blocked by the firewall | Frontend unreachable | Preflight `ss -ltnp`, `nft`/`ufw`, and VPN rules |
 | Two user stores | GUI and frontend users differ | Expected during migration; document it and use a test user |
-| Station-specific build-time URLs | Artifacts cannot be reused across stations | Build per target URL; record a manifest and checksums |
+| Node 24 fleet move | `engines` currently pins `^20.19.0` | Separate follow-up: widen the engine range and update CI before the fleet moves |
 | Two deployment contracts | Scripts and installer drift | D11 removes or updates the old scripts |
 
 ## Cutover Later
@@ -501,3 +559,11 @@ only if a single origin becomes a hard requirement.
 - Migrating GUI data or users.
 - Deploying `hermes-chat-final` in the first test.
 - Running containers on the radio in production.
+
+## Follow-ups
+
+- Confirm artifact delivery (GitHub Release vs local fallback).
+- Agree the maintenance window with the bench owners.
+- Confirm whether to deploy GPS given `HAS_GPS=false`, or shell only.
+- Plan the Node 24 fleet move and widen `engines` when it happens.
+- Keep the real station address and certificate name out of the repository.
