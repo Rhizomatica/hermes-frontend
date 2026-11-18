@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import type { HermesUser } from '@hermes/api';
 import { useAuth } from './AuthProvider';
+import { APP_PORTS, appOrigin, appUrl } from './appUrls';
 
 /**
  * useAuthGuard — redirects unauthenticated users to login.
@@ -19,26 +20,25 @@ import { useAuth } from './AuthProvider';
 export function useAuthGuard(): HermesUser | null {
   const { user, isLoading, isAuthenticated } = useAuth();
   const router = useRouter();
-  const shellUrl = process.env.NEXT_PUBLIC_SHELL_URL ?? '';
-  const loginUrl = shellUrl
-    ? `${shellUrl}${process.env.NEXT_PUBLIC_LOGIN_URL ?? '/login'}`
-    : process.env.NEXT_PUBLIC_LOGIN_URL ?? '/login';
-
-  // Cross-origin shells can't use router.replace — use window.location instead.
-  // Compare exact origins (not string prefixes) to avoid conflating hosts that
-  // share a prefix (e.g. localhost:400 vs localhost:4001).
-  const isCrossOrigin =
-    typeof window !== 'undefined' && shellUrl ? !isSameOrigin(window.location.origin, shellUrl) : false;
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      if (isCrossOrigin) {
-        window.location.assign(loginUrl);
-      } else {
-        router.replace(loginUrl);
-      }
+    if (isLoading || isAuthenticated) return;
+
+    // The login page lives on the shell app. Derive it at runtime so no station
+    // address is baked into the bundle.
+    const loginUrl = appUrl('shell', '/login') ?? '/login';
+    // Cross-origin shells can't use router.replace — use window.location instead.
+    // Compare exact origins (not string prefixes) to avoid conflating hosts that
+    // share a prefix (e.g. localhost:400 vs localhost:4001).
+    const shellOrigin = appOrigin(APP_PORTS.shell);
+    const isCrossOrigin = shellOrigin ? !isSameOrigin(window.location.origin, shellOrigin) : false;
+
+    if (isCrossOrigin) {
+      window.location.assign(loginUrl);
+    } else {
+      router.replace(loginUrl);
     }
-  }, [isLoading, isAuthenticated, router, loginUrl, isCrossOrigin]);
+  }, [isLoading, isAuthenticated, router]);
 
   if (isLoading || !isAuthenticated) return null;
 
