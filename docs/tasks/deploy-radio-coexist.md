@@ -349,8 +349,8 @@ stamp are build-time inputs.
 - `Dockerfile` — `ARG`/`ENV` for `NEXT_PUBLIC_BASE_PATH`,
   `NEXT_PUBLIC_ENABLE_CHAT`, `NEXT_PUBLIC_PMTILES_URL`,
   `NEXT_PUBLIC_APP_TIME_ZONE`, and `GIT_COMMIT_HASH`
-- `scripts/build-frontend-arm64.sh` — new script using `--target runner` and
-  `--output type=local`
+- `scripts/build-frontend-arm64.sh` — new script using the scratch `artifact`
+  stage and `--output type=local`
 - `.github/workflows/release.yml` — publish the tarballs, `.sha256` files, and
   manifest as release assets
 
@@ -364,7 +364,11 @@ stamp are build-time inputs.
 
 ---
 
-### [ ] D3: Deployment contract and release layout
+### [x] D3: Deployment contract and release layout
+
+**Status**: Implemented in `scripts/deploy-frontend.sh`; verified locally with
+mock artifacts (install, upgrade, repeated install, checksum mismatch,
+unreachable URL, dry run, and GUI-path guard).
 
 **Description**: Define and implement the release directories, runtime env files,
 ownership, and `current`/`previous` symlinks used by both the installer and the
@@ -381,6 +385,22 @@ manual deploy.
   installations.
 - An unreachable release URL or a checksum mismatch aborts before `current` is
   switched.
+
+**Implementation** (`scripts/deploy-frontend.sh`):
+- `HERMES_FRONTEND_RELEASE_URL` is tried first; `HERMES_FRONTEND_ARTIFACTS`
+  overrides it for air-gapped installs.
+- Every selected app is downloaded (if remote) and SHA256-verified in a staging
+  directory before any file is replaced.
+- Tarballs are extracted to `releases/<version>/<app>` and validated to contain
+  `apps/<pkg>/server.js` and `node_modules/`.
+- Runtime env files are written to `/etc/hermes-frontend/<app>.env` with the
+  internal port (`4100`/`4101`/`4102`), `HERMES_API_URL=https://127.0.0.1:8080`,
+  the station-derived `HERMES_API_TLS_SERVERNAME`, `NODE_ENV=production`,
+  `HOSTNAME=127.0.0.1`, and `NODE_OPTIONS=--max-old-space-size=256`.
+- `current` is switched atomically with a temporary symlink; the prior target
+  becomes `previous` and is preserved on repeated installs.
+- The script refuses paths under `/var/www/html`, so HERMES-GUI is never touched.
+- Release files are chowned to `hermes:hermes` when that user exists.
 
 ---
 
