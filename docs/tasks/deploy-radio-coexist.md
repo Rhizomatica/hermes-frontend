@@ -4,7 +4,7 @@
 **Type**: Deployment / migration
 **Branch**: `feature/deploy-radio-coexist`
 **Target**: the agreed bench station (details kept in the PR/tracker)
-**Status**: Planning — revised after PR #7 review
+**Status**: D1 preflight complete; D2–D11 pending
 **Created**: 2026-11-17
 **Revised**: 2026-11-18 — runtime URL derivation, station name, system Node,
 radiod health gate, and resource limits from the review
@@ -32,7 +32,7 @@ login, or radio behaviour.
 | Chat | `https://<station>:4002/` (later) |
 | Public base path | Empty for every app |
 | Station-specific builds | None — app URLs are derived at runtime from `location` |
-| First deploy scope | `hermes-shell` + `hermes-gps` (confirm given `HAS_GPS=false`) |
+| First deploy scope | `hermes-shell` + `hermes-gps` (confirmed — GPS hardware present) |
 | Build location | Cross-build ARM64 standalone artifacts on the dev host/CI and ship tarballs |
 | Artifact delivery | GitHub Release assets via `HERMES_FRONTEND_RELEASE_URL` plus SHA256; local `HERMES_FRONTEND_ARTIFACTS` fallback |
 | Node runtime | System `/usr/bin/node` only; the installer requires the app's minimum version |
@@ -48,7 +48,7 @@ login, or radio behaviour.
 |---|---|---|
 | Artifact delivery | Whether GitHub Releases are reachable from the station | Use a local `HERMES_FRONTEND_ARTIFACTS` directory |
 | Maintenance window | The bench owners running Mercury tests | Do not install or start until a window is agreed |
-| First deploy scope | The station reports `HAS_GPS=false` | Shell only, unless GPS UI testing is explicitly wanted |
+| First deploy scope | Station GPS hardware | Shell + GPS (confirmed; `HAS_GPS=false` was wrong) |
 
 Gates:
 - **D2 is not blocked** by a build-URL decision; one station-independent release
@@ -281,7 +281,7 @@ One TLS `server` block per public port. Reuse the station certificate.
 
 ## Task List
 
-### [ ] D1: Station preflight audit
+### [x] D1: Station preflight audit
 
 **Description**: Read-only checks on the agreed bench station before changing
 anything. This task confirms the artifact-delivery gate and produces the inputs
@@ -302,6 +302,36 @@ for D6 and D8.
 - A maintenance window is agreed with the bench owners; the test station is used
   for time-sensitive Mercury tests.
 - The artifact-delivery gate is recorded.
+
+**Preflight results** (2026-11-18, station name redacted):
+
+| Check | Observed | Verdict |
+|---|---|---|
+| OS | Debian 13.7 (trixie), aarch64, kernel 6.18 | OK |
+| CPU / RAM | 3 cores; 1843 MB total, ~1153 MB available | OK (tight) |
+| Disk | 29 G total, 24 G used, **4.8 G free (84%)** | Risk — budget releases and tiles |
+| Node | `v20.19.2` | OK, satisfies `^20.19.0` |
+| radiod | `radiod.service` active; listens `0.0.0.0:8080` | OK |
+| `/api/v2/health` | `200` via station name and public cert | OK |
+| Certificate | `CN=*.hermes.radio`, SAN `*.hermes.radio, hermes.radio`, valid to 2027-02-19 | OK |
+| Ports 4000–4002 / 4100–4102 | nothing listening | free |
+| Firewall | `nft` present; `nft list ruleset` empty; no iptables/ufw | no packet filter; ports open |
+| GUI | `https://<station>/` → `301` → `/es` → `200` | OK |
+| Failed units | none | OK |
+| PHP session | `session.name = PHPSESSID`; no Laravel `SESSION_COOKIE` | no `hermes_session` collision |
+| Tiles | no `.pmtiles` present | must ship `brazil.pmtiles` for GPS |
+| GPS | `gpsd` active, `/dev/ttyACM0` present | GPS present; `HAS_GPS=false` is wrong |
+| Backup | `/root/preflight-2026-11-18-1415.tgz`, 12K, sha256 `a9042d370231574e3f5df0e8c95d3ba4d98b87bfa996a81f5039fc0e428fc291` | OK (root-only; contains `secrets`, `voice.key`) |
+| Artifact delivery | GitHub Releases reachable (`200`) | use release assets; local fallback not needed |
+| Test daemon user | radiod store `/var/lib/hermes-radio-daemon/hermes.sqlite`; only `root` (operator) confirmed; `/api/v2/users` returns `401` | PASS — D9 uses `root` with owner consent |
+
+**Gates after D1**:
+- Artifact delivery: GitHub Releases reachable.
+- Maintenance window: agreed with the bench owners; the actual dates are tracked
+  outside the repository.
+- First deploy scope: **shell + GPS**. GPS hardware is present, so this
+  supersedes the earlier `HAS_GPS=false` assumption; `brazil.pmtiles` must be
+  shipped and its size added to the disk budget before D8.
 
 ---
 
