@@ -30,11 +30,31 @@ login, or radio behaviour.
 | GPS | `https://10.70.96.210:4001/` |
 | Chat | `https://10.70.96.210:4002/` (later) |
 | Public base path | Empty for every app |
+| Build URL | `https://10.70.96.210` (IP address) — provisional, confirm at D1 |
 | First deploy scope | `hermes-shell` + `hermes-gps` |
 | Build location | Cross-build ARM64 standalone artifacts on the dev host/CI and ship tarballs |
+| Artifact delivery | GitHub Release assets via `HERMES_FRONTEND_RELEASE_URL` plus SHA256; local `HERMES_FRONTEND_ARTIFACTS` fallback for air-gapped installs — provisional, confirm at D1 |
+| Node runtime | System `/usr/bin/node` when it is >= 20.19; otherwise a pinned Node 20.19 runtime under `/opt/hermes-frontend/runtime` — provisional, confirm at D1 |
+| Installer default | Install files, units, and nginx snippet; do not enable/start unless `HERMES_FRONTEND_ENABLE=true` |
+| WebSocket | Proxied at `/ws` on each frontend port with upstream TLS verification |
 | Production runtime | Native Node + systemd, no containers |
 | Docker | Development, testing, and artifact building only — never production |
 | Auth | Host-scoped `hermes_session` cookie shared across ports; GUI keeps its own PHP/localStorage login |
+
+## Decision Gates
+
+Three decisions are provisional and are settled by D1:
+
+| Decision | D1 input | Default if the input is unavailable |
+|---|---|---|
+| Build URL | Certificate SANs; whether the station hostname resolves | Keep the IP `10.70.96.210` |
+| Artifact delivery | Whether GitHub Releases are reachable from the station | Use a local `HERMES_FRONTEND_ARTIFACTS` directory |
+| Node runtime | `node --version` on the station | Install the pinned Node 20.19 runtime |
+
+Gates:
+- **D2 is blocked** until the build URL is confirmed.
+- **D8 is blocked** until artifact delivery and Node runtime are confirmed.
+- Every other decision in the table above is not gated and can proceed.
 
 ## Why Ports
 
@@ -75,7 +95,10 @@ Verified against the repositories:
   `HERMES_API_URL=https://<host>/api` (should be the daemon on `:8080`).
 - `scripts/deploy-sbitx.sh`, `scripts/rollback-sbitx.sh`, and the release workflow
   assume `/opt/hermes/<app>` plus `hermes-<app>.service`. The installer creates
-  neither, so there is no agreed deployment contract.
+  neither, so there is no agreed deployment contract. The workflow's staging and
+  production deploy jobs are still placeholders.
+- The installer already clones other projects from GitHub, but an installed
+  station may be air-gapped. Release downloads need a local-artifact fallback.
 - `ServiceWorkerRegistrator` registers `/sw.js` whenever the base path is empty
   and the environment is production. Only `hermes-shell/public/sw.js` exists;
   GPS and chat would request a missing file.
@@ -96,9 +119,18 @@ nginx 4002 (TLS)     -> 127.0.0.1:4102                hermes-chat-final (later)
 Each new server block also proxies:
   /ws                -> https://127.0.0.1:8080/api/v2/ws
   4001 only: /brazil.pmtiles -> /opt/hermes-frontend/tiles/brazil.pmtiles
+
+Browser:
+  https://10.70.96.210:4000       shell, wss://10.70.96.210:4000/ws
+  https://10.70.96.210:4001       gps,   wss://10.70.96.210:4001/ws
 ```
 
 Systemd binds the Next servers to `127.0.0.1`; only nginx exposes them.
+
+The build uses the IP address, so the station certificate may not match and the
+browser will show the same name-mismatch warning as the GUI. Accept it once for
+the test. The WebSocket is proxied through the same origin so it does not add a
+second certificate failure.
 
 ## Deployment Contract
 
@@ -217,32 +249,45 @@ One TLS `server` block per public port. Reuse the station certificate.
 ### [ ] D1: Station preflight audit
 
 **Description**: Read-only checks on `10.70.96.210` before changing anything.
+This task resolves the three provisional decisions (build URL, artifact
+delivery, Node runtime) and produces the inputs for D2 and D8.
 
 **Acceptance**:
 - Debian version, free disk, and free RAM recorded.
+- `node --version` recorded; it must be >= 20.19 or the pinned-runtime fallback is
+  planned.
+- GitHub Releases reachable from the station, or a local artifact source is
+  confirmed.
 - `4000-4002` are free and allowed through the firewall/VPN.
 - Daemon REST/WS listen address confirmed (`127.0.0.1:8080` or station address).
 - Certificate SANs and the daemon CA recorded; `NODE_EXTRA_CA_CERTS` path chosen.
+  Note that accessing by IP will show a name-mismatch warning if the certificate
+  has no IP SAN.
 - PHP API confirmed not to use a `hermes_session` cookie.
 - GUI and daemon currently healthy; a config backup is taken.
 - A test daemon user is available.
+- The build URL, artifact delivery, and Node runtime decisions are recorded in
+  this document.
 
 ---
 
 ### [ ] D2: Cross-build ARM64 artifacts
 
 **Description**: Make the Docker build accept and bake every `NEXT_PUBLIC_*`
-value, then package shell and GPS with a checksum and a build manifest.
+value, then publish shell and GPS as GitHub Release assets with checksums and a
+build manifest. The build uses `https://10.70.96.210` as the target URL.
 
 **Files**:
 - `Dockerfile` — `ARG`/`ENV` for the public variables and `GIT_COMMIT_HASH`
 - `scripts/build-frontend-arm64.sh` — new script using `--target runner` and
   `--output type=local`
-- `.github/workflows/release.yml` — pass the same build args
+- `.github/workflows/release.yml` — pass the same build args and publish the
+  tarballs, `.sha256` files, and manifest as release assets
 
 **Acceptance**:
 - Produces `hermes-shell-*.tar.gz` and `hermes-gps-*.tar.gz` plus `.sha256`.
 - The manifest records the target URLs, version, and build time.
+- The GitHub Release contains every asset the installer expects.
 - No `.env*` file is required in the build context.
 - The tarball keeps the `apps/<app>/server.js` + `node_modules` layout.
 
@@ -259,8 +304,12 @@ manual deploy.
 - `/opt/hermes-frontend/current` points to the installed release.
 - `/etc/hermes-frontend/<app>.env` contains only runtime variables.
 - A repeated install preserves `previous` and does not delete the GUI tree.
-- A documented artifact source is used (`HERMES_FRONTEND_ARTIFACTS` local path or
-  `HERMES_FRONTEND_RELEASE_URL`) with SHA256 verification.
+- `HERMES_FRONTEND_RELEASE_URL` is the primary artifact source; the installer
+  downloads the assets and verifies their SHA256.
+- `HERMES_FRONTEND_ARTIFACTS` is supported as a local fallback for air-gapped
+  installations.
+- An unreachable release URL or a checksum mismatch aborts before `current` is
+  switched.
 
 ---
 
@@ -302,8 +351,12 @@ task. Add it to `installer.sh` imports, `TASKS`, descriptions, and `run_task`.
 - The task does not clone or build the monorepo on the station and does not
   require Docker.
 - `HERMES_FRONTEND_APPS` selects `shell`, `gps`, `chat`, or a combination.
+- `HERMES_FRONTEND_RELEASE_URL` is used by default; `HERMES_FRONTEND_ARTIFACTS`
+  works as the local fallback. Both are checksum-verified.
 - Runtime env derives the daemon TLS name from the station, not a hardcoded
   `caldono.hermes.radio`.
+- The task installs files, units, and the nginx snippet but does **not** enable
+  or start the units. `HERMES_FRONTEND_ENABLE=true` opts into start.
 - Re-running the task is idempotent and keeps `previous`.
 - The task runs after `webserver` and `hermesnet`, before `db` and `firstboot`.
 
@@ -336,11 +389,12 @@ window. The GUI must remain available throughout.
 
 **Runbook**:
 1. Record the current GUI state and take a station config backup.
-2. Cross-build shell + GPS and copy the tarballs with checksums.
+2. Publish or fetch the shell + GPS release assets and verify their checksums.
 3. Install into `/opt/hermes-frontend/releases/<version>/` and switch `current`.
 4. Install runtime env files and systemd units.
 5. Add the new nginx server blocks; run `nginx -t` before reloading.
-6. Enable and start the two units.
+6. Start the two units manually for the test (the installer does not start them
+   by default).
 7. Run the validation checklist in D9.
 
 **Acceptance**:
@@ -358,6 +412,7 @@ window. The GUI must remain available throughout.
 - [ ] `wss://10.70.96.210:8080/websocket` still connects.
 
 **New frontend**:
+- [ ] The certificate warning for the IP address is accepted once, as with the GUI.
 - [ ] `https://10.70.96.210:4000` redirects to `/login` when unauthenticated.
 - [ ] Login succeeds with a daemon user; session is shared with `:4001`.
 - [ ] App selector links to `https://10.70.96.210:4001`.
@@ -416,7 +471,10 @@ window. The GUI must remain available throughout.
 |---|---|---|
 | PHP API also uses `hermes_session` | Cookie collision across ports | Preflight; use a distinct cookie name and translate to `Authorization` |
 | Daemon certificate not trusted by Node | Server-side API calls fail | `NODE_EXTRA_CA_CERTS` pointing at the CA; confirm the daemon bind address |
-| Certificate SAN does not match the URL | Browser warnings | Access by the certificate name, or add an IP SAN; the GUI has the same constraint today |
+| Station Node is older than 20.19 | Next servers will not start | Install the pinned Node 20.19 runtime and point systemd at it |
+| GitHub Releases unreachable from the station | Installer cannot fetch artifacts | Support `HERMES_FRONTEND_ARTIFACTS` as a local fallback; verify checksums |
+| IP address baked into the build | Moving the station requires a rebuild | Accept for the first test; parameterize per station later |
+| Certificate SAN does not include the IP | Browser warning | Accept once; the WebSocket is proxied on the same origin so it adds no second failure |
 | WebSocket `Origin` rejected by the daemon | Socket fails through nginx | Test; adjust `proxy_set_header Origin` only if required |
 | Service worker 404 in GPS/chat | Console errors, no offline shell | Disable registration for the first deploy |
 | Chat link 404 | Broken navigation | Hide chat for the first deploy |
