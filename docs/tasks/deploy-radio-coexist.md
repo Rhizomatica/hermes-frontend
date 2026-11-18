@@ -319,7 +319,7 @@ for D6 and D8.
 | GUI | `https://<station>/` → `301` → `/es` → `200` | OK |
 | Failed units | none | OK |
 | PHP session | `session.name = PHPSESSID`; no Laravel `SESSION_COOKIE` | no `hermes_session` collision |
-| Tiles | no `.pmtiles` present | must ship `brazil.pmtiles` for GPS |
+| Tiles | no `.pmtiles` on the station; `apps/hermes-gps/public/brazil.pmtiles` is **1.5 G** (gitignored) | must ship the tile; size is affordable inside 4.8 G but old releases must be pruned |
 | GPS | `gpsd` active, `/dev/ttyACM0` present | GPS present; `HAS_GPS=false` is wrong |
 | Backup | `/root/preflight-2026-11-18-1415.tgz`, 12K, sha256 `a9042d370231574e3f5df0e8c95d3ba4d98b87bfa996a81f5039fc0e428fc291` | OK (root-only; contains `secrets`, `voice.key`) |
 | Artifact delivery | GitHub Releases reachable (`200`) | use release assets; local fallback not needed |
@@ -336,6 +336,10 @@ for D6 and D8.
 ---
 
 ### [ ] D2: Cross-build station-independent ARM64 artifacts
+
+**Status**: Implemented; pending a real ARM64 build (Docker is not available on
+the development host used here). Layout and manifest verified with a mock
+builder.
 
 **Description**: Make the Docker build publish one shell tarball and one GPS
 tarball that work on every station. Only app-behaviour variables and the version
