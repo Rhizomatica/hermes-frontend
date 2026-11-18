@@ -439,7 +439,11 @@ task. Add it to `installer.sh` imports, `TASKS`, descriptions, and `run_task`.
 
 ---
 
-### [ ] D7: Runtime URLs and first-deploy app adjustments
+### [x] D7: Runtime URLs and first-deploy app adjustments
+
+**Status**: Code complete; runtime validation on the station happens in D9.
+The helpers live in `packages/shared-auth` (`appUrls.ts`, `useAppUrl.ts`)
+because both apps already depend on it.
 
 **Description**: Replace station-specific build-time URLs with runtime
 derivation, and make the small changes required by the shell + GPS scope.
