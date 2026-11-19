@@ -2,14 +2,12 @@
 
 declare namespace NodeJS {
   interface ProcessEnv {
-    NEXT_PUBLIC_LOGIN_URL?: string;
-    NEXT_PUBLIC_WS_URL?: string;
     NEXT_PUBLIC_BASE_PATH?: string;
     NEXT_PUBLIC_APP_VERSION?: string;
     NEXT_PUBLIC_BUILD_TIME?: string;
-    NEXT_PUBLIC_SHELL_URL?: string;
-    NEXT_PUBLIC_GPS_URL?: string;
-    NEXT_PUBLIC_CHAT_URL?: string;
+    NEXT_PUBLIC_ENABLE_CHAT?: string;
+    NEXT_PUBLIC_PMTILES_URL?: string;
+    NEXT_PUBLIC_APP_TIME_ZONE?: string;
     NEXT_PUBLIC_MOCK_GPS?: string;
     HERMES_API_URL?: string;
     HERMES_API_TLS_SERVERNAME?: string;

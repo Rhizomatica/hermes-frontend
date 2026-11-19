@@ -1,6 +1,8 @@
 export { AuthProvider, useAuth } from './AuthProvider';
 export type { AuthContextValue } from './AuthProvider';
 export { useAuthGuard } from './useAuthGuard';
+export { APP_PORTS, appOrigin, appUrl, wsUrl, type HermesApp } from './appUrls';
+export { useAppUrl } from './useAppUrl';
 export { WebSocketProvider } from './WebSocketProvider';
 export {
   useWebSocket,

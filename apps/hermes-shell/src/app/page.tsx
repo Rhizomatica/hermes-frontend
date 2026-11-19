@@ -3,15 +3,12 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { useAuth, useAuthGuard, useLocale } from '@hermes/shared-auth';
+import { useAppUrl, useAuth, useAuthGuard, useLocale } from '@hermes/shared-auth';
 import { LogOut, Moon, Sun, MapPin, MessagesSquare, ArrowRight, Users, UserRound } from 'lucide-react';
 import { useTheme, LoadingSpinner } from '@hermes/ui';
 import InfoList from '@/components/InfoList';
 import { useRadioStatus } from '@/hooks/useRadioStatus';
 import { useStationInfo } from '@/hooks/useStationInfo';
-
-const GPS_URL = process.env.NEXT_PUBLIC_GPS_URL ?? '/gps';
-const CHAT_URL = process.env.NEXT_PUBLIC_CHAT_URL ?? '/chat';
 
 /** Format a raw uptime value (seconds when numeric) into a compact string. */
 function formatUptime(value: number | string | null): string {
@@ -43,6 +40,9 @@ export default function AppSelector() {
   const router = useRouter();
   const radio = useRadioStatus();
   const stationInfo = useStationInfo();
+  const gpsUrl = useAppUrl('gps', '/', '/gps');
+  const chatUrl = useAppUrl('chat', '/', '/chat');
+  const chatEnabled = process.env.NEXT_PUBLIC_ENABLE_CHAT === 'true';
 
   if (!user) {
     return (
@@ -169,7 +169,7 @@ export default function AppSelector() {
 
         {/* App cards */}
         <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Link href={GPS_URL} className="group relative overflow-hidden rounded-2xl border border-gray-200/70 bg-white/70 p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:border-orange-300/70 hover:bg-white/90 hover:shadow-lg hover:shadow-orange-500/10 dark:border-gray-800 dark:bg-gray-800/60 dark:hover:border-orange-500/30 dark:hover:bg-gray-800/80">
+          <Link href={gpsUrl} className="group relative overflow-hidden rounded-2xl border border-gray-200/70 bg-white/70 p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:border-orange-300/70 hover:bg-white/90 hover:shadow-lg hover:shadow-orange-500/10 dark:border-gray-800 dark:bg-gray-800/60 dark:hover:border-orange-500/30 dark:hover:bg-gray-800/80">
             <div className="pointer-events-none absolute right-0 top-0 h-28 w-28 translate-x-10 -translate-y-10 rounded-full bg-orange-100/70 blur-2xl transition-all group-hover:bg-orange-200/70 dark:bg-orange-500/10" />
             <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500/10 to-orange-500/20 text-orange-600 ring-1 ring-orange-500/10 dark:text-orange-400 dark:ring-orange-500/20">
               <MapPin className="h-7 w-7" />
@@ -182,18 +182,20 @@ export default function AppSelector() {
             </span>
           </Link>
 
-          <Link href={CHAT_URL} className="group relative overflow-hidden rounded-2xl border border-gray-200/70 bg-white/70 p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:border-orange-300/70 hover:bg-white/90 hover:shadow-lg hover:shadow-orange-500/10 dark:border-gray-800 dark:bg-gray-800/60 dark:hover:border-orange-500/30 dark:hover:bg-gray-800/80">
-            <div className="pointer-events-none absolute right-0 top-0 h-28 w-28 translate-x-10 -translate-y-10 rounded-full bg-orange-100/70 blur-2xl transition-all group-hover:bg-orange-200/70 dark:bg-orange-500/10" />
-            <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500/10 to-orange-500/20 text-orange-600 ring-1 ring-orange-500/10 dark:text-orange-400 dark:ring-orange-500/20">
-              <MessagesSquare className="h-7 w-7" />
-            </span>
-            <h2 className="mt-4 text-xl font-bold text-gray-900 dark:text-white">{t('chat')}</h2>
-            <p className="mt-1 text-sm leading-relaxed text-gray-500 dark:text-gray-400">{t('chatDescription')}</p>
-            <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-orange-600 dark:text-orange-400">
-              {t('open')}
-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-            </span>
-          </Link>
+          {chatEnabled && (
+            <Link href={chatUrl} className="group relative overflow-hidden rounded-2xl border border-gray-200/70 bg-white/70 p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:border-orange-300/70 hover:bg-white/90 hover:shadow-lg hover:shadow-orange-500/10 dark:border-gray-800 dark:bg-gray-800/60 dark:hover:border-orange-500/30 dark:hover:bg-gray-800/80">
+              <div className="pointer-events-none absolute right-0 top-0 h-28 w-28 translate-x-10 -translate-y-10 rounded-full bg-orange-100/70 blur-2xl transition-all group-hover:bg-orange-200/70 dark:bg-orange-500/10" />
+              <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500/10 to-orange-500/20 text-orange-600 ring-1 ring-orange-500/10 dark:text-orange-400 dark:ring-orange-500/20">
+                <MessagesSquare className="h-7 w-7" />
+              </span>
+              <h2 className="mt-4 text-xl font-bold text-gray-900 dark:text-white">{t('chat')}</h2>
+              <p className="mt-1 text-sm leading-relaxed text-gray-500 dark:text-gray-400">{t('chatDescription')}</p>
+              <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-orange-600 dark:text-orange-400">
+                {t('open')}
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+              </span>
+            </Link>
+          )}
 
           {user.role === 'admin' && (
             <Link href="/users" className="group relative overflow-hidden rounded-2xl border border-gray-200/70 bg-white/70 p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:border-orange-300/70 hover:bg-white/90 hover:shadow-lg hover:shadow-orange-500/10 dark:border-gray-800 dark:bg-gray-800/60 dark:hover:border-orange-500/30 dark:hover:bg-gray-800/80">

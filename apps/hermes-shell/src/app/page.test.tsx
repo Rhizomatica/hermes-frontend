@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import type { HermesUser } from '@hermes/api';
@@ -54,6 +54,8 @@ vi.mock('@hermes/shared-auth', () => ({
   useAuth: () => ({ logout: authState.logout }),
   useAuthGuard: () => guardState.user,
   useLocale: () => ({ locale: localeState.locale, setLocale: localeState.setLocale }),
+  useAppUrl: (app: string, _path?: string, fallback = '/') =>
+    app === 'gps' ? 'http://localhost:4001/' : app === 'chat' ? 'http://localhost:4002/' : fallback,
 }));
 
 vi.mock('@hermes/ui', () => ({
@@ -141,6 +143,10 @@ describe('AppSelector', () => {
     infoListProps.calls = [];
   });
 
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   it('shows a loading spinner while the auth guard resolves', () => {
     guardState.user = null;
     render(<AppSelector />);
@@ -155,19 +161,27 @@ describe('AppSelector', () => {
     expect(screen.getByText('pu2uit')).toBeTruthy();
     expect(screen.getByText('MO')).toBeTruthy();
     expect(screen.getByText('gpsViewer')).toBeTruthy();
-    expect(screen.getByText('chat')).toBeTruthy();
+    expect(screen.queryByText('chat')).toBeNull();
     expect(screen.getAllByTestId('info-list')).toHaveLength(2);
   });
 
-  it('links the app cards to the GPS and chat URLs', () => {
+  it('links the GPS card to the runtime-derived URL and hides chat by default', () => {
     guardState.user = makeUser();
     render(<AppSelector />);
 
-    const gpsUrl = process.env.NEXT_PUBLIC_GPS_URL ?? '/gps';
-    const chatUrl = process.env.NEXT_PUBLIC_CHAT_URL ?? '/chat';
     const hrefs = screen.getAllByRole('link').map((l) => l.getAttribute('href'));
 
-    expect(hrefs).toEqual(['/profile', gpsUrl, chatUrl]);
+    expect(hrefs).toEqual(['/profile', 'http://localhost:4001/']);
+  });
+
+  it('renders the chat card when chat is deployed', () => {
+    vi.stubEnv('NEXT_PUBLIC_ENABLE_CHAT', 'true');
+    guardState.user = makeUser();
+    render(<AppSelector />);
+
+    const hrefs = screen.getAllByRole('link').map((l) => l.getAttribute('href'));
+
+    expect(hrefs).toEqual(['/profile', 'http://localhost:4001/', 'http://localhost:4002/']);
   });
 
   it('shows the users card only to admins', () => {

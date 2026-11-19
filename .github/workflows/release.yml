@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
     tags: ['v*']
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -11,11 +12,8 @@ permissions:
 
 jobs:
   build-arm64:
-    name: Build ARM64
+    name: Build ARM64 artifacts
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        app: [hermes-shell, hermes-gps, hermes-chat-final]
     steps:
       - uses: actions/checkout@v4
 
@@ -29,44 +27,40 @@ jobs:
         id: version
         run: |
           SHORT_SHA=$(git rev-parse --short HEAD)
-          echo "sha=$SHORT_SHA" >> $GITHUB_OUTPUT
-          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
-            echo "version=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          echo "sha=$SHORT_SHA" >> "$GITHUB_OUTPUT"
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            echo "version=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
           else
-            echo "version=dev-${SHORT_SHA}" >> $GITHUB_OUTPUT
+            echo "version=dev-${SHORT_SHA}" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Build ${{ matrix.app }} (ARM64 standalone output)
+      - name: Build and package standalone artifacts
         run: |
-          docker buildx build \
-            --platform linux/arm64 \
-            --build-arg APP=${{ matrix.app }} \
-            --build-arg PORT=3000 \
-            --build-arg NEXT_PUBLIC_APP_VERSION=${{ steps.version.outputs.version }} \
-            --build-arg NEXT_PUBLIC_BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
-            --output type=local,dest=./build-output/${{ matrix.app }} \
-            --target runner \
-            .
+          scripts/build-frontend-arm64.sh \
+            --version "${{ steps.version.outputs.version }}" \
+            --out dist
 
-      - name: Package standalone output
-        run: |
-          tar -czf ${{ matrix.app }}-${{ steps.version.outputs.sha }}-arm64.tar.gz \
-            -C ./build-output/${{ matrix.app }} .
-          echo "artifact=${{ matrix.app }}-${{ steps.version.outputs.sha }}-arm64.tar.gz" >> $GITHUB_OUTPUT
-        id: package
+      - name: Show artifacts
+        run: ls -lh dist
 
-      - name: Upload build artifact
+      - name: Upload workflow artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.app }}-arm64
-          path: ${{ matrix.app }}-${{ steps.version.outputs.sha }}-arm64.tar.gz
+          name: hermes-frontend-${{ steps.version.outputs.version }}-arm64
+          path: |
+            dist/*.tar.gz
+            dist/*.sha256
+            dist/manifest-*.json
           retention-days: 30
 
       - name: Upload to GitHub Release (tagged releases only)
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: ${{ matrix.app }}-${{ steps.version.outputs.sha }}-arm64.tar.gz
+          files: |
+            dist/*.tar.gz
+            dist/*.sha256
+            dist/manifest-*.json
           generate_release_notes: true
 
   deploy-staging:
@@ -119,19 +113,3 @@ jobs:
           echo "#   scp artifacts/\${app}-arm64/*.tar.gz \${SBITX_PROD_HOST}:/opt/hermes/"
           echo "#   ssh \${SBITX_PROD_HOST} 'cd /opt/hermes && tar -xzf \${app}.tar.gz && systemctl restart hermes-\${app}'"
           echo "# done"
-
-  rollback:
-    name: Rollback (manual trigger)
-    if: false  # Manual trigger — set to workflow_dispatch when ready
-    runs-on: ubuntu-latest
-    environment: production
-    steps:
-      - name: Rollback to previous version
-        run: |
-          echo "Rolling back to previous version..."
-          echo "This step requires:"
-          echo "  1. SSH key configured in GitHub Secrets (SBITX_PROD_SSH_KEY)"
-          echo "  2. Production sBitx hostname in GitHub Secrets (SBITX_PROD_HOST)"
-          echo ""
-          echo "Rollback command (uncomment when secrets are configured):"
-          echo "# ssh \${SBITX_PROD_HOST} 'systemctl rollback hermes-shell && systemctl rollback hermes-gps && systemctl rollback hermes-chat'"

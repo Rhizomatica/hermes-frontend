@@ -15,10 +15,10 @@ import {
   type WsHello,
   type WsTopicEvent,
 } from './useWebSocket';
+import { wsUrl } from './appUrls';
 
 export type { WebSocketContextValue, WebSocketState, WsHello, WsTopicEvent };
 
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL ?? 'ws://localhost:8080/api/v2/ws';
 const WS_PROTOCOLS = ['hermes.v1'];
 const BACKOFF_BASE_MS = 1_000;
 const BACKOFF_MAX_MS = 30_000;
@@ -89,7 +89,11 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
 
     setState((prev) => (prev === 'connected' ? 'connecting' : prev));
     setHello(null);
-    const ws = new WebSocket(WS_URL, WS_PROTOCOLS);
+
+    // Derived from `location` after mount; nginx proxies `/ws` on each port.
+    const url = wsUrl();
+    if (!url) return;
+    const ws = new WebSocket(url, WS_PROTOCOLS);
 
     ws.onopen = () => {
       if (disposedRef.current) {

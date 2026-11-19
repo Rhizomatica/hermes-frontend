@@ -12,6 +12,12 @@ node_modules
 
 # large tile archives — mounted as volumes at runtime instead
 *.pmtiles
+*.pmtiles.sha256
+
+# local build/release output
+dist
+build-output
+*.tar.gz
 
 # editor / OS noise
 .DS_Store

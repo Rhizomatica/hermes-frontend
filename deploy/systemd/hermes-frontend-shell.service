@@ -1,0 +1,20 @@
+[Unit]
+Description=HERMES Frontend — Shell
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=hermes
+Group=hermes
+WorkingDirectory=/opt/hermes-frontend/current/shell
+ExecStart=/usr/bin/node apps/hermes-shell/server.js
+EnvironmentFile=/etc/hermes-frontend/shell.env
+Restart=on-failure
+RestartSec=5
+Nice=10
+CPUWeight=50
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

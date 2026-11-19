@@ -45,9 +45,10 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-screen bg-background text-foreground antialiased">
+        {/* hermes-gps has no public/sw.js yet; registering would 404. */}
         <ServiceWorkerRegistrator
           basePath={process.env.NEXT_PUBLIC_BASE_PATH ?? ''}
-          enabled={process.env.NODE_ENV === 'production'}
+          enabled={false}
         />
         {/* LocaleProvider wraps IntlProvider so locale changes re-render the message bundle */}
         <LocaleProvider initialLocale={locale}>

@@ -17,8 +17,6 @@ import {
   isUserRole,
 } from '@/lib/userOptions';
 
-const SHELL_URL = process.env.NEXT_PUBLIC_SHELL_URL ?? '';
-
 const inputClass =
   'w-full rounded-lg bg-gray-100 px-3 py-2 text-sm text-gray-900 outline-none placeholder-gray-400 focus:ring-2 focus:ring-orange-500 dark:bg-gray-700 dark:text-white';
 
@@ -56,7 +54,7 @@ export default function ProfilePage() {
       <header className="sticky top-0 z-10 border-b border-gray-200/70 bg-background/70 backdrop-blur-md dark:border-gray-800">
         <div className="mx-auto flex max-w-2xl items-center gap-3 px-4 py-3">
           <Link
-            href={SHELL_URL || '/'}
+            href="/"
             className="inline-flex min-h-[44px] items-center gap-1 rounded-lg px-2 text-sm font-medium text-orange-600 hover:bg-orange-50 dark:text-orange-400 dark:hover:bg-orange-500/10"
             aria-label={tc('backToHermes')}
           >

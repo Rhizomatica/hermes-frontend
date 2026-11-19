@@ -1,0 +1,22 @@
+[Unit]
+Description=HERMES Frontend — Chat
+After=network-online.target
+Wants=network-online.target
+# Prepared for a later deploy; the unit stays inert until chat is installed.
+ConditionPathExists=/opt/hermes-frontend/current/chat/apps/hermes-chat-final/server.js
+
+[Service]
+Type=simple
+User=hermes
+Group=hermes
+WorkingDirectory=/opt/hermes-frontend/current/chat
+ExecStart=/usr/bin/node apps/hermes-chat-final/server.js
+EnvironmentFile=/etc/hermes-frontend/chat.env
+Restart=on-failure
+RestartSec=5
+Nice=10
+CPUWeight=50
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

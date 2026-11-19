@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { useAuth, useAuthGuard } from '@hermes/shared-auth';
+import { useAppUrl, useAuth, useAuthGuard } from '@hermes/shared-auth';
 import { ChevronLeft } from 'lucide-react';
 import { useTheme, ErrorBanner, LoadingSpinner } from '@hermes/ui';
 import type { GpsPoint } from '@hermes/api';
@@ -43,6 +43,7 @@ export default function GpsPage() {
     useGpsCoords();
   const { history, appendPosition, refresh: refreshHistory } = useGpsHistory();
   const stations = useGpsStations();
+  const shellUrl = useAppUrl('shell', '/', '/');
 
   const [showTrail, setShowTrail] = useState(false);
   const [recenterToken, setRecenterToken] = useState(0);
@@ -58,7 +59,6 @@ export default function GpsPage() {
 
   // Append new live positions to the breadcrumb history
   const prevTimestampRef = useRef<string | null>(null);
-  const SHELL_URL = process.env.NEXT_PUBLIC_SHELL_URL ?? 'localhost:4000';
 
   useEffect(() => {
     if (
@@ -115,7 +115,7 @@ export default function GpsPage() {
 
         {/* Back link overlay */}
         <Link
-          href={{ pathname: SHELL_URL }}
+          href={shellUrl}
           className="inline-flex left-4 top-4 z-10 rounded-lg bg-background/80 px-3 py-2 text-sm text-blue-500 backdrop-blur-sm"
           aria-label={tc('backToHermes')}>
           <ChevronLeft/>{tc('backToHermes')}
