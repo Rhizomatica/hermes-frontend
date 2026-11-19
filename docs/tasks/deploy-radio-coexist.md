@@ -436,7 +436,12 @@ reboot check happen on the station in D8.
 
 ---
 
-### [ ] D5: nginx multi-port coexistence
+### [x] D5: nginx multi-port coexistence
+
+**Status**: Config templates added under `deploy/nginx/` and installed by
+`scripts/deploy-frontend.sh`; rendered configs validated with a parser locally.
+`nginx -t` against the live config and the port/WebSocket checks happen on the
+station in D9.
 
 **Description**: Add three TLS server blocks (chat can be added later) without
 modifying the existing 443 block.
@@ -450,6 +455,20 @@ modifying the existing 443 block.
   CA bundle.
 - `https://<station>:4001/brazil.pmtiles` serves the tile file.
 - `nginx -t` passes before reload.
+
+**Implementation**:
+- `deploy/nginx/hermes-frontend-{shell,gps,chat}.conf` are station-independent
+  templates. `deploy-frontend.sh` substitutes `__STATION_NAME__`,
+  `__CERT_PATH__`, `__KEY_PATH__`, and `__TILES_ROOT__` at install time and
+  writes them to `/etc/nginx/conf.d/`.
+- Each block listens only on its own port, so the existing `:443` server block
+  is untouched. `location /` proxies to the app without rewriting the URI;
+  `location = /ws` proxies to `https://127.0.0.1:8080/api/v2/ws` with upgrade
+  headers and `proxy_ssl_verify on` against the system CA bundle.
+- GPS also serves `location = /brazil.pmtiles` from `<root>/tiles`.
+- The script runs `nginx -t` after installing configs and removes them on
+  failure, before `current` is switched. It reloads nginx only when
+  `HERMES_FRONTEND_ENABLE=true` (or `--enable`).
 
 ---
 

@@ -31,6 +31,11 @@ RELEASE_URL="${HERMES_FRONTEND_RELEASE_URL:-}"
 STATION="${HERMES_FRONTEND_STATION:-}"
 SYSTEMD_DIR="${HERMES_FRONTEND_SYSTEMD_DIR:-/etc/systemd/system}"
 UNIT_DIR="${HERMES_FRONTEND_UNIT_DIR:-$SCRIPT_DIR/../deploy/systemd}"
+NGINX_DIR="${HERMES_FRONTEND_NGINX_DIR:-/etc/nginx/conf.d}"
+NGINX_SRC_DIR="${HERMES_FRONTEND_NGINX_SRC_DIR:-$SCRIPT_DIR/../deploy/nginx}"
+CERT_PATH="${HERMES_FRONTEND_CERT:-/etc/ssl/certs/hermes.radio.crt}"
+KEY_PATH="${HERMES_FRONTEND_KEY:-/etc/ssl/private/hermes.radio.key}"
+TILES_ROOT="${HERMES_FRONTEND_TILES:-$ROOT/tiles}"
 ENABLE="${HERMES_FRONTEND_ENABLE:-false}"
 DRY_RUN=false
 
@@ -53,6 +58,11 @@ Environment:
   HERMES_FRONTEND_ETC               default /etc/hermes-frontend
   HERMES_FRONTEND_SYSTEMD_DIR       default /etc/systemd/system
   HERMES_FRONTEND_UNIT_DIR          default <repo>/deploy/systemd
+  HERMES_FRONTEND_NGINX_DIR         default /etc/nginx/conf.d
+  HERMES_FRONTEND_NGINX_SRC_DIR     default <repo>/deploy/nginx
+  HERMES_FRONTEND_CERT/KEY          default /etc/ssl/certs/hermes.radio.crt
+                                    and /etc/ssl/private/hermes.radio.key
+  HERMES_FRONTEND_TILES             default <root>/tiles
   HERMES_FRONTEND_USER/GROUP        default hermes/hermes
   HERMES_FRONTEND_RELEASE_URL       primary artifact source
   HERMES_FRONTEND_ARTIFACTS         local fallback for air-gapped stations
@@ -102,9 +112,11 @@ fi
 DEFAULT_ROOT="/opt/hermes-frontend"
 DEFAULT_ETC="/etc/hermes-frontend"
 DEFAULT_SYSTEMD="/etc/systemd/system"
+DEFAULT_NGINX="/etc/nginx/conf.d"
 if [ "$DRY_RUN" = false ] && [ "$(id -u)" -ne 0 ] \
   && { [ "$ROOT" = "$DEFAULT_ROOT" ] || [ "$ETC" = "$DEFAULT_ETC" ] \
-       || [ "$SYSTEMD_DIR" = "$DEFAULT_SYSTEMD" ]; }; then
+       || [ "$SYSTEMD_DIR" = "$DEFAULT_SYSTEMD" ] \
+       || [ "$NGINX_DIR" = "$DEFAULT_NGINX" ]; }; then
   die "must run as root (try sudo), or use --dry-run"
 fi
 
@@ -129,6 +141,8 @@ for app in $APPS; do
   app_pkg "$app" >/dev/null || die "unknown app: $app"
   [ -f "$UNIT_DIR/hermes-frontend-$app.service" ] \
     || die "missing unit file: $UNIT_DIR/hermes-frontend-$app.service"
+  [ -f "$NGINX_SRC_DIR/hermes-frontend-$app.conf" ] \
+    || die "missing nginx config: $NGINX_SRC_DIR/hermes-frontend-$app.conf"
 done
 
 TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/hermes-deploy.XXXXXX")"
@@ -216,6 +230,7 @@ if [ "$DRY_RUN" = true ]; then
     echo "    $RELEASE_DIR/$app"
     echo "    $ETC/$app.env"
     echo "    $SYSTEMD_DIR/hermes-frontend-$app.service"
+    echo "    $NGINX_DIR/hermes-frontend-$app.conf"
   done
   echo "    $ROOT/current -> $RELEASE_DIR"
   [ -L "$ROOT/current" ] && echo "    $ROOT/previous -> $(readlink -f "$ROOT/current")"
@@ -240,6 +255,30 @@ for app in $APPS; do
   install -m 0644 "$UNIT_DIR/$unit" "$SYSTEMD_DIR/$unit"
   echo "==> Installed $SYSTEMD_DIR/$unit"
 done
+
+NGINX_INSTALLED=()
+for app in $APPS; do
+  src="$NGINX_SRC_DIR/hermes-frontend-$app.conf"
+  dest="$NGINX_DIR/hermes-frontend-$app.conf"
+  install -d -m 0755 "$NGINX_DIR"
+  sed -e "s|__STATION_NAME__|$STATION|g" \
+      -e "s|__CERT_PATH__|$CERT_PATH|g" \
+      -e "s|__KEY_PATH__|$KEY_PATH|g" \
+      -e "s|__TILES_ROOT__|$TILES_ROOT|g" \
+      "$src" > "$TMP_DIR/nginx-$app.conf"
+  install -m 0644 "$TMP_DIR/nginx-$app.conf" "$dest"
+  NGINX_INSTALLED+=("$dest")
+  echo "==> Installed $dest"
+done
+
+if [ "$NGINX_DIR" = "$DEFAULT_NGINX" ] && command -v nginx >/dev/null 2>&1; then
+  if nginx -t; then
+    echo "==> nginx -t passed"
+  else
+    for conf in "${NGINX_INSTALLED[@]}"; do rm -f "$conf"; done
+    die "nginx -t failed; removed the new frontend configs"
+  fi
+fi
 
 if [ "$(id -u)" -eq 0 ] && id -u "$RUN_USER" >/dev/null 2>&1; then
   group="$RUN_GROUP"
@@ -277,6 +316,16 @@ if [ "$(id -u)" -eq 0 ] && command -v systemctl >/dev/null 2>&1 && [ -d /run/sys
   fi
 else
   echo "==> systemd not available here; skipped daemon-reload"
+fi
+
+if [ "$ENABLE" = true ] && [ "$NGINX_DIR" = "$DEFAULT_NGINX" ] \
+  && command -v nginx >/dev/null 2>&1; then
+  if command -v systemctl >/dev/null 2>&1 && [ -d /run/systemd/system ]; then
+    systemctl reload nginx
+  else
+    nginx -s reload
+  fi
+  echo "==> nginx reloaded"
 fi
 
 echo "==> Installed $APPS at version $VERSION."
