@@ -101,8 +101,10 @@ fi
 
 DEFAULT_ROOT="/opt/hermes-frontend"
 DEFAULT_ETC="/etc/hermes-frontend"
+DEFAULT_SYSTEMD="/etc/systemd/system"
 if [ "$DRY_RUN" = false ] && [ "$(id -u)" -ne 0 ] \
-  && { [ "$ROOT" = "$DEFAULT_ROOT" ] || [ "$ETC" = "$DEFAULT_ETC" ]; }; then
+  && { [ "$ROOT" = "$DEFAULT_ROOT" ] || [ "$ETC" = "$DEFAULT_ETC" ] \
+       || [ "$SYSTEMD_DIR" = "$DEFAULT_SYSTEMD" ]; }; then
   die "must run as root (try sudo), or use --dry-run"
 fi
 
