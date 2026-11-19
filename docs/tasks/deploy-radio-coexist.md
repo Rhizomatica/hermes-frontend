@@ -357,7 +357,9 @@ stamp are build-time inputs.
 **Acceptance**:
 - Produces `hermes-shell-*.tar.gz` and `hermes-gps-*.tar.gz` plus `.sha256`.
 - The manifest records the version and build time, not a station address.
-- The GitHub Release contains every asset the installer expects.
+- The GitHub Release contains every asset the installer expects, including the
+  `hermes-frontend-deploy-<version>.tar.gz` bundle with units, nginx templates,
+  and the install script.
 - No `.env*` file is required in the build context.
 - The tarball keeps the `apps/<app>/server.js` + `node_modules` layout.
 - The same artifact is valid for every station.
@@ -387,8 +389,8 @@ manual deploy.
   switched.
 
 **Implementation** (`scripts/deploy-frontend.sh`):
-- `HERMES_FRONTEND_RELEASE_URL` is tried first; `HERMES_FRONTEND_ARTIFACTS`
-  overrides it for air-gapped installs.
+- `HERMES_FRONTEND_RELEASE_URL` takes precedence; `HERMES_FRONTEND_ARTIFACTS`
+  is used only when the URL is unset (air-gapped installs).
 - Every selected app is downloaded (if remote) and SHA256-verified in a staging
   directory before any file is replaced.
 - Tarballs are extracted to `releases/<version>/<app>` and validated to contain
@@ -472,7 +474,11 @@ modifying the existing 443 block.
 
 ---
 
-### [ ] D6: Wire a real `frontend` task into hermes-installer
+### [x] D6: Wire a real `frontend` task into hermes-installer
+
+**Status**: Implemented on the `hermes-installer` branch
+`feature/frontend-artifact-task`; the release now ships the deploy bundle the
+task consumes. Station run happens in D8.
 
 **Description**: Replace the orphan `frontend_setup.sh` with an artifact-based
 task. Add it to `installer.sh` imports, `TASKS`, descriptions, and `run_task`.
@@ -493,6 +499,21 @@ task. Add it to `installer.sh` imports, `TASKS`, descriptions, and `run_task`.
   or start the units. `HERMES_FRONTEND_ENABLE=true` opts into start.
 - Re-running the task is idempotent and keeps `previous`.
 - The task runs after `webserver` and `hermesnet`, before `db` and `firstboot`.
+
+**Implementation**:
+- `scripts/build-frontend-arm64.sh` now publishes
+  `hermes-frontend-deploy-<version>.tar.gz` (units, nginx templates, and
+  `scripts/deploy-frontend.sh`) plus its `.sha256`, so the installer does not
+  clone or build anything on the station.
+- `hermes-installer`'s `frontend` task checks `/usr/bin/node` (>= 20.19.0),
+  verifies the bundle SHA256, and calls the deploy script with
+  `--station "$HERMES_HOSTNAME"`.
+- The health gate reads `/api/v2/health` on `127.0.0.1:8080`; a non-`200`
+  installs the files but forces `HERMES_FRONTEND_ENABLE=false`.
+- `HERMES_FRONTEND_RELEASE_URL` takes precedence; `HERMES_FRONTEND_ARTIFACTS`
+  is used only when it is unset.
+- The task is inserted after `webserver` in `TASKS`, so it runs after
+  `webserver`/`hermesnet` and before `db`/`firstboot`.
 
 ---
 

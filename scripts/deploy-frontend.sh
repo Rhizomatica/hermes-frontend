@@ -149,14 +149,14 @@ TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/hermes-deploy.XXXXXX")"
 cleanup() { rm -rf "$TMP_DIR"; }
 trap cleanup EXIT
 
-if [ -n "$ARTIFACTS" ]; then
-  SRC="$ARTIFACTS"
-  [ -d "$SRC" ] || die "artifact directory not found: $SRC"
-  SOURCE_KIND="local"
-elif [ -n "$RELEASE_URL" ]; then
+if [ -n "$RELEASE_URL" ]; then
   SRC="$TMP_DIR/assets"
   mkdir -p "$SRC"
   SOURCE_KIND="remote"
+elif [ -n "$ARTIFACTS" ]; then
+  SRC="$ARTIFACTS"
+  [ -d "$SRC" ] || die "artifact directory not found: $SRC"
+  SOURCE_KIND="local"
 else
   die "set HERMES_FRONTEND_RELEASE_URL or HERMES_FRONTEND_ARTIFACTS (or --release-url/--artifacts)"
 fi

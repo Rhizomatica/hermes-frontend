@@ -109,6 +109,12 @@ for app in $APPS; do
     { \"app\": \"$app\", \"file\": \"$tarball\", \"sha256\": \"$sha\" }"
 done
 
+deploy_bundle="hermes-frontend-deploy-$VERSION.tar.gz"
+echo "==> Packaging $deploy_bundle"
+tar -C "$REPO_ROOT" -czf "$OUT_DIR/$deploy_bundle" deploy scripts/deploy-frontend.sh
+( cd "$OUT_DIR" && sha256sum "$deploy_bundle" > "$deploy_bundle.sha256" )
+deploy_sha="$(cut -d' ' -f1 "$OUT_DIR/$deploy_bundle.sha256")"
+
 manifest="$OUT_DIR/manifest-$VERSION.json"
 cat > "$manifest" <<EOF
 {
@@ -116,6 +122,7 @@ cat > "$manifest" <<EOF
   "gitCommit": "$GIT_COMMIT_HASH",
   "buildTime": "$BUILD_TIME",
   "platform": "$PLATFORM",
+  "deploy": { "file": "$deploy_bundle", "sha256": "$deploy_sha" },
   "apps": [$manifest_entries
   ]
 }
