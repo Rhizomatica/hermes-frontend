@@ -404,7 +404,11 @@ manual deploy.
 
 ---
 
-### [ ] D4: systemd units
+### [x] D4: systemd units
+
+**Status**: Unit files added under `deploy/systemd/` and installed by
+`scripts/deploy-frontend.sh`; local install verified. Starting them and the
+reboot check happen on the station in D8.
 
 **Description**: Add and install `hermes-frontend-shell.service` and
 `hermes-frontend-gps.service`; prepare the chat unit but keep it disabled.
@@ -415,6 +419,20 @@ manual deploy.
 - `systemctl start hermes-frontend-shell hermes-frontend-gps` succeeds.
 - Apps survive `daemon-reload` and a station reboot.
 - Logs are available through `journalctl -u hermes-frontend-*`.
+
+**Implementation**:
+- `deploy/systemd/hermes-frontend-{shell,gps,chat}.service` use
+  `User=hermes`, `WorkingDirectory=/opt/hermes-frontend/current/<app>`,
+  `ExecStart=/usr/bin/node apps/<pkg>/server.js`, and
+  `EnvironmentFile=/etc/hermes-frontend/<app>.env` (which sets
+  `HOSTNAME=127.0.0.1`, `PORT`, and `NODE_OPTIONS`).
+- `Restart=on-failure`, `RestartSec=5`, `Nice=10`, `CPUWeight=50`,
+  `LimitNOFILE=65536`, and `WantedBy=multi-user.target`.
+- The chat unit carries a `ConditionPathExists` guard so it stays inert until
+  the chat release is installed.
+- `scripts/deploy-frontend.sh` installs the unit files and runs
+  `systemctl daemon-reload`, but does **not** enable or start them unless
+  `HERMES_FRONTEND_ENABLE=true` (or `--enable`) is set.
 
 ---
 

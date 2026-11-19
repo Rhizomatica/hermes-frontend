@@ -14,6 +14,8 @@
 # SHA256-verified before anything is installed or `current` is switched.
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 ROOT="${HERMES_FRONTEND_ROOT:-/opt/hermes-frontend}"
 ETC="${HERMES_FRONTEND_ETC:-/etc/hermes-frontend}"
 ROOT="${ROOT%/}"
@@ -27,6 +29,9 @@ APPS="${HERMES_FRONTEND_APPS:-shell gps}"
 ARTIFACTS="${HERMES_FRONTEND_ARTIFACTS:-}"
 RELEASE_URL="${HERMES_FRONTEND_RELEASE_URL:-}"
 STATION="${HERMES_FRONTEND_STATION:-}"
+SYSTEMD_DIR="${HERMES_FRONTEND_SYSTEMD_DIR:-/etc/systemd/system}"
+UNIT_DIR="${HERMES_FRONTEND_UNIT_DIR:-$SCRIPT_DIR/../deploy/systemd}"
+ENABLE="${HERMES_FRONTEND_ENABLE:-false}"
 DRY_RUN=false
 
 usage() {
@@ -39,17 +44,21 @@ Options:
   --artifacts <dir>    Local artifact directory (air-gapped fallback)
   --release-url <url>  Base URL holding the release assets
   --station <fqdn>     Station certificate name (default: hostname -f)
+  --enable             Enable and start the units after installing (default: off)
   --dry-run            Verify and stage, print the plan, change nothing
   -h, --help           Show this help
 
 Environment:
   HERMES_FRONTEND_ROOT              default /opt/hermes-frontend
   HERMES_FRONTEND_ETC               default /etc/hermes-frontend
+  HERMES_FRONTEND_SYSTEMD_DIR       default /etc/systemd/system
+  HERMES_FRONTEND_UNIT_DIR          default <repo>/deploy/systemd
   HERMES_FRONTEND_USER/GROUP        default hermes/hermes
   HERMES_FRONTEND_RELEASE_URL       primary artifact source
   HERMES_FRONTEND_ARTIFACTS         local fallback for air-gapped stations
   HERMES_FRONTEND_APPS              default "shell gps"
   HERMES_FRONTEND_STATION           daemon TLS server name
+  HERMES_FRONTEND_ENABLE            true to enable/start the units
 EOF
 }
 
@@ -62,6 +71,7 @@ while [ $# -gt 0 ]; do
     --artifacts) ARTIFACTS="${2:?--artifacts requires a value}"; shift 2 ;;
     --release-url) RELEASE_URL="${2:?--release-url requires a value}"; shift 2 ;;
     --station) STATION="${2:?--station requires a value}"; shift 2 ;;
+    --enable) ENABLE=true; shift ;;
     --dry-run) DRY_RUN=true; shift ;;
     -h|--help) usage; exit 0 ;;
     *) die "unknown option: $1" ;;
@@ -115,6 +125,8 @@ app_port() {
 
 for app in $APPS; do
   app_pkg "$app" >/dev/null || die "unknown app: $app"
+  [ -f "$UNIT_DIR/hermes-frontend-$app.service" ] \
+    || die "missing unit file: $UNIT_DIR/hermes-frontend-$app.service"
 done
 
 TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/hermes-deploy.XXXXXX")"
@@ -201,6 +213,7 @@ if [ "$DRY_RUN" = true ]; then
   for app in $APPS; do
     echo "    $RELEASE_DIR/$app"
     echo "    $ETC/$app.env"
+    echo "    $SYSTEMD_DIR/hermes-frontend-$app.service"
   done
   echo "    $ROOT/current -> $RELEASE_DIR"
   [ -L "$ROOT/current" ] && echo "    $ROOT/previous -> $(readlink -f "$ROOT/current")"
@@ -217,6 +230,13 @@ for app in $APPS; do
   rm -rf "$dest"
   mv "$STAGE/$app" "$dest"
   install -m 0640 "$ENV_STAGE/$app.env" "$ETC/$app.env"
+done
+
+for app in $APPS; do
+  unit="hermes-frontend-$app.service"
+  install -d -m 0755 "$SYSTEMD_DIR"
+  install -m 0644 "$UNIT_DIR/$unit" "$SYSTEMD_DIR/$unit"
+  echo "==> Installed $SYSTEMD_DIR/$unit"
 done
 
 if [ "$(id -u)" -eq 0 ] && id -u "$RUN_USER" >/dev/null 2>&1; then
@@ -242,5 +262,20 @@ ln -sfn "$RELEASE_DIR" "$ROOT/.current.tmp"
 mv -Tf "$ROOT/.current.tmp" "$ROOT/current"
 
 echo "==> current -> $RELEASE_DIR"
+
+if [ "$(id -u)" -eq 0 ] && command -v systemctl >/dev/null 2>&1 && [ -d /run/systemd/system ]; then
+  systemctl daemon-reload
+  if [ "$ENABLE" = true ]; then
+    units=()
+    for app in $APPS; do units+=("hermes-frontend-$app.service"); done
+    systemctl enable --now "${units[@]}"
+    echo "==> Enabled and started: ${units[*]}"
+  else
+    echo "==> Units installed but not enabled (set HERMES_FRONTEND_ENABLE=true to start)"
+  fi
+else
+  echo "==> systemd not available here; skipped daemon-reload"
+fi
+
 echo "==> Installed $APPS at version $VERSION."
 echo "==> HERMES-GUI under $GUI_ROOT was not touched."
